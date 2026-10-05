@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O segmento do cardápio, num RadioButton sem bolinha: escolhido, o acento a 30 %; desligado (a fonte
+     define o tamanho), o escolhido fica cinza, e não violeta. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="#338B8B99" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#4D6A5AF9" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+</selector>

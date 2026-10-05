@@ -1,0 +1,44 @@
+[workspace]
+# Workspace próprio, como `apps/windows`: esta sonda só faz sentido no Windows (o Dell da bancada) e
+# não entra no workspace da raiz. Ver `tools/sonda-r5/README.md`, seção Windows.
+
+[package]
+name = "sonda-r5-windows"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+description = "S-W1 do R5: dois H.264 de hardware ao mesmo tempo, e o MP4 fragmentado do IMFSinkWriter depois de matar o processo."
+
+[[bin]]
+name = "sonda-r5-w1"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+crossbeam-channel = "0.5"
+
+[target.'cfg(windows)'.dependencies]
+# O encoder e o dispositivo do produto (`encoder.rs`, `device.rs`), sem `quall-core`: sem rede, sem
+# OpenSSL, compila em segundos (só no Windows: no Mac a sonda só testa `caixas.rs`), e roda na Sessão 0 pelo SSH.
+quall-capture-probe = { path = "../../../apps/windows", default-features = false }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Media",
+    "Win32_Media_MediaFoundation",
+    "Win32_System_RemoteDesktop",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_System_Threading",
+    "Win32_System_Console",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+opt-level = 3

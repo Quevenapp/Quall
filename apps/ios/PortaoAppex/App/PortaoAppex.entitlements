@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Group: a única memória compartilhada entre o app e a extension, que são
+	     processos separados. NÃO acrescentar com.apple.developer.networking.multicast
+	     aqui antes de o App ID mostrar a chave habilitada: se acrescentar antes, a
+	     falha vira erro de compilação e parece regressão do portão. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.br.com.queven.quall</string>
+	</array>
+</dict>
+</plist>

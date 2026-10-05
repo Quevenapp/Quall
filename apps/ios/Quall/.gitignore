@@ -1,0 +1,29 @@
+# O `.xcodeproj` é gerado pelo xcodegen a partir do `project.yml`, que é o que está versionado.
+# Mesma escolha do `PortaoQuall` e do `PortaoAppex`, pelo mesmo motivo: `pbxproj` é o formato que
+# mais produz conflito sem significado entre frentes paralelas.
+Quall.xcodeproj/
+DD/
+saida/
+
+# A trava de corrida única. Ela é do instante, não do repositório.
+.corrida-em-curso.pid
+saida-comparacao/
+
+# `saida-longa/`, e por que esta linha existe: eu criei esse nome no `corrida-longa.sh` e esqueci
+# de ignorá-lo. Um `git add -A` varreu 510 MB de syslog e **57 MB de gravação da tela do usuário**
+# para dentro de um commit, e quem barrou o push foi o limite de tamanho do GitHub, não o cuidado
+# de ninguém. Artefato de corrida nunca é fonte, e gravação de tela alheia não sai desta máquina.
+saida-longa/
+saida-rx/
+
+# A saída do `laco-de-audio.sh`. Mesma regra: artefato de corrida nunca é fonte. Aqui não há
+# gravação de tela nem `.wav` — o laço não guarda amostra nenhuma —, mas há syslog do aparelho,
+# que é da vida dele e não deste repositório.
+saida-audio/
+
+# Os retratos das telas (`retratos-das-telas.sh`): imagens de tela do aparelho, que ficam na máquina.
+saida-retratos/
+
+# A saída do `provar-controles.sh` (R9): o diário da câmera e o veredito. Só números (nenhum quadro é
+# salvo), mas é diário de aparelho, e artefato de corrida nunca é fonte.
+saida-controles/

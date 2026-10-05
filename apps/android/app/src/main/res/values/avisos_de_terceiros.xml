@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lic_avisos_completos">All third-party notices</string>
+    <string name="lic_sem_avisos">Couldn\'t read the third-party notices included in the app: %1$s</string>
+</resources>

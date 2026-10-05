@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- O idioma destes recursos (docs/traducao.md, Android): a fonte de verdade de `Idioma.codigo`. -->
+    <string name="idioma_codigo">pt</string>
+    <string name="idioma_descricao">Idioma: Português</string>
+    <string name="idioma_acao">Mudar para inglês</string>
+    <string name="notification_channel_capture">Captura do Quall</string>
+
+    <!-- Fluxo do produto — docs/fluxo-de-uso.md -->
+    <string name="o_que_transmitir">O que transmitir</string>
+    <string name="resolucao">Resolução</string>
+    <!-- %1$s é o rótulo (720p…4K), %2$s a taxa em Mbps. A frase diz o CUSTO, não a capacidade:
+         ver docs/fluxo-de-uso.md, "combinação testada, não capacidade abstrata". -->
+    <string name="resolucao_custo">%1$s pede cerca de %2$s Mbps deste enlace.</string>
+    <string name="resolucao_custo_alto">%1$s pede cerca de %2$s Mbps. Num Wi-Fi compartilhado isso é muito; no cabo, folgado.</string>
+    <string name="fonte_tela">A tela</string>
+    <string name="espelhar">Espelhar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="parar">Parar de espelhar</string>
+    <string name="esperando_um_aparelho">Esperando um aparelho</string>
+    <string name="espelhando">Espelhando</string>
+    <string name="previa_da_camera">O que a câmera está enviando agora</string>
+    <string name="aparelhos_esperando">Aparelhos esperando na rede</string>
+    <string name="aparelhos_esperando_nota">Lista crua do mDNS do núcleo, para conferir que a descoberta funciona nesta rede. Tocar num item abre a tela de exibir com o endereço já preenchido.</string>
+    <string name="procurar_aparelhos">Procurar aparelhos (mDNS pelo núcleo)</string>
+    <string name="verificacao_sem_rede">Verificação sem rede (contrato do sidecar)</string>
+    <string name="exibir">Exibir outro aparelho</string>
+    <string name="exibir_nota">Este aparelho também exibe: toque em “Exibir outro aparelho” para ver o que outro Quall está transmitindo.</string>
+
+    <!-- Receptor — docs/fluxo-de-uso.md, o lado que exibe -->
+    <string name="exibir_titulo">Exibir outro aparelho</string>
+    <string name="lista_vazia_nota">Ninguém anunciando. Use o endereço que aparece no outro aparelho.</string>
+    <string name="ou_digite_endereco">Ou digite o endereço</string>
+    <string name="pin_do_outro_aparelho">PIN do outro aparelho</string>
+    <string name="conectar_e_exibir">Conectar e exibir</string>
+    <string name="pedir_idr">Pedir IDR</string>
+    <string name="parar_de_exibir">Parar de exibir</string>
+    <string name="tela_cheia">Tela cheia</string>
+    <string name="tela_cheia_como_sair">Tela cheia. Para sair, use Voltar — puxe a barra da borda se ela estiver escondida.</string>
+    <string name="previa_suspensa">Transmissão em andamento. A prévia volta se você refizer a conexão.</string>
+
+    <!-- O microfone da câmera (R5, fase 2): um botão que começa desligado, na tela R5 e no
+         espelhamento de câmera comum. -->
+    <string name="microfone_desligado">Microfone: desligado</string>
+    <string name="microfone_ligado">Microfone: ligado</string>
+    <string name="microfone_desligar">Desligar o microfone</string>
+
+    <!-- Comuns a várias telas, e os rótulos das telas no manifesto. -->
+    <string name="ajustes">Ajustes</string>
+    <string name="voltar">Voltar</string>
+</resources>

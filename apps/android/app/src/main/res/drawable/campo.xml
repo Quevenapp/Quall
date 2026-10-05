@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O campo (§4): a superfície, a borda branca a 10 %, cantos de 14; com o foco, a borda no acento. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/q_superficie" />
+            <stroke android:width="2dp" android:color="@color/q_acento" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/q_superficie" />
+            <stroke android:width="1dp" android:color="@color/q_contorno_campo" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</selector>

@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endereços de exemplo sintéticos. -->
+
+<!-- O teleprompter: escolha, prompter, controle, R5 (docs/contrato-teleprompter.md) (docs/traducao.md, Android). English; the Portuguese source is in values-pt/. -->
+<resources>
+    <!-- Teleprompter (F6b) — docs/contrato-teleprompter.md -->
+    <string name="tp_secao">Teleprompter</string>
+    <string name="tp_mostrar_texto">Show the text (teleprompter)</string>
+    <string name="tp_controlar">Control a teleprompter</string>
+    <string name="tp_secao_nota">One device shows the scrolling text — mirrored, to read on the glass — and another is the remote. Both edit the script; the last change wins.</string>
+    <string name="tp_prompter_titulo">Teleprompter</string>
+    <string name="r5_titulo">Teleprompter with camera</string>
+    <string name="r5_abrir">Teleprompter with camera (front)</string>
+    <string name="r5_esconder_camera">Hide camera</string>
+    <string name="r5_mostrar_camera">Show camera</string>
+    <string name="r5_previa_espelhada">Mirrored preview</string>
+    <string name="r5_texto_na_lente">Text: camera side</string>
+    <string name="r5_texto_oposto">Text: opposite side</string>
+    <string name="r5_gravar">● Record</string>
+    <string name="tp_esperando_o_controle">Waiting for the remote</string>
+    <string name="tp_controle_titulo">Control a teleprompter</string>
+    <string name="tp_lista_vazia">No teleprompter found. Open “Show the text” on the other device, or type the address shown on it.</string>
+    <string name="tp_pin_do_prompter">Teleprompter PIN</string>
+    <string name="tp_endereco_dica">192.168.56.50 (port 7979 is added for you)</string>
+    <string name="tp_conectar_e_controlar">Connect and control</string>
+    <string name="tp_rolar">Scroll</string>
+    <string name="tp_parar">Stop</string>
+    <string name="tp_inicio">Start</string>
+    <string name="tp_pular_menos" formatted="false">−5%</string>
+    <string name="tp_pular_mais" formatted="false">+5%</string>
+    <string name="tp_vel_menos">Speed −</string>
+    <string name="tp_vel_mais">Speed +</string>
+    <string name="tp_fonte_menos">A −</string>
+    <string name="tp_fonte_mais">A +</string>
+    <string name="tp_margem_menos">Margin −</string>
+    <string name="tp_margem_mais">Margin +</string>
+    <string name="tp_linha_sobe">Line ↑</string>
+    <string name="tp_linha_desce">Line ↓</string>
+    <string name="tp_espelho">Mirror</string>
+    <string name="tp_espelho_longo">Mirror (flips the text to read in the glass reflection)</string>
+    <string name="tp_editar">Edit</string>
+    <string name="tp_sair">Exit</string>
+    <string name="tp_orientacao">Orientation</string>
+    <string name="tp_fonte_automatica">Automatic font size</string>
+    <string name="tp_segurar_para_rolar">Hold to scroll</string>
+    <string name="tp_rolar_para_cima">Scroll up</string>
+    <string name="tp_rolar_para_baixo">Scroll down</string>
+    <string name="tp_rolar_para_cima_descricao">Scroll up: hold to scroll, release to stop</string>
+    <string name="tp_rolar_para_baixo_descricao">Scroll down: hold to scroll, release to stop</string>
+    <string name="tp_sair_do_segurar">Exit</string>
+    <string name="tp_sair_do_segurar_descricao">Exit hold to scroll: hold</string>
+    <string name="tp_inverter_botoes">Swap buttons</string>
+    <string name="tp_inverter_botoes_ligado">Swap buttons ✓</string>
+    <string name="tp_no_prompter">On the prompter</string>
+    <string name="tp_neste_aparelho">On this device</string>
+    <string name="tp_usar_o_do_prompter">Use the prompter\'s</string>
+    <string name="tp_mandar_o_meu">Send mine</string>
+    <string name="tp_o_que_sair_fica_guardado">The script that\'s replaced stays in Saved scripts.</string>
+    <string name="tp_roteiros_guardados">Saved scripts</string>
+    <string name="tp_nenhum_roteiro_guardado">No saved scripts.</string>
+    <string name="tp_fechar">Close</string>
+    <string name="tp_ver">View</string>
+    <string name="tp_usar_este">Use this one</string>
+    <string name="tp_apagar">Delete</string>
+    <string name="tp_progresso">Reading progress</string>
+    <string name="tp_velocidade">Speed</string>
+    <string name="tp_fonte">Font size</string>
+    <string name="tp_margem">Margin</string>
+    <string name="tp_linha_de_leitura">Reading line</string>
+    <string name="tp_editar_roteiro">Edit the script</string>
+    <string name="tp_colar_roteiro">Paste a script</string>
+    <string name="tp_desconectar">Disconnect</string>
+    <string name="tp_editar_titulo">Edit the script</string>
+    <string name="tp_conflito">The script changed on the other device while you were editing. What you typed here is still in the editor.</string>
+    <string name="tp_usar_o_novo">Use the new text</string>
+    <string name="tp_manter_o_meu">Keep mine</string>
+    <string name="tp_roteiro_dica">Write or paste the script here.</string>
+    <string name="tp_limpar">Clear</string>
+    <string name="tp_colar">Paste</string>
+    <string name="tp_confirmar">Confirm</string>
+    <string name="tp_sem_roteiro">No script. Tap the screen and “Edit” — or write on the remote.</string>
+
+    <!-- A tela do prompter e a R5: títulos, recados, a faixa do alto e a barra de ícones. -->
+    <string name="tp_voltar_de_novo_fecha">Go back again to close the teleprompter.</string>
+    <string name="tp_um_prompter_por_aparelho">Close %1$s before opening %2$s: one prompter per device.</string>
+    <string name="tp_nucleo_nao_carregou">The native core didn’t load: %1$s</string>
+    <string name="tp_replica_falhou">Couldn’t set up the teleprompter: %1$s</string>
+    <string name="tp_estado_parado">Stopped</string>
+    <string name="tp_fonte_automatica_desligada">Automatic font size off</string>
+    <string name="tp_fonte_automatica_desligada_pelo_controle">Automatic font size off: the remote changed the font size</string>
+    <string name="tp_orientacao_travada">Orientation is locked while recording.</string>
+    <string name="tp_controle_conectado_recado">Remote “%1$s” connected</string>
+    <string name="tp_controle_conectado_pareado">Remote “%1$s” connected — paired with PIN</string>
+    <string name="tp_controle_desconectado">Remote disconnected</string>
+    <string name="tp_controle_conectado">Remote connected</string>
+    <string name="tp_controlado_por">Controlled by %1$s</string>
+    <string name="tp_pin_rotulo">PIN %1$s</string>
+    <string name="tp_sem_rede">no network</string>
+    <string name="tp_pausar">Pause</string>
+    <string name="tp_resumo">%1$.2f lines/s · %2$.0f sp · %3$.0f%%</string>
+    <string name="tp_ultima_recusa">The last remote attempt was refused: %1$s</string>
+    <string name="tp_voltar_ao_comeco">Back to start</string>
+    <string name="tp_mais_devagar">Slower</string>
+    <string name="tp_mais_depressa">Faster</string>
+    <string name="tp_folha_controlar_titulo">Control this teleprompter</string>
+    <string name="tp_folha_controlar_instrucao">On the other device, open Quall → Teleprompter → Remote, and enter:</string>
+    <string name="tp_letra_grande_descricao">Show the address and PIN in large type</string>
+    <string name="tp_teleprompter_abrindo">The teleprompter is still opening the session.</string>
+    <string name="tp_par_teleprompter">teleprompter</string>
+    <string name="tp_par_controle">remote</string>
+
+    <!-- Os avisos das duas telas (teleprompter/Avisos.kt). -->
+    <string name="tp_aviso_sumido_curto_rolando">Remote disconnected%1$s · text keeps scrolling</string>
+    <string name="tp_aviso_sumido_curto_parado">Remote disconnected%1$s · text stays paused</string>
+    <string name="tp_aviso_sumido_rolando">Remote disconnected — the text keeps scrolling as it was. Waiting for the remote to come back%1$s</string>
+    <string name="tp_aviso_sumido_parado">Remote disconnected — the text stays paused as it was. Waiting for the remote to come back%1$s</string>
+    <string name="tp_aviso_nao_chegou_ao_controle_curto">The last change from here didn’t reach the remote</string>
+    <string name="tp_aviso_nao_chegou_ao_controle">The last change made here hasn’t reached the remote yet.</string>
+    <string name="tp_aviso_conexao_perdida">Lost connection to the teleprompter — it keeps going as it was. %1$s</string>
+    <string name="tp_tentando_de_novo">Trying again…</string>
+    <string name="tp_aviso_nao_chegou_ao_prompter">The last command hasn’t reached the teleprompter yet.</string>
+    <string name="tp_aviso_outra_versao_curto">Different version on the other device: update Quall on both</string>
+    <string name="tp_aviso_outra_versao">The other device uses a different teleprompter version: update Quall on both.</string>
+    <string name="tp_aviso_relogio_curto">Wrong clock on one of the devices: set the time</string>
+    <string name="tp_aviso_relogio">The clock on one of the devices is wrong: the script may not have gone through. Set the time.</string>
+
+    <!-- O que cada lado diz depois de uma falha (teleprompter/Politicas.kt e as sessões). -->
+    <string name="tp_erro_esperar_controle">couldn’t wait for the remote: %1$s</string>
+    <string name="tp_erro_abrir_porta">couldn’t open port %1$d: %2$s</string>
+    <string name="tp_ocupado_soltando">The teleprompter is still releasing the previous session — trying again…</string>
+    <string name="tp_ocupado_outro_controle">The teleprompter has another remote — trying again…</string>
+    <string name="tp_pin_nao_reconhece">The teleprompter no longer recognizes this device. Enter the PIN shown on its screen.</string>
+    <string name="tp_pin_nao_conferiu">The PIN didn’t match. Check the six digits on the teleprompter’s screen and enter it again.</string>
+    <string name="tp_pareamento_nao_fechou">Pairing didn’t complete. Enter the PIN shown on the teleprompter’s screen.</string>
+    <string name="tp_erro_protocolo">%1$s didn’t accept this device as a remote (it isn’t a teleprompter, or it uses a different Quall version): %2$s</string>
+    <string name="tp_erro_invalido">invalid address or data: %1$s</string>
+    <string name="tp_tentando_reconectar">Trying to reconnect…</string>
+    <string name="tp_erro_sem_rota">the two devices couldn’t reach each other. Check that they’re on the same Wi-Fi network.</string>
+    <string name="tp_erro_prazo">%1$s didn’t respond in time. Is the teleprompter open and waiting?</string>
+    <string name="tp_erro_recusou">%1$s refused the connection. Open the teleprompter on the other device (and check the port).</string>
+    <string name="tp_erro_conectar">couldn’t connect to %1$s: %2$s</string>
+    <string name="tp_erro_nucleo">the native core didn’t load: %1$s</string>
+    <string name="tp_queda_o_outro_saiu">The teleprompter left the session. Trying to reconnect…</string>
+    <string name="tp_queda_rede">The network between the two devices failed. Trying to reconnect…</string>
+    <string name="tp_recusa_pin_mudou">the previous PIN didn’t match (%1$s): the PIN changed</string>
+
+    <!-- A pergunta do texto e os roteiros guardados (teleprompter/PerguntaDoTexto.kt, TelaDosRoteiros). -->
+    <string name="tp_pergunta_titulo">The prompter %1$s has a different script.</string>
+    <string name="tp_conferindo">Checking the prompter\'s script…</string>
+    <string name="tp_pergunta_saiu">The prompter left. The question comes back when it returns.</string>
+    <string name="tp_pergunta_mudou">The prompter\'s script changed. Check again.</string>
+    <string name="tp_uma_palavra">1 word</string>
+    <string name="tp_n_palavras">%1$s words</string>
+    <string name="tp_confirma_usar">Use this script? It replaces the current script, also on the connected prompter.</string>
+    <string name="tp_usar">Use</string>
+    <string name="tp_confirma_apagar">Delete this saved script?</string>
+    <string name="tp_origem_do_prompter">From the prompter %1$s</string>
+    <string name="tp_origem_deste_aparelho">From this device, before %1$s</string>
+    <string name="tp_dia_e_hora">%2$02d/%1$02d %3$s</string>
+    <string name="tp_nao_deu_para_usar">Couldn’t use this script (%1$s).</string>
+    <string name="tp_roteiro_sumiu">That script is no longer saved.</string>
+
+    <!-- O editor do roteiro (ui/EditorDeTexto.kt) e o tamanho (teleprompter/Percurso.kt). -->
+    <string name="tp_tamanho_do_roteiro">%1$s KB of %2$s KB</string>
+    <string name="tp_area_vazia_colar">The clipboard is empty — copy the script and tap Paste.</string>
+    <string name="tp_roteiro_mudou_no_editor">The script changed on the other device — the editor followed.</string>
+    <string name="tp_descartar_pergunta">Discard what you typed in the script?</string>
+    <string name="tp_descartar">Discard</string>
+    <string name="tp_continuar_editando">Keep editing</string>
+    <string name="tp_area_vazia">The clipboard is empty.</string>
+    <string name="tp_caractere_nulo">The script has a null character, which can’t be sent. Delete it and confirm again.</string>
+    <string name="tp_passou_do_limite">The script is over the limit: %1$s.</string>
+    <string name="tp_nucleo_recusou">The core refused the script (%1$s).</string>
+    <string name="tp_acima_do_limite">%1$s — over the limit</string>
+    <string name="tp_sem_roteiro_curto">No script.</string>
+    <string name="tp_linha_de_leitura_valor">Reading line %1$.1f%%</string>
+
+    <!-- A folha de Ajustes do prompter e os controles do texto (ui/FolhasDoPrompter.kt). -->
+    <string name="tp_ajustes_do_texto">Text settings</string>
+    <string name="tp_pronto">Done</string>
+    <string name="tp_linhas_por_s">%1$.2f lines/s</string>
+    <string name="tp_fonte_menor">Smaller font</string>
+    <string name="tp_fonte_maior">Larger font</string>
+    <string name="tp_fonte_sp">%1$.0f sp</string>
+    <string name="tp_fonte_sp_automatica">%1$.0f sp (automatic)</string>
+    <string name="tp_margem_valor">%1$.0f%% on each side</string>
+    <string name="tp_linha_valor">%1$.0f%% from the top</string>
+    <string name="tp_espelho_legenda">Flips the text horizontally, to read it in the glass\'s reflection.</string>
+    <string name="tp_orientacao_legenda">This device only. Lying flat under the glass, the sensor can’t decide: choose Landscape (top on the left) or Reverse landscape (top on the right).</string>
+    <string name="tp_orientacao_travada_legenda">Locked while recording: one file, one orientation.</string>
+    <string name="tp_orientacao_automatica">Auto</string>
+    <string name="tp_orientacao_retrato">Portrait</string>
+    <string name="tp_orientacao_paisagem">Landscape</string>
+    <string name="tp_orientacao_paisagem_invertida">Reverse landscape</string>
+    <string name="tp_fonte_automatica_agora">Now: %1$.0f sp. This device only.</string>
+    <string name="tp_fonte_automatica_legenda">The largest font size where every line has at least two words. This device only.</string>
+    <string name="tp_enquadramento">Framing</string>
+    <string name="tp_enquadramento_legenda">Drag the blue triangles to frame the text. This device only.</string>
+    <string name="tp_largura_inteira">Full width</string>
+
+    <!-- O controle remoto (ui/ControleActivity.kt, activity_controle.xml). -->
+    <string name="tp_controlar_curto">Remote</string>
+    <string name="tp_do_outro_lado">On the other side: Quall → Teleprompter → Show the text.</string>
+    <string name="tp_prompters_na_rede">Prompters on the network</string>
+    <string name="tp_procurando">searching</string>
+    <string name="tp_procurar_de_novo">Search the network again</string>
+    <string name="tp_pin">PIN</string>
+    <string name="tp_pin_nota">Leave blank if the two are already paired.</string>
+    <string name="tp_conectar">Connect</string>
+    <string name="tp_colar_endereco">Paste address</string>
+    <string name="tp_leitura">Reading</string>
+    <string name="tp_segurar_nota">The screen shows just two big buttons: hold to scroll, release to stop. At the set speed. Saved on this device.</string>
+    <string name="tp_roteiro">Script</string>
+    <string name="tp_editar_ou_colar">Edit or paste the script</string>
+    <string name="tp_sem_endereco">%1$s didn’t announce a usable address.</string>
+    <string name="tp_nao_e_endereco">That’s not a Quall address (clipboard).</string>
+    <string name="tp_digite_endereco">Enter the address shown on the prompter, like 192.168.55.10:7979.</string>
+    <string name="tp_pin_seis_digitos">The PIN has six digits.</string>
+    <string name="tp_digite_pin">Enter the six-digit PIN shown on the prompter’s screen.</string>
+    <string name="tp_encerrando">Closing the previous session…</string>
+    <string name="tp_conectando_em">Connecting to %1$s…</string>
+    <string name="tp_tentativa">Attempt %1$d</string>
+    <string name="tp_conexao_perdida_titulo">Connection lost — trying again</string>
+    <string name="tp_conectado_ao_prompter">Connected to the prompter</string>
+    <string name="tp_conectado_a">Connected to %1$s</string>
+    <string name="tp_conectando">Connecting…</string>
+    <string name="tp_porcento">%1$.0f%%</string>
+    <string name="tp_porcento_alvo">→ %1$.0f%%</string>
+    <string name="tp_kib">%1$.1f KiB</string>
+    <string name="tp_voltar_5" formatted="false">Back 5%</string>
+    <string name="tp_voltar_1" formatted="false">Back 1%</string>
+    <string name="tp_pular_1" formatted="false">Forward 1%</string>
+    <string name="tp_pular_5" formatted="false">Forward 5%</string>
+
+    <!-- "Segurar para rolar" (ui/ModoSegurar.kt, teleprompter/SegurarParaRolar.kt). -->
+    <string name="tp_efeito_volta">moves the text back</string>
+    <string name="tp_efeito_avanca">moves the text forward</string>
+    <string name="tp_segurar_esperando">Waiting for the prompter…</string>
+    <string name="tp_segurar_atualize">Update the app on the prompter to use this mode</string>
+    <string name="tp_segurar_parou">The text stopped. Release and press again.</string>
+    <string name="tp_segurar_parou_e">The text stopped. %1$s</string>
+    <string name="tp_segurar_nao_chegou">The last command hasn’t reached the prompter yet.</string>
+    <string name="tp_segurar_conectando">Connecting to the prompter at %1$s…</string>
+    <string name="tp_segurar_nao_responde">The prompter isn’t responding. Waiting…</string>
+    <string name="tp_segurar_sem_conexao">No connection to the prompter.</string>
+    <string name="tp_controlando_par">Controlling “%1$s”</string>
+    <string name="tp_sem_sessao">No session</string>
+    <string name="tp_segurar_velocidade">Speed: %1$.2f lines/s</string>
+    <string name="tp_inverter_como">To swap the buttons, hold “Swap buttons”.</string>
+    <string name="tp_inverter_solte">Release the scroll button to swap.</string>
+    <string name="tp_inverter_descricao_ligado">Swap buttons, on: hold to change</string>
+    <string name="tp_inverter_descricao_desligado">Swap buttons, off: hold to change</string>
+    <string name="tp_sair_como">To leave this mode, hold “Exit” in the corner.</string>
+
+    <!-- A tela R5: a faixa, a prévia, a gravação (ui/PrompterComCameraActivity.kt, ui/DivisaoDaTela.kt, teleprompter/DecisaoDaGravacao.kt). -->
+    <string name="r5_lado_voltou">The text side is back to auto; if this device’s camera is on another edge, choose it in Settings.</string>
+    <string name="r5_aguarde">Please wait… opening the camera</string>
+    <string name="r5_abrir_ajustes">Open Settings</string>
+    <string name="r5_chip_texto">Text</string>
+    <string name="r5_chip_camera">Camera</string>
+    <string name="r5_ajustes_da_camera">Camera settings</string>
+    <string name="r5_esconder_previa">Hide the preview</string>
+    <string name="r5_mostrar_previa">Show the preview</string>
+    <string name="r5_folha_camera_titulo">Receive this device’s camera</string>
+    <string name="r5_folha_camera_instrucao">On the other device, open Quall → Receive, and enter:</string>
+    <string name="r5_camera_nao_esperando">The camera isn’t waiting for a receiver yet.</string>
+    <string name="r5_sem_frontal">This device has no front camera. The text works; the camera doesn’t.</string>
+    <string name="r5_video_nao_subiu">The video didn’t start: %1$s</string>
+    <string name="r5_sem_permissao">Quall doesn’t have access to this device’s camera. Open Settings → Apps → Quall → Permissions → Camera and allow it; the text keeps working meanwhile.</string>
+    <string name="r5_nucleo_nao_carregou">Quall’s core didn’t load (%1$s): the text and the camera don’t work on this device.</string>
+    <string name="r5_frontal_nao_abriu">The front camera didn’t open: %1$s</string>
+    <string name="r5_desativado">disabled: %1$s</string>
+    <string name="r5_gravando">Recording</string>
+    <string name="r5_gravacao_em_transicao">Recording starting or closing</string>
+    <string name="r5_gravando_sem_som">Recording WITHOUT AUDIO — turn on the microphone</string>
+    <string name="r5_gravando_sem_som_ainda">Recording: no audio yet — the microphone is opening</string>
+    <string name="r5_transmitindo_720p">Sending in 720p</string>
+    <string name="r5_microfone_desligado">Microphone off: %1$s</string>
+    <string name="r5_abrir_ajustes_microfone">Open Settings (microphone)</string>
+    <string name="r5_microfone_aviso">Microphone: %1$s</string>
+    <string name="r5_nao_abriu_teleprompter">Couldn’t open the teleprompter: %1$s</string>
+    <string name="r5_estado_parado">stopped</string>
+    <string name="r5_estado_controle_desconectado">remote disconnected</string>
+    <string name="r5_estado_esperando_controle">waiting for the remote</string>
+    <string name="r5_estado_controle_conectado">remote connected</string>
+    <string name="r5_estado_controlado_por">controlled by %1$s</string>
+    <string name="r5_camera_sem_acesso">no access</string>
+    <string name="r5_camera_abrindo">opening</string>
+    <string name="r5_camera_enviando">sending</string>
+    <string name="r5_camera_enviando_para">sending to %1$s</string>
+    <string name="r5_camera_esperando">waiting for a receiver</string>
+    <string name="r5_camera_parou">stopped</string>
+    <string name="r5_nao_da_gravar_espelhamento">Can’t record here: the camera is in use by regular mirroring.</string>
+    <string name="r5_nao_da_gravar_fechada">Can’t record: the camera isn’t open.</string>
+    <string name="r5_gravar_voltou">Record is back: the next recording will try again.</string>
+    <string name="r5_continua_sem_gravar">Still can’t record: %1$s</string>
+    <string name="r5_nao_gravou">Didn’t record: %1$s</string>
+    <string name="r5_recusa_espelhamento">the camera is in use by regular mirroring, outside this screen</string>
+    <string name="r5_recusa_camera_fechada">the camera isn’t open</string>
+    <string name="r5_recusa_reserva">couldn’t record</string>
+    <string name="r5_indicador_abrindo">● Starting the recording…</string>
+    <string name="r5_indicador_fechando">● Closing the file…</string>
+    <string name="r5_indicador_gravando">● Recording %1$s</string>
+    <string name="r5_indicador_sem_som">NO AUDIO — turn on the microphone</string>
+    <string name="r5_indicador_sem_som_ainda">no audio yet: the microphone is opening</string>
+    <string name="r5_indicador_sobram">%1$s left</string>
+    <string name="r5_gravar_sem_som">● Record (no audio)</string>
+    <string name="r5_abrindo">● Starting…</string>
+    <string name="r5_parar_gravacao">■ Stop recording</string>
+    <string name="r5_fechando">■ Closing…</string>
+    <string name="r5_previa_como_espelho">Mirror the preview</string>
+    <string name="r5_previa_legenda">Only the image on this screen. Whoever receives the camera always sees it unmirrored.</string>
+    <string name="r5_lado_do_texto">Text side</string>
+    <string name="r5_lado_legenda">Auto: the text stays at the top, near the camera, also in landscape; upside down, at the bottom. If this device’s camera is on another edge, choose here.</string>
+    <string name="r5_lado_automatico">Auto</string>
+    <string name="r5_lado_cima">Top</string>
+    <string name="r5_lado_baixo">Bottom</string>
+    <string name="r5_lado_esquerda">Left</string>
+    <string name="r5_lado_direita">Right</string>
+    <string name="r5_borda_descricao">Border between the text and the preview. Drag to split.</string>
+    <string name="r5_borda_estado">text at %1$.0f%% of the screen</string>
+
+    <!-- O exemplo de endereço do campo do controle: igual nos dois idiomas. -->
+    <string name="tp_endereco_exemplo" translatable="false">192.168.55.10:7979</string>
+</resources>

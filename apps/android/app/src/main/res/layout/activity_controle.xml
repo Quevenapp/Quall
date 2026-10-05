@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O controle remoto do teleprompter, no modelo da `TelaDoControle` do iOS (pedido do Pessoa Exemplo, 28/09;
+  `docs/telas-android-como-ios.md` §4.4–4.5). Três telas num arquivo, alternadas por visibilidade:
+  o formulário (endereço e PIN), "Conectando…" e o painel. O modo "segurar para rolar", os roteiros
+  guardados, o editor e a pergunta do texto ficam por cima.
+
+  O endereço digitado é o caminho: o iPhone não lista aparelhos (o entitlement de multicast segue
+  pendente) e o A10s não acha ninguém por mDNS dentro do app (dívida 9). A lista por mDNS fica, só
+  no Android, acima do endereço, com altura reservada.
+
+  O formulário e o "Conectando" estão no "Estúdio de bolso" (`docs/telas-estudio.md` §6.7); o painel, o
+  modo segurar, os roteiros, o editor e a pergunta, só com as cores novas (§6.8: a geometria de sempre).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ======================= o formulário =======================
+
+         O molde do Exibir (`docs/telas-estudio.md` §6.7): voltar · "Controlar"; "Controlar um
+         teleprompter" e o caminho do outro lado; os prompters na rede (a procura começa sozinha ao abrir,
+         a lista tem altura reservada e rola por dentro); o endereço; o PIN em casas; "Conectar"; e embaixo
+         "Colar endereço" e "Roteiros guardados". Em paisagem, o endereço à esquerda e o PIN e o Conectar
+         à direita (§11.1). -->
+    <ScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/escolhaControle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/colunasDoControle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <ImageButton
+                    android:id="@+id/buttonVoltarDoControle"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/voltar"
+                    android:src="@drawable/ic_q_voltar" />
+
+                <TextView
+                    style="@style/Quall.TituloDoCabecalho"
+                    android:accessibilityHeading="true"
+                    android:text="@string/tp_controlar_curto" />
+
+                <!-- Sem engrenagem: o espaço do botão redondo, para o título ficar no centro. -->
+                <Space
+                    android:layout_width="48dp"
+                    android:layout_height="48dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textTituloControle"
+                style="@style/Quall.TituloDeTela"
+                android:layout_marginTop="8dp"
+                android:text="@string/tp_controle_titulo"
+                app:coluna="esquerda" />
+
+            <TextView
+                android:id="@+id/textSubtituloControle"
+                style="@style/Quall.Corpo2"
+                android:layout_marginTop="4dp"
+                android:text="@string/tp_do_outro_lado"
+                app:coluna="esquerda" />
+
+            <!-- Só no Android: a lista por mDNS (o iOS não lista por falta do entitlement de multicast, e
+                 não por desenho). -->
+            <LinearLayout
+                android:id="@+id/blocoDosPrompters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/RotuloDeSecao"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:accessibilityHeading="true"
+                        android:text="@string/tp_prompters_na_rede" />
+
+                    <LinearLayout
+                        android:id="@+id/linhaProcurandoPrompters"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <com.quall.android.ui.PontoQuePulsa
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/tp_procurando"
+                            android:textColor="@color/q_texto2"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/buttonProcurarPrompters"
+                        style="@style/Quall.BotaoRedondo"
+                        android:layout_marginTop="-4dp"
+                        android:layout_marginBottom="-4dp"
+                        android:contentDescription="@string/tp_procurar_de_novo"
+                        android:src="@drawable/ic_q_atualizar" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/caixaDosPrompters"
+                    android:layout_width="match_parent"
+                    android:layout_height="144dp"
+                    android:layout_marginTop="6dp">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:defaultFocusHighlightEnabled="false"
+                        android:id="@+id/recyclerPrompters"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scrollbars="vertical" />
+
+                    <TextView
+                        android:id="@+id/textListaDePromptersVazia"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:text="@string/tp_lista_vazia"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/blocoDoEnderecoPrompter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <TextView
+                    style="@style/RotuloDeSecao"
+                    android:labelFor="@id/editEnderecoPrompter"
+                    android:text="@string/ou_digite_endereco" />
+
+                <EditText
+                    android:id="@+id/editEnderecoPrompter"
+                    style="@style/Quall.Campo.Endereco"
+                    android:layout_marginTop="8dp"
+                    android:autofillHints="off"
+                    android:hint="@string/tp_endereco_exemplo"
+                    android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/blocoDoPinPrompter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="direita">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/RotuloDeSecao"
+                        android:layout_width="wrap_content"
+                        android:labelFor="@id/editPinPrompter"
+                        android:text="@string/tp_pin" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="@string/tp_pin_nota"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.quall.android.ui.CampoDoPin
+                    android:id="@+id/editPinPrompter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:autofillHints="off"
+                    android:hint="@string/pin_dica"
+                    android:importantForAutofill="no"
+                    android:imeOptions="flagNoExtractUi|flagNoFullscreen"
+                    android:inputType="number"
+                    android:maxLength="6" />
+            </LinearLayout>
+
+            <!-- Logo abaixo do PIN: o teclado numérico não tem tecla de confirmar, e um botão mais
+                 abaixo ficaria escondido por ele. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonConectarControle"
+                style="@style/Widget.Quall.Botao.Principal"
+                android:layout_marginTop="14dp"
+                android:text="@string/tp_conectar"
+                app:coluna="direita" />
+
+            <!-- O erro do formulário e o motivo de a conexão ter falhado, como Aviso vermelho. -->
+            <com.quall.android.ui.PilhaDeAvisos
+                android:id="@+id/avisosDoControle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:avisosAVista="1"
+                app:coluna="direita">
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/textControleStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:tipoDoAviso="vermelho" />
+            </com.quall.android.ui.PilhaDeAvisos>
+
+            <!-- "Colar endereço" e os roteiros guardados (as cópias moram no salvo deste aparelho: a
+                 lista abre também sem conexão, §11.7). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                app:coluna="direita">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonColarEndereco"
+                    style="@style/Widget.Quall.Botao.Pequeno"
+                    android:layout_width="0dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/tp_colar_endereco"
+                    app:icon="@drawable/ic_q_colar" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonRoteirosGuardadosEscolha"
+                    style="@style/Widget.Quall.Botao.Pequeno"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/tp_roteiros_guardados"
+                    app:icon="@drawable/ic_q_bandeja" />
+            </LinearLayout>
+        </com.quall.android.ui.ColunasDaTela>
+    </ScrollView>
+
+    <!-- ======================= conectando =======================
+
+         §6.7: a roda violeta, "Conectando em {x}…" e "Cancelar". -->
+    <LinearLayout
+        android:id="@+id/conectandoControle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="@color/q_acento_claro" />
+
+        <TextView
+            android:id="@+id/textConectando"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:textColor="@color/q_texto"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textConectandoAviso"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="@color/q_texto2"
+            android:textSize="15sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonCancelarConexao"
+            style="@style/Widget.Quall.Botao.Secundario"
+            android:layout_width="220dp"
+            android:layout_marginTop="22dp"
+            android:text="@string/cancelar" />
+    </LinearLayout>
+
+    <!-- ============================ o painel ============================ -->
+    <ScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/painelControle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/corpoDoPainel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- O cabeçalho: a bolinha, "Conectado a X" / "Conexão perdida — tentando de novo", e o
+                 endereço. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/bolinhaControle"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginEnd="8dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/textControleTitulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textControleSub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:fontFamily="monospace"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Os avisos em faixas, com ícone e cor (`AvisosDoTeleprompter`). -->
+            <LinearLayout
+                android:id="@+id/avisosControle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical" />
+
+            <!-- A leitura: a posição que o prompter relata. Só no Android, arrastar e soltar pede um
+                 salto para ali (a fração cai no layout DELE, que é quem decide onde). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tp_leitura"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textProgresso"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:alpha="0.6"
+                    android:fontFamily="monospace"
+                    android:gravity="end"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seekPosicao"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:max="1000" />
+
+            <!-- O transporte: seis botões, o play/pausa grande no meio (entram pelo código). -->
+            <LinearLayout
+                android:id="@+id/transporteControle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal" />
+
+            <!-- "Segurar para rolar" (§12.5): liga a camada de dois botões (`modo_segurar.xml`). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tp_segurar_para_rolar"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.6"
+                        android:text="@string/tp_segurar_nota"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/buttonSegurarParaRolar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/tp_segurar_para_rolar" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="18dp"
+                android:alpha="0.2"
+                android:background="#FF8E8E93" />
+
+            <!-- Os controles do texto (velocidade, fonte, margem, linha de leitura, espelho): os
+                 mesmos da folha de Ajustes do prompter, montados pelo código (`MontadorDeAjustes`). -->
+            <LinearLayout
+                android:id="@+id/controlesDoTextoControle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="18dp"
+                android:alpha="0.2"
+                android:background="#FF8E8E93" />
+
+            <!-- O roteiro: o tamanho, a prévia (ou "Sem roteiro."), editar e os guardados. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/tp_roteiro"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textRoteiroInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.6"
+                    android:fontFamily="monospace"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textPreviaDoRoteiro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:alpha="0.6"
+                android:ellipsize="end"
+                android:maxLines="3"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonEditarControle"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/tp_editar_ou_colar"
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_q_editar"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonRoteirosGuardadosPainel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/tp_roteiros_guardados"
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_q_bandeja"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonDesconectar"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/tp_desconectar"
+                android:textAllCaps="false"
+                android:textColor="#FFFF453A"
+                app:strokeColor="#66FF453A" />
+
+            <!-- Os números da sessão: só com o diagnóstico (a bancada lê o diário). -->
+            <TextView
+                android:id="@+id/textControleDetalhe"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:alpha="0.5"
+                android:fontFamily="monospace"
+                android:textSize="11sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+    <include
+        android:id="@+id/modoSegurar"
+        layout="@layout/modo_segurar" />
+
+    <include
+        android:id="@+id/roteirosGuardados"
+        layout="@layout/roteiros_guardados" />
+
+    <include
+        android:id="@+id/editorControle"
+        layout="@layout/editor_de_texto" />
+
+    <!-- A pergunta do texto por cima de tudo: sem escolher, o roteiro não sincroniza (§11.7). -->
+    <include
+        android:id="@+id/perguntaDoTexto"
+        layout="@layout/pergunta_do_texto" />
+
+    <!-- "Conferindo o roteiro do prompter…": uma faixa embaixo, que não pega toque — enquanto o
+         texto está retido, rolar, pausar e o resto do controle seguem valendo (§11.3). -->
+    <TextView
+        android:id="@+id/textConferindo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        android:background="#E6FF8C00"
+        android:clickable="false"
+        android:focusable="false"
+        android:padding="12dp"
+        android:textColor="#FF000000"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+</FrameLayout>

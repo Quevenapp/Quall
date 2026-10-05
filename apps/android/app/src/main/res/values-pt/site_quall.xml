@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="site_privacidade">Política de privacidade</string>
+    <string name="site_suporte">Suporte</string>
+    <string name="site_nao_abriu">Não foi possível abrir o site.</string>
+</resources>

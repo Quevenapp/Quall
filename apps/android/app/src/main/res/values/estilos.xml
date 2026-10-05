@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  As peças do "Estúdio de bolso" em XML (`docs/telas-estudio.md` §3 e §4). As que mudam com o estado
+  (a pílula, o letreiro do PIN, o chip de endereço, o aviso, o ladrilho de origem) são vistas em
+  `ui/PecasDaTela.kt`; aqui ficam os botões, os textos, os campos e os ladrilhos fixos.
+
+  Tipos: sempre a fonte do sistema (Roboto), nada embutido; título em bold/black com −0,01 de
+  espaçamento; dígitos (PIN, IP) em `monospace`.
+-->
+<resources>
+
+    <!-- As raízes dos nomes com ponto (`Quall.*`, `Quall.Folha.*`): vazias. -->
+    <style name="Quall" />
+    <style name="Quall.Folha" />
+
+    <!-- ============================== botões ============================== -->
+
+    <!-- O botão de todo o app (o `materialButtonStyle` do tema): cantos de 16, texto como está. -->
+    <style name="Widget.Quall.Botao" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- O botão principal (§4): 56 de altura, cantos de 16, fundo no acento, texto branco 17 semibold,
+         ícone opcional à esquerda. Desligado, 40 %. -->
+    <style name="Widget.Quall.Botao.Principal" parent="Widget.MaterialComponents.Button.UnelevatedButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/botao_principal_fundo</item>
+        <item name="android:textColor">@color/botao_principal_texto</item>
+        <item name="iconTint">@color/botao_principal_texto</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">10dp</item>
+        <item name="iconSize">20dp</item>
+        <item name="rippleColor">#33FFFFFF</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- O botão secundário (§4): igual, na superfície alta, com o texto na cor do texto. -->
+    <style name="Widget.Quall.Botao.Secundario" parent="Widget.Quall.Botao.Principal">
+        <item name="backgroundTint">@color/botao_secundario_fundo</item>
+        <item name="android:textColor">@color/botao_secundario_texto</item>
+        <item name="iconTint">@color/botao_secundario_texto</item>
+    </style>
+
+    <!-- O botão de perigo (§4): o vermelho a 18 %, o texto #FF8A80 e o quadradinho de parar. -->
+    <style name="Widget.Quall.Botao.Perigo" parent="Widget.Quall.Botao.Principal">
+        <item name="backgroundTint">@color/q_perigo_fundo</item>
+        <item name="android:textColor">@color/botao_perigo_texto</item>
+        <item name="icon">@drawable/ic_q_parar</item>
+        <item name="iconTint">@color/botao_perigo_texto</item>
+        <item name="iconSize">16dp</item>
+    </style>
+
+    <!-- Os botões secundários pequenos ("Colar endereço", "Roteiros guardados"). -->
+    <style name="Widget.Quall.Botao.Pequeno" parent="Widget.Quall.Botao.Secundario">
+        <item name="android:layout_height">44dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="iconSize">18dp</item>
+        <item name="iconPadding">6dp</item>
+        <!-- Uma linha só, sem os recuos de cima e de baixo do MaterialButton: dois lado a lado em 360 dp
+             ("Colar endereço" e "Roteiros guardados") quebravam a linha e saíam de alturas diferentes
+             (a foto do A07 de 30/09). -->
+        <item name="android:maxLines">1</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+    </style>
+
+    <!-- O "Parar" da barra do vídeo (§6.6): o perigo, compacto. Largura fixa: a bancada guarda a
+         coordenada dele (`aa-corrida.py`), e o nome do par ao lado não o empurra. -->
+    <style name="Widget.Quall.Botao.Perigo.Pequeno">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="iconSize">14dp</item>
+        <item name="iconPadding">6dp</item>
+        <item name="android:minWidth">0dp</item>
+    </style>
+
+    <!-- Um botão de texto da barra do vídeo ("Pedir IDR"): o secundário, compacto. -->
+    <style name="Widget.Quall.Botao.Barra" parent="Widget.Quall.Botao.Secundario">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:minWidth">0dp</item>
+    </style>
+
+    <!-- O contornado de todo o app (os botões do painel do controle, das folhas do prompter). -->
+    <style name="Widget.Quall.Botao.Contornado" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/q_acento_claro</item>
+        <item name="iconTint">@color/q_acento_claro</item>
+        <item name="strokeColor">#40FFFFFF</item>
+        <item name="rippleColor">#24FFFFFF</item>
+    </style>
+
+    <!-- O botão redondo (§4): 40 × 40 no desenho, 48 × 48 de toque; só o ícone, o rótulo vai na
+         acessibilidade (`contentDescription`). -->
+    <style name="Quall.BotaoRedondo">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/botao_redondo</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="tint">@color/q_texto</item>
+    </style>
+
+    <!-- O interruptor nativo, tingido de acento (§4). -->
+    <style name="Widget.Quall.Interruptor" parent="Widget.MaterialComponents.CompoundButton.Switch">
+        <item name="useMaterialThemeColors">false</item>
+        <item name="thumbTint">@color/interruptor_botao</item>
+        <item name="trackTint">@color/interruptor_trilho</item>
+    </style>
+
+    <!-- ============================== textos ============================== -->
+
+    <!-- "Quall" ao lado da marca: o tipo de título, em black. -->
+    <style name="Quall.Marca">
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <!-- O título de tela ("O que vamos espelhar?", "Assistir outro aparelho"): 26, bold. -->
+    <style name="Quall.TituloDeTela">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textSize">26sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <!-- O título do cabeçalho, entre os botões redondos ("Espelhar", "Exibir"): 17 semibold. -->
+    <style name="Quall.TituloDoCabecalho">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <!-- O texto secundário (a explicação embaixo do título). -->
+    <style name="Quall.Corpo2">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/q_texto2</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingMultiplier">1.1</item>
+    </style>
+
+    <!-- A legenda (as notas de rodapé): 12, `texto3` — nunca mais claro que isto em letra pequena. -->
+    <style name="Quall.Legenda">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/q_texto3</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- O rótulo de seção (§4): 12 semibold, caixa alta, +0,08 em, `texto3`. -->
+    <style name="RotuloDeSecao">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/q_texto3</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- ============================== campos ============================== -->
+
+    <!-- O campo (§4): 52 de altura, cantos de 14, a superfície com a borda branca a 10 %. -->
+    <style name="Quall.Campo">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:background">@drawable/campo</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textColorHint">@color/q_texto3</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:importantForAutofill">no</item>
+    </style>
+
+    <!-- O campo do endereço: sempre em mono. -->
+    <style name="Quall.Campo.Endereco">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:inputType">textUri</item>
+    </style>
+
+    <!-- ============================== cartões e ladrilhos ============================== -->
+
+    <!-- O cartão de papel (§4): cantos de 22, padding 14, o ícone num quadrado de 42 com cantos de 13,
+         o título em 21 e uma linha de explicação em 13. Metade da largura, a mesma altura. -->
+    <style name="Quall.CartaoDePapel">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:minHeight">150dp</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="Quall.CartaoDePapel.Icone" parent="">
+        <item name="android:layout_width">42dp</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <style name="Quall.CartaoDePapel.Titulo" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">21sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <style name="Quall.CartaoDePapel.Detalhe" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">3dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:lineSpacingMultiplier">1.1</item>
+    </style>
+
+    <!-- O ladrilho (§4): cantos de 18, a superfície com o contorno, o ícone num quadrado de 32 (cantos
+         de 10, `acentoFundo`, ícone `acentoClaro`), o título em 14 semibold e a legenda em 12 `texto2`. -->
+    <style name="Quall.Ladrilho">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:background">@drawable/ladrilho</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <!-- O ladrilho deitado (a captura pelo USB): o ícone à esquerda, o texto ao lado. -->
+    <style name="Quall.Ladrilho.Deitado">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">64dp</item>
+    </style>
+
+    <style name="Quall.Ladrilho.Icone" parent="">
+        <item name="android:layout_width">32dp</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:padding">7dp</item>
+        <item name="android:background">@drawable/icone_do_cartao</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="tint">@color/q_acento_claro</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <style name="Quall.Ladrilho.Titulo" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingMultiplier">1.05</item>
+    </style>
+
+    <style name="Quall.Ladrilho.Legenda" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">3dp</item>
+        <item name="android:textColor">@color/q_texto2</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- ============================== a folha de Ajustes ============================== -->
+
+    <style name="Quall.Folha.Grupo">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:background">@drawable/grupo_da_folha</item>
+    </style>
+
+    <style name="Quall.Folha.Linha">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+    </style>
+
+    <style name="Quall.Folha.Titulo">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textColor">@color/q_texto</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="Quall.Folha.Valor">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">12dp</item>
+        <item name="android:gravity">end</item>
+        <item name="android:textColor">@color/q_texto2</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">monospace</item>
+    </style>
+
+    <style name="Quall.Folha.Fio">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginStart">14dp</item>
+        <item name="android:background">@color/q_fio</item>
+    </style>
+</resources>

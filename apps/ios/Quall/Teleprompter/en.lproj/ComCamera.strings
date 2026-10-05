@@ -1,0 +1,95 @@
+/* Quall iOS — textos em inglês da tela "Texto com a câmera" (R5, pasta Teleprompter/).
+   A chave é o texto em português, exatamente como está no código em tr("…").
+   Ver Comum/Idioma.swift e docs/traducao.md (seção iOS). */
+
+/* Barra de baixo (TelaDoPrompterComCamera) */
+"Sair" = "Exit";
+"Editar" = "Edit";
+"Ajustes" = "Settings";
+"Mais devagar" = "Slower";
+"Pausar" = "Pause";
+"Rolar" = "Scroll";
+"Mais depressa" = "Faster";
+"Mostrar a prévia" = "Show Preview";
+"Esconder a prévia" = "Hide Preview";
+"Tela cheia" = "Full screen";
+"Ajustes da câmera" = "Camera settings";
+
+/* Prévia da câmera (TelaDoPrompterComCamera) */
+"Este aparelho não tem câmera frontal. O texto funciona; a câmera, não." = "This device has no front camera. The text works; the camera doesn't.";
+"O Quall não tem acesso à câmera deste aparelho. Abra %@ e ligue; o texto continua funcionando enquanto isso." = "Quall can't access this device's camera. Open %@ and turn it on; the text keeps working in the meantime.";
+"Ajustes → Quall → Câmera" = "Settings → Quall → Camera";
+"Prévia pausada: aparelho quente" = "Preview paused: device is hot";
+"Toque para mostrar" = "Tap to show";
+"Prévia pausada: aparelho quente. Toque para mostrar." = "Preview paused: device is hot. Tap to show.";
+"Aguarde… abrindo a câmera" = "Please wait… opening the camera";
+"Abrir os Ajustes" = "Open Settings";
+"Borda entre o texto e a prévia. Arraste para dividir." = "Border between the text and the preview. Drag to split.";
+"texto com %.0f %% da tela" = "text takes %.0f %% of the screen";
+
+/* Avisos da faixa (TelaDoPrompterComCamera) */
+"Gravando" = "Recording";
+"Gravação começando ou fechando" = "Recording starting or finishing";
+"Gravando em 720p: a transmissão tem prioridade com o aparelho quente." = "Recording in 720p: the stream has priority while the device is hot.";
+"Aparelho quente: o som da transmissão pode atrasar." = "Device is hot: the stream's audio may lag.";
+"Toque para recolher os avisos" = "Tap to collapse the alerts";
+"Toque para ler os avisos inteiros" = "Tap to read the full alerts";
+"Esquecer aparelhos pareados" = "Forget Paired Devices";
+"Abrir os Ajustes (microfone)" = "Open Settings (microphone)";
+
+/* Estado das duas sessões (TelaDoPrompterComCamera) */
+"Texto" = "Text";
+"Câmera" = "Camera";
+"%@: %@. PIN %@" = "%@: %@. PIN %@";
+"Mostra o endereço e o PIN em letra grande" = "Shows the address and PIN in large type";
+"parado" = "stopped";
+"esperando o controle" = "waiting for the remote";
+"controle conectado" = "remote connected";
+"controlado por %@" = "controlled by %@";
+"controle desconectado" = "remote disconnected";
+"abrindo" = "opening";
+"pedindo acesso à rede local…" = "asking for local network access…";
+"sem acesso" = "no access";
+"quem recebia saiu; reabrindo…" = "the receiver left; reopening…";
+"esperando quem recebe" = "waiting for a receiver";
+"enviando" = "sending";
+"enviando para %@" = "sending to %@";
+"saindo…" = "leaving…";
+"parou" = "stopped";
+
+/* Endereço da câmera (FolhaDoEnderecoDaCamera) */
+"Receber a câmera deste aparelho" = "Receive this device's camera";
+"No outro aparelho, abra o Quall → Exibir, e digite:" = "On the other device, open Quall → Receive, and enter:";
+"sem rede" = "no network";
+"Fechar" = "Close";
+
+/* Ajustes da tela com câmera (AjustesDaTelaComCamera, DivisaoDaTelaComCamera) */
+"Prévia como espelho" = "Mirror the preview";
+"Só a imagem desta tela. Quem recebe a câmera a vê sempre sem espelho." = "Only the image on this screen. Whoever receives the camera always sees it unmirrored.";
+"Lado do texto" = "Text side";
+"No automático o texto fica junto da câmera, para o olhar de quem lê ficar perto dela; com a câmera de lado (o iPhone deitado, o iPad em pé), o texto fica em cima e a prévia embaixo. Para pôr lado a lado, ou se a câmera deste aparelho estiver em outra borda, escolha aqui." = "In automatic, the text sits next to the camera so the reader's eyes stay close to it; with the camera on the side (iPhone in landscape, iPad in portrait), the text goes on top and the preview below. To place them side by side, or if this device's camera is on another edge, choose here.";
+"Automático" = "Automatic";
+"Em cima" = "Top";
+"Embaixo" = "Bottom";
+"À esquerda" = "Left";
+"À direita" = "Right";
+
+/* Orientação (OrientacaoDoPrompter) */
+"Orientação" = "Orientation";
+"Automática" = "Automatic";
+"Retrato" = "Portrait";
+"Paisagem" = "Landscape";
+"Paisagem invertida" = "Flipped landscape";
+"Só deste aparelho. Deitado sob o vidro o sensor não decide: escolha Paisagem (topo à esquerda) ou Paisagem invertida (topo à direita)." = "This device only. Lying flat under the glass, the sensor can't decide: choose Landscape (top on the left) or Flipped landscape (top on the right).";
+"Neste modo de janelas o iPad não deixa o app girar a tela para %@: o texto foi girado dentro da vista, e os botões seguem o aparelho." = "In this windowing mode the iPad doesn't let the app rotate the screen to %@: the text was rotated inside the view, and the buttons follow the device.";
+"O iPad não deixa travar a tela neste modo de janelas: a gravação continua no ângulo do começo, e a imagem gravada fica de lado até o iPad voltar." = "The iPad doesn't allow locking the screen in this windowing mode: the recording keeps the starting angle, and the recorded image stays sideways until the iPad turns back.";
+
+/* Botão Gravar (GravacaoNaTelaComCamera) */
+"Parar a gravação" = "Stop Recording";
+"Gravar" = "Record";
+"SEM SOM ·" = "NO AUDIO ·";
+"Parado" = "Stopped";
+"Começando" = "Starting";
+"Fechando o arquivo" = "Closing the file";
+"Gravando há %@" = "Recording for %@";
+"Gravando há %@, sem som (microfone desligado)" = "Recording for %@, no audio (microphone off)";

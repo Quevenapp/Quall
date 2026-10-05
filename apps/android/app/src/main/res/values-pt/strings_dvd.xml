@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O DVD para MP4 (docs/dvd-para-mp4.md) (docs/traducao.md, Android). O português é o texto-fonte; o inglês mora em values/. -->
+<resources>
+    <string name="dvd_titulo_da_tela">Converter DVD</string>
+
+    <!-- A tela: o cabeçalho, a explicação e os botões (activity_conversao_dvd.xml) -->
+    <string name="dvd_cabecalho">DVD</string>
+    <string name="dvd_ajustes_descricao">Ajustes do DVD</string>
+    <string name="dvd_ler_de_novo">Ler o disco de novo</string>
+    <string name="dvd_explicacao">Um título do DVD vira um MP4 na Galeria, com todas as faixas de som, ou vai para outro aparelho pela rede. Só discos sem proteção, como os gravados em casa.</string>
+    <string name="dvd_som_da_transmissao">O som da transmissão</string>
+    <string name="dvd_som_da_transmissao_chip">Som da transmissão: %1$s</string>
+    <string name="dvd_som_da_transmissao_descricao">Som da transmissão: %1$s. Toque para escolher outra faixa.</string>
+    <string name="dvd_converter">Converter</string>
+    <string name="dvd_transmitir">Transmitir</string>
+    <string name="dvd_assistir_aqui">Assistir aqui</string>
+    <string name="dvd_legenda_do_disco">Converter grava na Galeria. Transmitir manda pela rede (o Quall, o OBS), sem gravar. Um de cada vez: o leitor é um só.</string>
+    <string name="dvd_rotulo_transmissao">A TRANSMISSÃO</string>
+    <string name="dvd_rotulo_assistindo_aqui">ASSISTINDO AQUI</string>
+    <string name="dvd_pausar">Pausar</string>
+    <string name="dvd_continuar">Continuar</string>
+    <string name="dvd_do_comeco">Do começo</string>
+    <string name="dvd_ouvir">Ouvir</string>
+    <string name="dvd_parar_som">Parar som</string>
+    <string name="dvd_parar_de_ouvir">Parar de ouvir</string>
+    <string name="dvd_gravar">Gravar</string>
+    <string name="dvd_gravacao">Gravação</string>
+    <string name="dvd_parar_a_gravacao">Parar a gravação</string>
+    <string name="dvd_parar">Parar</string>
+    <string name="dvd_parar_a_transmissao">Parar a transmissão</string>
+    <string name="dvd_transmitir_daqui">Transmitir daqui</string>
+    <string name="dvd_progresso_nota">A tela pode apagar; a conversão segue, e o arquivo aparece em Movies/Quall.</string>
+
+    <!-- A engrenagem (as notas do pé, o R16) -->
+    <string name="dvd_ajustes_secao_leitor">O leitor</string>
+    <string name="dvd_ajustes_nota_leitor">O leitor de DVD precisa do carregador ligado no hub: sem ele, o telefone não consegue alimentar o leitor. A conversão segue com a tela apagada, e o arquivo aparece em Movies/Quall.</string>
+    <string name="dvd_ajustes_secao_converter">Converter e transmitir</string>
+    <string name="dvd_ajustes_nota_converter">Converter grava o título num MP4 na Galeria, com todas as faixas de som. Transmitir manda o disco para outro aparelho (o receptor do Quall, o OBS) sem gravar, com o som da faixa escolhida. Os dois não rodam juntos: o leitor é um só.</string>
+    <string name="dvd_ajustes_nota_sem_receptor">Sem receptor conectado, o disco espera: o filme começa quando alguém conectar.</string>
+    <string name="dvd_ajustes_secao_enderecos">Endereços da transmissão</string>
+    <string name="dvd_ajustes_endereco">Endereço</string>
+    <string name="dvd_ajustes_tambem">Também</string>
+    <string name="dvd_ajustes_secao_discos">Os discos</string>
+    <string name="dvd_ajustes_nota_discos">Só discos sem proteção, como os gravados em casa. O disco com proteção contra cópia é recusado.</string>
+
+    <!-- O leitor e a leitura do disco -->
+    <string name="dvd_procurar_de_novo">Procurar de novo</string>
+    <string name="dvd_tentar_de_novo">Tentar de novo</string>
+    <string name="dvd_nao_converte_64_bits">Este app ou aparelho não oferece conversão de DVD. Ela exige Android 11 ou posterior em um aparelho de 64 bits.</string>
+    <string name="dvd_pendrive_montado">Há um pendrive montado no telefone. Tire-o do hub para o Quall procurar o leitor de DVD.</string>
+    <string name="dvd_leitor_encontrado">Leitor encontrado: %1$s. O Android pede a sua permissão para o Quall usá-lo.</string>
+    <string name="dvd_permitir_acesso">Permitir o acesso ao leitor</string>
+    <string name="dvd_leitor_nome">Leitor: %1$s</string>
+    <string name="dvd_sem_permissao">Sem a permissão, o Quall não consegue ler o leitor de DVD.</string>
+    <string name="dvd_conferindo_o_leitor">Conferindo o leitor e lendo o disco…</string>
+    <string name="dvd_etapa_com_tempo">%1$s… (%2$d s)</string>
+    <string name="dvd_etapa_acordando">Acordando o leitor</string>
+    <string name="dvd_etapa_esperando_girar">Esperando o disco girar</string>
+    <string name="dvd_etapa_lendo_indice">Lendo o índice do disco</string>
+    <string name="dvd_lista_e">%1$s e %2$s</string>
+    <string name="dvd_nao_e_leitor">%1$s não é um leitor de DVD. Ligue o leitor no hub.</string>
+    <string name="dvd_leitor_sem_disco">Leitor: %1$s. Ponha um DVD no leitor.</string>
+    <string name="dvd_leitor_nao_ficou_pronto">Leitor: %1$s. O disco não ficou pronto em 30 s: confira se ele está limpo e bem encaixado.</string>
+    <string name="dvd_disco_nao_lido">O disco não pôde ser lido: %1$s</string>
+    <string name="dvd_sem_nome">(sem nome)</string>
+    <string name="dvd_sem_titulos">O disco não tem títulos de vídeo.</string>
+
+    <!-- Os títulos e as faixas de som -->
+    <string name="dvd_titulo_numero">Título %1$d — %2$s</string>
+    <string name="dvd_titulo_sem_som">sem som</string>
+    <string name="dvd_titulo_som">som: %1$s</string>
+    <string name="dvd_aviso_sem_som">%1$s O vídeo sai sem som.</string>
+    <string name="dvd_faixa">%1$s %2$s %3$s</string>
+    <string name="dvd_faixa_nao_converte">%1$s %2$s %3$s (não converte)</string>
+    <string name="dvd_sem_idioma">sem idioma</string>
+    <string name="dvd_canais_mono">mono</string>
+    <string name="dvd_canais_estereo">estéreo</string>
+    <string name="dvd_canais_n">%1$d canais</string>
+    <string name="dvd_idioma_pt">português</string>
+    <string name="dvd_idioma_en">inglês</string>
+    <string name="dvd_idioma_es">espanhol</string>
+    <string name="dvd_idioma_fr">francês</string>
+    <string name="dvd_idioma_de">alemão</string>
+    <string name="dvd_idioma_it">italiano</string>
+    <string name="dvd_idioma_ja">japonês</string>
+    <string name="dvd_idioma_zh">chinês</string>
+    <string name="dvd_idioma_ko">coreano</string>
+    <string name="dvd_idioma_ru">russo</string>
+    <string name="dvd_idioma_nl">holandês</string>
+    <string name="dvd_idioma_pl">polonês</string>
+    <string name="dvd_duracao_h_min">%1$d h %2$02d min</string>
+    <string name="dvd_tempo_h_min">%1$d h %2$d min</string>
+    <string name="dvd_tempo_min">%1$d min</string>
+
+    <!-- A transmissão e o Assistir aqui -->
+    <string name="dvd_transmissao_nao_comecou">A transmissão não começou: %1$s</string>
+    <string name="dvd_tocando_aqui_sem_rede">Tocando o DVD aqui, sem rede</string>
+    <string name="dvd_transmitindo">Transmitindo o DVD</string>
+    <string name="dvd_legenda_local">Para converter, pare antes: o leitor é um só.</string>
+    <string name="dvd_legenda_rede">Sem receptor, o filme espera: começa quando alguém conectar. Para converter, pare antes.</string>
+    <string name="dvd_tx_titulo">\"%1$s\" — título %2$d</string>
+    <string name="dvd_tx_titulo_com_som">\"%1$s\" — título %2$d · som %3$s</string>
+    <string name="dvd_sem_rede">sem rede</string>
+    <string name="dvd_tambem_enderecos">também: %1$s</string>
+    <string name="dvd_conferindo_o_disco">Conferindo o disco e lendo o começo do título…</string>
+    <string name="dvd_tocando_aqui">Tocando aqui</string>
+    <string name="dvd_preparando">Preparando…</string>
+    <string name="dvd_enviando_para">Enviando para %1$s</string>
+    <string name="dvd_esperando_receptor">Esperando um receptor. No outro aparelho, escolha este telefone e digite o PIN.</string>
+    <string name="dvd_andamento_pulando">%1$s · pulando…</string>
+    <string name="dvd_andamento_fim_do_titulo">%1$s · fim do título</string>
+    <string name="dvd_andamento_pausado">%1$s · pausado</string>
+    <string name="dvd_gravando">● Gravando %1$s · %2$.1f MB</string>
+    <string name="dvd_gravando_pausada">● Gravando %1$s · %2$.1f MB · pausada com a transmissão</string>
+    <string name="dvd_parou">Parou.</string>
+    <string name="dvd_transmissao_terminou">A transmissão terminou.</string>
+    <string name="dvd_leitor_nao_aberto_assistir">O leitor de DVD não está aberto: leia o disco de novo.</string>
+    <string name="dvd_nao_toca_64_bits">este aparelho não toca DVD (precisa de um aparelho de 64 bits)</string>
+    <string name="dvd_nao_abriu">O DVD não abriu: %1$s</string>
+    <string name="dvd_transmissao_falhou">a transmissão do DVD falhou: %1$s</string>
+    <string name="dvd_fonte_de_som">som do DVD (%1$s)</string>
+    <string name="dvd_som_um_canal">%1$s · %2$s</string>
+    <string name="dvd_gravacao_nao_comecou">A gravação não começou: %1$s</string>
+    <string name="dvd_gravacao_pouco_espaco">o telefone tem só %1$d MB livres</string>
+    <string name="dvd_transmissao_acabou">a transmissão acabou</string>
+    <string name="dvd_gravacao_apagada">A gravação foi apagada: %1$s</string>
+    <string name="dvd_gravacao_pendente">A gravação fica para ser recuperada na próxima abertura.</string>
+    <string name="dvd_gravacao_sem_quadros">A gravação não teve nenhum quadro.</string>
+    <string name="dvd_gravacao_parcial">%1$s — o que foi gravado está em Movies/Quall/%2$s</string>
+    <string name="dvd_gravacao_nao_publicada">A gravação não pôde ser publicada na Galeria.</string>
+
+    <!-- A conversão (a tela, o serviço e a notificação) -->
+    <string name="dvd_progresso_porcentagem">%1$d %%</string>
+    <string name="dvd_progresso_de">%1$s de %2$s</string>
+    <string name="dvd_progresso_falta">falta %1$s</string>
+    <string name="dvd_progresso_pulado_um">1 setor ilegível pulado</string>
+    <string name="dvd_progresso_pulados">%1$d setores ilegíveis pulados</string>
+    <string name="dvd_lendo_o_comeco">Lendo o começo do título…</string>
+    <string name="dvd_convertendo">Convertendo. A tela pode apagar; a conversão segue.</string>
+    <string name="dvd_conversao_terminou">A conversão terminou.</string>
+    <string name="dvd_converter_outro">Converter outro título</string>
+    <string name="dvd_canal_da_notificacao">Conversão de DVD</string>
+    <string name="dvd_titulo_da_notificacao">Quall — DVD para MP4</string>
+    <string name="dvd_notificacao_preparando">Preparando a conversão…</string>
+    <string name="dvd_notificacao_convertendo">Convertendo %1$s</string>
+    <string name="dvd_notificacao_convertendo_falta">Convertendo %1$s — falta %2$s</string>
+    <string name="dvd_conversao_encerrada">conversão encerrada</string>
+    <string name="dvd_conversao_cancelada">conversão cancelada</string>
+    <string name="dvd_limite_6h">o Android limita a conversão em segundo plano a 6 horas por dia; o que já foi está na Galeria</string>
+    <string name="dvd_espaco_insuficiente">Espaço insuficiente: o título precisa de ~%1$d MB e há %2$d MB livres.</string>
+    <string name="dvd_espaco_acabou">o espaço livre do telefone acabou (%1$d MB); a conversão parou</string>
+    <string name="dvd_pronto">pronto</string>
+    <string name="dvd_pronto_pulado_um">pronto; 1 setor ilegível do disco foi pulado (o vídeo tem soluços ali)</string>
+    <string name="dvd_pronto_pulados">pronto; %1$d setores ilegíveis do disco foram pulados (o vídeo tem soluços ali)</string>
+    <string name="dvd_conversao_falhou">a conversão falhou: %1$s</string>
+    <string name="dvd_arquivo_pendente">%1$s; o arquivo fica para ser recuperado na próxima abertura</string>
+    <string name="dvd_salvo_na_galeria">Salvo na Galeria: Movies/Quall/%1$s</string>
+    <string name="dvd_parcial_na_galeria">%1$s — o que já foi está em Movies/Quall/%2$s</string>
+    <string name="dvd_com_um_canal">%1$s (%2$s)</string>
+    <string name="dvd_um_canal_so">o disco tem som num canal só; o Quall copia para os dois lados</string>
+    <string name="dvd_leitor_nao_aberto_conversao">o leitor não está aberto (volte à tela do DVD)</string>
+    <string name="dvd_titulo_nao_existe">o título %1$d não existe</string>
+    <string name="dvd_disco_nao_pronto">o disco não está pronto no leitor; volte à tela do DVD e leia o disco de novo</string>
+    <string name="dvd_leitura_falhou">a leitura do disco falhou: %1$s</string>
+
+    <!-- Os erros do pipeline em C e do conversor (QuallDvd.motivo, ConversorDvd.erro) -->
+    <string name="dvd_erro_posicao">erro interno: bloco fora de ordem</string>
+    <string name="dvd_erro_demux">o fluxo do DVD não pôde ser lido</string>
+    <string name="dvd_erro_video">o título não tem vídeo MPEG-2</string>
+    <string name="dvd_erro_memoria">memória insuficiente</string>
+    <string name="dvd_erro_leitor">o leitor de DVD parou</string>
+    <string name="dvd_erro_celulas">o título tem células demais, ou fora de ordem</string>
+    <string name="dvd_erro_codigo">erro %1$d na conversão</string>
+    <string name="dvd_erro_escritor">o escritor de imagens recusou: %1$s</string>
+    <string name="dvd_erro_mp4_15s">o MP4 não fechou em 15 s</string>
+    <string name="dvd_erro_mp4_fechou">o MP4 não fechou direito (%1$d)</string>
+
+    <!-- As recusas do desenho (docs/dvd-para-mp4.md §2.1 e §2.3; FrasesDoDvd) -->
+    <string name="dvd_recusa_protegido">Este DVD tem proteção contra cópia. O Quall só converte discos sem proteção, como os gravados em casa.</string>
+    <string name="dvd_recusa_angulos">Este título tem vários ângulos; o Quall ainda não converte.</string>
+    <string name="dvd_recusa_so_dts">O som deste título é DTS, que o Quall ainda não converte.</string>
+    <string name="dvd_recusa_nao_finalizado">Este disco não foi finalizado. Finalize-o no aparelho que gravou e tente de novo.</string>
+    <string name="dvd_recusa_sem_video_ts">Este disco não é um DVD de vídeo (não tem a pasta VIDEO_TS).</string>
+    <string name="dvd_recusa_sem_video_ts_ifo">Este disco não é um DVD de vídeo (falta o VIDEO_TS.IFO).</string>
+    <string name="dvd_recusa_sem_celulas">Este título não tem células de vídeo.</string>
+    <string name="dvd_leitor_parou">O leitor de DVD parou de responder. Se ele desligou sozinho ao acelerar o disco, é falta de energia: confira o carregador no hub (ou a fonte do leitor) e toque em Ler o disco de novo.</string>
+    <string name="dvd_leitor_preso">O leitor de DVD ficou preso numa leitura. Desligue-o e ligue de novo (e toque em Ler o disco de novo).</string>
+    <string name="dvd_disco_trocado">O disco foi trocado no leitor. Volte à tela do DVD e leia o disco de novo.</string>
+    <string name="dvd_recusa_fora_do_disco">Este título aponta para fora do disco (o IFO está danificado); o Quall não converte.</string>
+    <string name="dvd_recusa_celulas_demais">Este título tem células demais; o Quall ainda não converte.</string>
+    <string name="dvd_sem_leitor">Ligue o leitor de DVD. Ele precisa do carregador ligado no hub: sem ele, o telefone não consegue alimentar o leitor.</string>
+</resources>

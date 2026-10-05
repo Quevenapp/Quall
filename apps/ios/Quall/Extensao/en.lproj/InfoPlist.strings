@@ -1,0 +1,3 @@
+/* The broadcast extension's texts in English (system language, not the in-app switch). */
+"CFBundleDisplayName" = "Quall Studio Screen";
+"NSLocalNetworkUsageDescription" = "Quall needs the local network to send this iPhone's screen to the device that will show it. Nothing leaves your network.";

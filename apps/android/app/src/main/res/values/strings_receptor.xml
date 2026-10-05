@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O receptor: a tela de Exibir, a lista de aparelhos e os avisos da sessão (docs/fluxo-de-uso.md, docs/telas-estudio.md §6.6 e §11.3) (docs/traducao.md, Android). English; the Portuguese source is in values-pt/. The numbers panel (textReceptorStats) is bench-only and stays out. -->
+<resources>
+    <!-- A tela de escolha -->
+    <string name="rx_cabecalho">Receive</string>
+    <string name="rx_titulo">Watch another device</string>
+    <string name="rx_subtitulo">Tap the device that’s mirroring. The first time, type the PIN shown there.</string>
+    <string name="rx_na_rede_agora">On the network now</string>
+    <string name="rx_procurando">searching</string>
+    <string name="rx_procurar_de_novo">Search the network again</string>
+    <string name="rx_pin_vazio_se_pareados">Leave blank if the two are already paired.</string>
+    <string name="rx_conectar">Connect</string>
+    <!-- O rótulo do campo: PIN nos dois idiomas (o glossário). -->
+    <string name="rx_pin" translatable="false">PIN</string>
+    <string name="rx_usar_o_ultimo">Use the last one · %1$s</string>
+    <string name="rx_sem_endereco_anunciado">%1$s didn’t announce a usable address.</string>
+    <string name="rx_nucleo_nao_carregou">The native core didn’t load: %1$s</string>
+    <string name="rx_digite_o_endereco">Type the address shown on the screen of the device that’s mirroring.</string>
+    <string name="rx_digite_o_pin">Type the six-digit PIN shown on the other device’s screen.</string>
+
+    <!-- A tela do vídeo -->
+    <string name="rx_conectando_em">Connecting to %1$s…</string>
+    <string name="rx_parar">Stop</string>
+    <string name="rx_mostrar_numeros">Show the numbers</string>
+    <string name="rx_esconder_numeros">Hide the numbers</string>
+    <string name="rx_idr_pedido">IDR requested — measuring recovery</string>
+    <string name="rx_dica_tela_cheia">Tap the screen to exit full screen.</string>
+    <string name="rx_par_sem_nome">sender</string>
+
+    <!-- Os avisos da sessão (ReceptorBus.Aviso) -->
+    <string name="rx_aviso_retomando">Resuming pairing…</string>
+    <string name="rx_aviso_conectando_e_pareando">Connecting and pairing…</string>
+    <string name="rx_aviso_cancelado">Canceled</string>
+    <string name="rx_aviso_precisa_de_pin">The other device no longer recognizes this one. Type the six-digit PIN shown on its screen.</string>
+    <string name="rx_aviso_sem_rota">The two devices couldn’t find a path to each other. Check that they’re on the same Wi-Fi network.</string>
+    <string name="rx_aviso_sem_resposta">%1$s didn’t respond in time. Is the other device still waiting?</string>
+    <string name="rx_aviso_nao_conectou">Couldn’t connect to %1$s: %2$s</string>
+    <string name="rx_aviso_nucleo_nao_carregou">The native core didn’t load on this device: %1$s</string>
+    <string name="rx_aviso_recepcao_morreu">Receiving crashed: %1$s</string>
+    <string name="rx_aviso_esperando_a_imagem">Waiting for the picture…</string>
+    <string name="rx_aviso_sem_track">%1$s connected but didn’t open any media track</string>
+    <string name="rx_aviso_sem_caixa">Couldn’t create the frame buffer (out of memory?)</string>
+    <string name="rx_aviso_tratador_recusado">quall_track_on_frame refused: %1$s</string>
+    <string name="rx_aviso_emissor_saiu">%1$s: the sender left</string>
+    <string name="rx_aviso_transporte_falhou">%1$s: the connection failed</string>
+    <string name="rx_aviso_sem_quadro">%1$s: no frames for %2$d s</string>
+    <string name="rx_aviso_recepcao_encerrada">Receiving ended</string>
+    <string name="rx_aviso_recepcao_terminou">The stream ended</string>
+    <string name="rx_aviso_so_som">Receiving audio only</string>
+    <string name="rx_aviso_sessao_caiu">The session dropped (event %1$s)</string>
+    <string name="rx_aviso_audio_nao_toca">Audio isn’t playing</string>
+
+    <!-- A linha da lista (item_device) -->
+    <string name="rx_pareado_selo">PAIRED</string>
+    <string name="rx_pareado_falado">paired</string>
+    <string name="rx_sem_endereco">no usable address</string>
+    <string name="rx_papel_tela">screen</string>
+    <string name="rx_papel_camera">camera</string>
+    <string name="rx_papel_exibe">receives</string>
+    <string name="rx_papel_teleprompter">teleprompter</string>
+    <string name="rx_sem_capacidade">no declared capabilities</string>
+</resources>

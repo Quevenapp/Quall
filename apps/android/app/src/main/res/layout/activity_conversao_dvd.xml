@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Converter DVD" (`docs/dvd-para-mp4.md` §2.1 e §2.9: o ladrilho "DVD" do Início abre esta tela), no
+  "Estúdio de bolso" e no R16 desde 30/09 (decisão do Pessoa Exemplo; a emenda da §11 de `docs/telas-estudio.md`):
+  cabe sem rolar no A07, no A10s e no tablet, em pé e deitado. A tela é uma função do `ConversaoDvdBus`, do
+  `TransmissaoDvdBus`, do `MirrorBus` e do que ela mesma leu do disco; o comportamento é o de antes ("o
+  filme espera" sem receptor; o som do disco vai na trilha do sistema).
+
+  De cima para baixo: voltar · "DVD" · engrenagem; a pílula de estado (AGUARDANDO, ABRINDO, CONECTADO,
+  CONVERTENDO, NO AR) com a linha do leitor e o "ler de novo"; o aviso do leitor (sem leitor, a permissão,
+  as recusas) com o botão dele; o disco (o volume, os títulos numa caixa com teto, o som da transmissão num
+  chip, Converter · Transmitir · Assistir aqui); a transmissão (a prévia, que estica; o PIN em casas e o
+  endereço; o tempo; os controles); a conversão (a barra, o que falta, Cancelar); a frase do fim.
+
+  Deitado, duas colunas (`ColunasDaTela`, no código: a tela trata a rotação por `configChanges`): o leitor e
+  a prévia à esquerda; o disco, os controles e a conversão à direita. No tablet, a coluna de até 560 dp
+  (520 cada, deitado), centrada. As notas que moravam no pé foram para a engrenagem.
+
+  Os ids de antes continuam (nenhum roteiro de bancada os lê). `dvdFaixas` é agora o chip do som da
+  transmissão, e `dvdTitulos` mora numa caixa com teto (rola dentro dela, a tela não).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo">
+
+    <androidx.core.widget.NestedScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/dvdRolagem"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/dvdColunas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            app:centralizarNaAltura="true">
+
+            <!-- Voltar · "DVD" · engrenagem. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <ImageButton
+                    android:id="@+id/dvdVoltar"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/voltar"
+                    android:src="@drawable/ic_q_voltar" />
+
+                <TextView
+                    style="@style/Quall.TituloDoCabecalho"
+                    android:accessibilityHeading="true"
+                    android:text="@string/dvd_cabecalho" />
+
+                <ImageButton
+                    android:id="@+id/dvdAjustes"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/dvd_ajustes_descricao"
+                    android:src="@drawable/ic_q_engrenagem" />
+            </LinearLayout>
+
+            <!-- A luz de estúdio e o leitor, com o "ler o disco de novo" ao lado. -->
+            <LinearLayout
+                android:id="@+id/dvdLinhaDeEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:minHeight="48dp"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <com.quall.android.ui.PilulaDeEstado
+                    android:id="@+id/dvdPilula"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/dvdRotulo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="14sp" />
+
+                <ImageButton
+                    android:id="@+id/dvdLerDeNovo"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/dvd_ler_de_novo"
+                    android:src="@drawable/ic_q_atualizar"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- O leitor: sem leitor, a permissão, lendo o disco, as recusas e os erros. -->
+            <com.quall.android.ui.AvisoDaTela
+                android:id="@+id/dvdLeitor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <!-- A etapa em andamento ao abrir o leitor e ler o disco (o Pessoa Exemplo, 29/09: parecia travado). -->
+            <ProgressBar
+                android:id="@+id/dvdProgressoDoLeitor"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/q_acento"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/dvdAcaoDoLeitor"
+                style="@style/Widget.Quall.Botao.Principal"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <!-- O que a tela faz: só sem disco (com ele, a tela já diz). -->
+            <TextView
+                android:id="@+id/dvdExplicacao"
+                style="@style/Quall.Corpo2"
+                android:layout_marginTop="12dp"
+                android:text="@string/dvd_explicacao"
+                app:coluna="direita" />
+
+            <!-- A prévia da transmissão (o que vai à rede, ou o que toca aqui), desenhada pela GPU como a da
+                 placa. Estica: a altura que sobra na coluna, entre 140 dp e 4:3 da largura. -->
+            <FrameLayout
+                android:id="@+id/dvdTxQuadro"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/quadro_da_previa"
+                android:minHeight="140dp"
+                android:visibility="gone"
+                app:coluna="esquerda"
+                app:estica="true"
+                app:proporcaoMaxima="0.75">
+
+                <SurfaceView
+                    android:id="@+id/dvdTxPrevia"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <!-- O disco: o volume, os títulos (o mais longo marcado), o som da transmissão e os botões. -->
+            <LinearLayout
+                android:id="@+id/dvdSecaoDoDisco"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <TextView
+                    android:id="@+id/dvdVolume"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="8dp"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@drawable/ic_q_disco"
+                    app:drawableTint="@color/q_acento_claro" />
+
+                <!-- Os títulos: rolam dentro da caixa quando passam do teto (3 linhas em pé, 2 deitado). -->
+                <com.quall.android.ui.CaixaComTeto
+                    android:id="@+id/dvdCaixaDosTitulos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/cartao_da_captura"
+                    android:scrollbars="vertical"
+                    app:tetoDaAltura="172dp">
+
+                    <RadioGroup
+                        android:id="@+id/dvdTitulos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="6dp"
+                        android:paddingTop="2dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="2dp" />
+                </com.quall.android.ui.CaixaComTeto>
+
+                <!-- Fica para o id: o chip abaixo já diz "Som da transmissão". -->
+                <TextView
+                    android:id="@+id/dvdRotuloDasFaixas"
+                    style="@style/RotuloDeSecao"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/dvd_som_da_transmissao"
+                    android:visibility="gone" />
+
+                <!-- O som da transmissão, com mais de uma faixa (a primeira por padrão): o toque escolhe. -->
+                <TextView
+                    android:id="@+id/dvdFaixas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/capsula"
+                    android:drawablePadding="8dp"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/q_texto"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    app:drawableEndCompat="@drawable/ic_q_seta_direita"
+                    app:drawableTint="@color/q_acento_claro" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdConverter"
+                        style="@style/Widget.Quall.Botao.Principal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="@string/dvd_converter"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTransmitir"
+                        style="@style/Widget.Quall.Botao.Secundario"
+                        android:layout_width="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="@string/dvd_transmitir"
+                        android:textSize="15sp" />
+
+                    <!-- Ver e ouvir o disco no próprio aparelho, sem rede (o pedido do Pessoa Exemplo, 29/09). -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdAssistir"
+                        style="@style/Widget.Quall.Botao.Secundario"
+                        android:layout_width="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="@string/dvd_assistir_aqui"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/dvdLegendaDoDisco"
+                    style="@style/Quall.Legenda"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingMultiplier="1.1"
+                    android:text="@string/dvd_legenda_do_disco" />
+            </LinearLayout>
+
+            <!-- A transmissão (`docs/dvd-para-mp4.md` §9, a T3), ou o Assistir aqui: o título, o PIN e o
+                 endereço como no Espelhar (lado a lado, deitado), o estado, o tempo e os controles. -->
+            <LinearLayout
+                android:id="@+id/dvdSecaoDaTransmissao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <!-- Fica para o id: a pílula e a linha do leitor já dizem se é a transmissão ou o Assistir aqui. -->
+                <TextView
+                    android:id="@+id/dvdTxRotulo"
+                    style="@style/RotuloDeSecao"
+                    android:text="@string/dvd_rotulo_transmissao"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/dvdTxTitulo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:id="@+id/dvdTxLinhaDoPin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical">
+
+                    <com.quall.android.ui.LetreiroDoPin
+                        android:id="@+id/dvdTxPin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+
+                    <com.quall.android.ui.ChipDeEndereco
+                        android:id="@+id/dvdTxEndereco"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/dvdTxOutros"
+                    style="@style/Quall.Legenda"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/dvdTxEstado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingMultiplier="1.1"
+                    android:textColor="@color/q_texto"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/dvdTxTempo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/q_texto"
+                        android:textSize="15sp" />
+
+                    <ProgressBar
+                        android:id="@+id/dvdTxBarra"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:max="1000"
+                        android:progressTint="@color/q_acento" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxVoltar30"
+                        style="@style/Widget.Quall.Botao.Secundario"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="−30 s"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxPausar"
+                        style="@style/Widget.Quall.Botao.Principal"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1.4"
+                        android:text="@string/dvd_pausar"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxAvancar30"
+                        style="@style/Widget.Quall.Botao.Secundario"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="+30 s"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <!-- Os três numa linha estreita (o A10s deitado, 30/09): "■ Gravação" quebrava no meio da
+                         palavra ("Gravaçã / o"). Ícone de 14 dp e recuos de 8 dp como o Parar, e a letra desce até
+                         10 sp antes de quebrar. -->
+                    <!-- O som do disco no alto-falante do aparelho, desligado por padrão. -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxOuvir"
+                        style="@style/Widget.Quall.Botao.Pequeno"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/dvd_ouvir"
+                        app:autoSizeMaxTextSize="13sp"
+                        app:autoSizeMinTextSize="10sp"
+                        app:autoSizeTextType="uniform"
+                        app:icon="@drawable/ic_q_som"
+                        app:iconSize="14dp" />
+
+                    <!-- Gravar o que está sendo transmitido (a T4), como nas câmeras. -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxGravar"
+                        style="@style/Widget.Quall.Botao.Pequeno"
+                        android:layout_width="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/dvd_gravar"
+                        app:autoSizeMaxTextSize="13sp"
+                        app:autoSizeMinTextSize="10sp"
+                        app:autoSizeTextType="uniform"
+                        app:icon="@drawable/ic_q_gravar"
+                        app:iconSize="14dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dvdTxParar"
+                        style="@style/Widget.Quall.Botao.Perigo"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:maxLines="1"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/dvd_parar"
+                        android:textSize="13sp"
+                        app:cornerRadius="12dp"
+                        app:iconPadding="6dp"
+                        app:iconSize="14dp" />
+                </LinearLayout>
+
+                <!-- Assistindo aqui: a transmissão segue do mesmo ponto. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/dvdTxTransmitirDaqui"
+                    style="@style/Widget.Quall.Botao.Pequeno"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/dvd_transmitir_daqui"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_q_espelhar" />
+
+                <TextView
+                    android:id="@+id/dvdTxGravacao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="monospace"
+                    android:gravity="center_horizontal"
+                    android:textColor="@color/q_perigo_texto"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/dvdTxLegenda"
+                    style="@style/Quall.Legenda"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingMultiplier="1.1" />
+            </LinearLayout>
+
+            <!-- A conversão: o arquivo, a barra, o que falta e o Cancelar. -->
+            <LinearLayout
+                android:id="@+id/dvdSecaoDoProgresso"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/cartao_da_captura"
+                android:orientation="vertical"
+                android:padding="14dp"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <TextView
+                    android:id="@+id/dvdNomeDoArquivo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="middle"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/dvdBarra"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:max="1000"
+                    android:progressTint="@color/q_acento" />
+
+                <TextView
+                    android:id="@+id/dvdProgresso"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/dvdCancelar"
+                    style="@style/Widget.Quall.Botao.Perigo"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/cancelar" />
+
+                <TextView
+                    style="@style/Quall.Legenda"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/dvd_progresso_nota" />
+            </LinearLayout>
+
+            <!-- O fim da conversão, a recusa e o erro: a frase, sempre à vista até a próxima ação. -->
+            <com.quall.android.ui.AvisoDaTela
+                android:id="@+id/dvdMensagem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:coluna="direita"
+                app:tipoDoAviso="info" />
+        </com.quall.android.ui.ColunasDaTela>
+    </androidx.core.widget.NestedScrollView>
+</FrameLayout>

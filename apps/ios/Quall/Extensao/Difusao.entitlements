@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Mesmo App Group do app. Sem ele a appex não acha o pedido, sobe uma sessão com PIN que
+	     não é o da tela, e a pessoa digita seis dígitos que nunca casam. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.br.com.queven.quall</string>
+	</array>
+</dict>
+</plist>

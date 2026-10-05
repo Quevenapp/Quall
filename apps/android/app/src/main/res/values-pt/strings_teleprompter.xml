@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endereços de exemplo sintéticos. -->
+
+<!-- O teleprompter: escolha, prompter, controle, R5 (docs/contrato-teleprompter.md) (docs/traducao.md, Android). O português é o texto-fonte; o inglês mora em values/. -->
+<resources>
+    <!-- Teleprompter (F6b) — docs/contrato-teleprompter.md. Todo aparelho faz os dois papéis. -->
+    <string name="tp_secao">Teleprompter</string>
+    <string name="tp_mostrar_texto">Mostrar o texto (teleprompter)</string>
+    <string name="tp_controlar">Controlar um teleprompter</string>
+    <string name="tp_secao_nota">Um aparelho mostra o texto rolando — com espelho, para ler no vidro — e outro controla. Os dois editam o roteiro; vale o último que mudou.</string>
+    <string name="tp_prompter_titulo">Teleprompter</string>
+    <!-- A tela R5, "Teleprompter com câmera" (docs/teleprompter-com-camera.md). -->
+    <string name="r5_titulo">Teleprompter com câmera</string>
+    <string name="r5_abrir">Teleprompter com câmera (frontal)</string>
+    <string name="r5_esconder_camera">Esconder câmera</string>
+    <string name="r5_mostrar_camera">Mostrar câmera</string>
+    <string name="r5_previa_espelhada">Prévia espelhada</string>
+    <string name="r5_texto_na_lente">Texto: lado da câmera</string>
+    <string name="r5_texto_oposto">Texto: lado oposto</string>
+    <string name="r5_gravar">● Gravar</string>
+    <string name="tp_esperando_o_controle">Esperando o controle</string>
+    <string name="tp_controle_titulo">Controlar um teleprompter</string>
+    <string name="tp_lista_vazia">Nenhum teleprompter anunciando. Abra “Mostrar o texto” no outro aparelho, ou digite o endereço que aparece nele.</string>
+    <string name="tp_pin_do_prompter">PIN do teleprompter</string>
+    <string name="tp_endereco_dica">192.168.56.50 (a porta 7979 entra sozinha)</string>
+    <string name="tp_conectar_e_controlar">Conectar e controlar</string>
+    <string name="tp_rolar">Rolar</string>
+    <string name="tp_parar">Parar</string>
+    <string name="tp_inicio">Início</string>
+    <string name="tp_pular_menos" formatted="false">−5 %</string>
+    <string name="tp_pular_mais" formatted="false">+5 %</string>
+    <string name="tp_vel_menos">Vel −</string>
+    <string name="tp_vel_mais">Vel +</string>
+    <string name="tp_fonte_menos">A −</string>
+    <string name="tp_fonte_mais">A +</string>
+    <string name="tp_margem_menos">Margem −</string>
+    <string name="tp_margem_mais">Margem +</string>
+    <string name="tp_linha_sobe">Linha ↑</string>
+    <string name="tp_linha_desce">Linha ↓</string>
+    <string name="tp_espelho">Espelho</string>
+    <string name="tp_espelho_longo">Espelho (inverte o texto para ler no reflexo do vidro)</string>
+    <string name="tp_editar">Editar</string>
+    <string name="tp_sair">Sair</string>
+    <!-- A orientação do prompter, ajuste deste aparelho (as quatro opções são `teleprompter/Orientacao.kt`). -->
+    <string name="tp_orientacao">Orientação</string>
+    <!-- Os ajustes locais do prompter: docs/teleprompter-ajustes-locais.md §5. -->
+    <string name="tp_fonte_automatica">Fonte automática</string>
+    <!-- "Segurar para rolar" (docs/contrato-teleprompter.md §12.5): ajuste local do controle. -->
+    <string name="tp_segurar_para_rolar">Segurar para rolar</string>
+    <string name="tp_rolar_para_cima">Rolar para cima</string>
+    <string name="tp_rolar_para_baixo">Rolar para baixo</string>
+    <string name="tp_rolar_para_cima_descricao">Rolar para cima: segure para rolar, solte para parar</string>
+    <string name="tp_rolar_para_baixo_descricao">Rolar para baixo: segure para rolar, solte para parar</string>
+    <string name="tp_sair_do_segurar">Sair</string>
+    <string name="tp_sair_do_segurar_descricao">Sair do modo segurar para rolar: segure</string>
+    <!-- "Inverter botões" (pedido do usuário, 14/09 à tarde): o de cima avança e o de baixo volta. -->
+    <string name="tp_inverter_botoes">Inverter botões</string>
+    <string name="tp_inverter_botoes_ligado">Inverter botões ✓</string>
+    <!-- A pergunta do texto e os roteiros guardados (docs/contrato-teleprompter.md §11.7): os textos
+         literais, os mesmos nas quatro telas. Os que a tela monta estão em teleprompter/PerguntaDoTexto.kt. -->
+    <string name="tp_no_prompter">No prompter</string>
+    <string name="tp_neste_aparelho">Neste aparelho</string>
+    <string name="tp_usar_o_do_prompter">Usar o do prompter</string>
+    <string name="tp_mandar_o_meu">Mandar o meu</string>
+    <string name="tp_o_que_sair_fica_guardado">O roteiro que sair fica em Roteiros guardados.</string>
+    <string name="tp_roteiros_guardados">Roteiros guardados</string>
+    <string name="tp_nenhum_roteiro_guardado">Nenhum roteiro guardado.</string>
+    <string name="tp_fechar">Fechar</string>
+    <string name="tp_ver">Ver</string>
+    <string name="tp_usar_este">Usar este</string>
+    <string name="tp_apagar">Apagar</string>
+    <string name="tp_progresso">Progresso da leitura</string>
+    <string name="tp_velocidade">Velocidade</string>
+    <string name="tp_fonte">Fonte</string>
+    <string name="tp_margem">Margem</string>
+    <string name="tp_linha_de_leitura">Linha de leitura</string>
+    <string name="tp_editar_roteiro">Editar o roteiro</string>
+    <string name="tp_colar_roteiro">Colar um roteiro</string>
+    <string name="tp_desconectar">Desconectar</string>
+    <string name="tp_editar_titulo">Editar o roteiro</string>
+    <string name="tp_conflito">O roteiro mudou no outro aparelho enquanto você editava. O que você digitou aqui continua no editor.</string>
+    <string name="tp_usar_o_novo">Usar o texto novo</string>
+    <string name="tp_manter_o_meu">Manter o meu</string>
+    <string name="tp_roteiro_dica">Escreva ou cole o roteiro aqui.</string>
+    <string name="tp_limpar">Limpar</string>
+    <string name="tp_colar">Colar</string>
+    <string name="tp_confirmar">Confirmar</string>
+    <string name="tp_sem_roteiro">Sem roteiro. Toque na tela e em “Editar” — ou escreva no controle.</string>
+
+    <!-- A tela do prompter e a R5: títulos, recados, a faixa do alto e a barra de ícones. -->
+    <string name="tp_voltar_de_novo_fecha">Voltar de novo fecha o teleprompter.</string>
+    <string name="tp_um_prompter_por_aparelho">Feche o %1$s antes de abrir o %2$s: um prompter por aparelho.</string>
+    <string name="tp_nucleo_nao_carregou">O núcleo nativo não carregou: %1$s</string>
+    <string name="tp_replica_falhou">Não consegui criar a réplica do teleprompter: %1$s</string>
+    <string name="tp_estado_parado">Parado</string>
+    <string name="tp_fonte_automatica_desligada">Fonte automática desligada</string>
+    <string name="tp_fonte_automatica_desligada_pelo_controle">Fonte automática desligada: o controle mudou a fonte</string>
+    <string name="tp_orientacao_travada">A orientação fica travada enquanto grava.</string>
+    <string name="tp_controle_conectado_recado">Controle “%1$s” conectado</string>
+    <string name="tp_controle_conectado_pareado">Controle “%1$s” conectado — pareado por PIN</string>
+    <string name="tp_controle_desconectado">Controle desconectado</string>
+    <string name="tp_controle_conectado">Controle conectado</string>
+    <string name="tp_controlado_por">Controlado por %1$s</string>
+    <string name="tp_pin_rotulo">PIN %1$s</string>
+    <string name="tp_sem_rede">sem rede</string>
+    <string name="tp_pausar">Pausar</string>
+    <string name="tp_resumo">%1$.2f linhas/s · %2$.0f sp · %3$.0f %%</string>
+    <string name="tp_ultima_recusa">A última tentativa de controle foi recusada: %1$s</string>
+    <string name="tp_voltar_ao_comeco">Voltar ao começo</string>
+    <string name="tp_mais_devagar">Mais devagar</string>
+    <string name="tp_mais_depressa">Mais depressa</string>
+    <string name="tp_folha_controlar_titulo">Controlar este teleprompter</string>
+    <string name="tp_folha_controlar_instrucao">No outro aparelho, abra o Quall → Teleprompter → Controlar, e digite:</string>
+    <string name="tp_letra_grande_descricao">Mostrar o endereço e o PIN em letra grande</string>
+    <string name="tp_teleprompter_abrindo">O teleprompter ainda está abrindo a sessão.</string>
+    <string name="tp_par_teleprompter">teleprompter</string>
+    <string name="tp_par_controle">controle</string>
+
+    <!-- Os avisos das duas telas (teleprompter/Avisos.kt). -->
+    <string name="tp_aviso_sumido_curto_rolando">Controle desconectado%1$s · texto segue rolando</string>
+    <string name="tp_aviso_sumido_curto_parado">Controle desconectado%1$s · texto segue parado</string>
+    <string name="tp_aviso_sumido_rolando">Controle desconectado — o texto segue rolando como estava. Esperando o controle voltar%1$s</string>
+    <string name="tp_aviso_sumido_parado">Controle desconectado — o texto segue parado como estava. Esperando o controle voltar%1$s</string>
+    <string name="tp_aviso_nao_chegou_ao_controle_curto">A última mudança daqui não chegou ao controle</string>
+    <string name="tp_aviso_nao_chegou_ao_controle">A última mudança feita aqui ainda não chegou ao controle.</string>
+    <string name="tp_aviso_conexao_perdida">Conexão perdida com o teleprompter — ele continua como estava. %1$s</string>
+    <string name="tp_tentando_de_novo">Tentando de novo…</string>
+    <string name="tp_aviso_nao_chegou_ao_prompter">O último comando ainda não chegou ao teleprompter.</string>
+    <string name="tp_aviso_outra_versao_curto">Outra versão no outro aparelho: atualize o Quall nos dois</string>
+    <string name="tp_aviso_outra_versao">O outro aparelho usa outra versão do teleprompter: atualize o Quall nos dois.</string>
+    <string name="tp_aviso_relogio_curto">Relógio errado num dos aparelhos: acerte a hora</string>
+    <string name="tp_aviso_relogio">O relógio de um dos aparelhos está errado: o roteiro pode não ter passado. Acerte a hora.</string>
+
+    <!-- O que cada lado diz depois de uma falha (teleprompter/Politicas.kt e as sessões). -->
+    <string name="tp_erro_esperar_controle">não consegui esperar o controle: %1$s</string>
+    <string name="tp_erro_abrir_porta">não consegui abrir a porta %1$d: %2$s</string>
+    <string name="tp_ocupado_soltando">O teleprompter ainda está soltando a sessão anterior — tentando de novo…</string>
+    <string name="tp_ocupado_outro_controle">O teleprompter está com outro controle — tentando de novo…</string>
+    <string name="tp_pin_nao_reconhece">O teleprompter não reconhece mais este aparelho. Digite o PIN que aparece na tela dele.</string>
+    <string name="tp_pin_nao_conferiu">O PIN não conferiu. Confira os seis dígitos na tela do teleprompter e digite de novo.</string>
+    <string name="tp_pareamento_nao_fechou">O pareamento não fechou. Digite o PIN que aparece na tela do teleprompter.</string>
+    <string name="tp_erro_protocolo">%1$s não aceitou este aparelho como controle (não é um teleprompter, ou usa outra versão do Quall): %2$s</string>
+    <string name="tp_erro_invalido">endereço ou dado inválido: %1$s</string>
+    <string name="tp_tentando_reconectar">Tentando reconectar…</string>
+    <string name="tp_erro_sem_rota">os dois aparelhos não acharam caminho um para o outro. Confira se estão na mesma rede Wi-Fi.</string>
+    <string name="tp_erro_prazo">%1$s não respondeu a tempo. O teleprompter está aberto, esperando?</string>
+    <string name="tp_erro_recusou">%1$s recusou a conexão. Abra o teleprompter no outro aparelho (e confira a porta).</string>
+    <string name="tp_erro_conectar">não consegui conectar em %1$s: %2$s</string>
+    <string name="tp_erro_nucleo">o núcleo nativo não carregou: %1$s</string>
+    <string name="tp_queda_o_outro_saiu">O teleprompter saiu da sessão. Tentando reconectar…</string>
+    <string name="tp_queda_rede">A rede entre os dois aparelhos falhou. Tentando reconectar…</string>
+    <string name="tp_recusa_pin_mudou">o PIN anterior não conferiu (%1$s): o PIN mudou</string>
+
+    <!-- A pergunta do texto e os roteiros guardados (teleprompter/PerguntaDoTexto.kt, TelaDosRoteiros). -->
+    <string name="tp_pergunta_titulo">O prompter %1$s tem outro roteiro.</string>
+    <string name="tp_conferindo">Conferindo o roteiro do prompter…</string>
+    <string name="tp_pergunta_saiu">O prompter saiu. A pergunta volta quando ele voltar.</string>
+    <string name="tp_pergunta_mudou">O roteiro do prompter mudou. Confira de novo.</string>
+    <string name="tp_uma_palavra">1 palavra</string>
+    <string name="tp_n_palavras">%1$s palavras</string>
+    <string name="tp_confirma_usar">Usar este roteiro? Ele substitui o roteiro atual, também no prompter conectado.</string>
+    <string name="tp_usar">Usar</string>
+    <string name="tp_confirma_apagar">Apagar este roteiro guardado?</string>
+    <string name="tp_origem_do_prompter">Do prompter %1$s</string>
+    <string name="tp_origem_deste_aparelho">Deste aparelho, antes de %1$s</string>
+    <string name="tp_dia_e_hora">%1$02d/%2$02d %3$s</string>
+    <string name="tp_nao_deu_para_usar">Não deu para usar este roteiro (%1$s).</string>
+    <string name="tp_roteiro_sumiu">Este roteiro não está mais guardado.</string>
+
+    <!-- O editor do roteiro (ui/EditorDeTexto.kt) e o tamanho (teleprompter/Percurso.kt). -->
+    <string name="tp_tamanho_do_roteiro">%1$s KB de %2$s KB</string>
+    <string name="tp_area_vazia_colar">A área de transferência está vazia — copie o roteiro e toque em Colar.</string>
+    <string name="tp_roteiro_mudou_no_editor">O roteiro mudou no outro aparelho — o editor acompanhou.</string>
+    <string name="tp_descartar_pergunta">Descartar o que você digitou no roteiro?</string>
+    <string name="tp_descartar">Descartar</string>
+    <string name="tp_continuar_editando">Continuar editando</string>
+    <string name="tp_area_vazia">A área de transferência está vazia.</string>
+    <string name="tp_caractere_nulo">O roteiro tem um caractere nulo, que não atravessa. Apague-o e confirme de novo.</string>
+    <string name="tp_passou_do_limite">O roteiro passou do limite: %1$s.</string>
+    <string name="tp_nucleo_recusou">O núcleo recusou o roteiro (%1$s).</string>
+    <string name="tp_acima_do_limite">%1$s — acima do limite</string>
+    <string name="tp_sem_roteiro_curto">Sem roteiro.</string>
+    <string name="tp_linha_de_leitura_valor">Linha de leitura %1$.1f %%</string>
+
+    <!-- A folha de Ajustes do prompter e os controles do texto (ui/FolhasDoPrompter.kt). -->
+    <string name="tp_ajustes_do_texto">Ajustes do texto</string>
+    <string name="tp_pronto">Pronto</string>
+    <string name="tp_linhas_por_s">%1$.2f linhas/s</string>
+    <string name="tp_fonte_menor">Fonte menor</string>
+    <string name="tp_fonte_maior">Fonte maior</string>
+    <string name="tp_fonte_sp">%1$.0f sp</string>
+    <string name="tp_fonte_sp_automatica">%1$.0f sp (automática)</string>
+    <string name="tp_margem_valor">%1$.0f %% de cada lado</string>
+    <string name="tp_linha_valor">%1$.0f %% do alto</string>
+    <string name="tp_espelho_legenda">Inverte o texto na horizontal, para ler no reflexo do vidro.</string>
+    <string name="tp_orientacao_legenda">Só deste aparelho. Deitado sob o vidro o sensor não decide: escolha Paisagem (topo à esquerda) ou Paisagem invertida (topo à direita).</string>
+    <string name="tp_orientacao_travada_legenda">Travada enquanto grava: um arquivo, uma orientação.</string>
+    <string name="tp_orientacao_automatica">Automática</string>
+    <string name="tp_orientacao_retrato">Retrato</string>
+    <string name="tp_orientacao_paisagem">Paisagem</string>
+    <string name="tp_orientacao_paisagem_invertida">Paisagem invertida</string>
+    <string name="tp_fonte_automatica_agora">Agora: %1$.0f sp. Só deste aparelho.</string>
+    <string name="tp_fonte_automatica_legenda">A maior fonte em que cada linha tem pelo menos duas palavras. Só deste aparelho.</string>
+    <string name="tp_enquadramento">Enquadramento</string>
+    <string name="tp_enquadramento_legenda">Arraste os triângulos azuis para enquadrar o texto. Só deste aparelho.</string>
+    <string name="tp_largura_inteira">Largura inteira</string>
+
+    <!-- O controle remoto (ui/ControleActivity.kt, activity_controle.xml). -->
+    <string name="tp_controlar_curto">Controlar</string>
+    <string name="tp_do_outro_lado">Do outro lado: Quall → Teleprompter → Mostrar o texto.</string>
+    <string name="tp_prompters_na_rede">Prompters na rede</string>
+    <string name="tp_procurando">procurando</string>
+    <string name="tp_procurar_de_novo">Procurar de novo na rede</string>
+    <string name="tp_pin">PIN</string>
+    <string name="tp_pin_nota">Deixe vazio se os dois já parearam.</string>
+    <string name="tp_conectar">Conectar</string>
+    <string name="tp_colar_endereco">Colar endereço</string>
+    <string name="tp_leitura">Leitura</string>
+    <string name="tp_segurar_nota">A tela fica só com dois botões grandes: segure para rolar, solte para parar. Na velocidade ajustada. Fica guardado neste aparelho.</string>
+    <string name="tp_roteiro">Roteiro</string>
+    <string name="tp_editar_ou_colar">Editar ou colar o roteiro</string>
+    <string name="tp_sem_endereco">%1$s não anunciou endereço utilizável.</string>
+    <string name="tp_nao_e_endereco">Isso não é um endereço do Quall (área de transferência).</string>
+    <string name="tp_digite_endereco">Digite o endereço que aparece no prompter, como 192.168.55.10:7979.</string>
+    <string name="tp_pin_seis_digitos">O PIN tem seis dígitos.</string>
+    <string name="tp_digite_pin">Digite o PIN de seis dígitos que aparece na tela do prompter.</string>
+    <string name="tp_encerrando">Encerrando a sessão anterior…</string>
+    <string name="tp_conectando_em">Conectando em %1$s…</string>
+    <string name="tp_tentativa">Tentativa %1$d</string>
+    <string name="tp_conexao_perdida_titulo">Conexão perdida — tentando de novo</string>
+    <string name="tp_conectado_ao_prompter">Conectado ao prompter</string>
+    <string name="tp_conectado_a">Conectado a %1$s</string>
+    <string name="tp_conectando">Conectando…</string>
+    <string name="tp_porcento">%1$.0f %%</string>
+    <string name="tp_porcento_alvo">→ %1$.0f %%</string>
+    <string name="tp_kib">%1$.1f KiB</string>
+    <string name="tp_voltar_5" formatted="false">Voltar 5 %</string>
+    <string name="tp_voltar_1" formatted="false">Voltar 1 %</string>
+    <string name="tp_pular_1" formatted="false">Pular 1 %</string>
+    <string name="tp_pular_5" formatted="false">Pular 5 %</string>
+
+    <!-- "Segurar para rolar" (ui/ModoSegurar.kt, teleprompter/SegurarParaRolar.kt). -->
+    <string name="tp_efeito_volta">volta o texto</string>
+    <string name="tp_efeito_avanca">avança o texto</string>
+    <string name="tp_segurar_esperando">Esperando o prompter…</string>
+    <string name="tp_segurar_atualize">Atualize o app do prompter para usar este modo</string>
+    <string name="tp_segurar_parou">O texto parou. Solte e aperte de novo.</string>
+    <string name="tp_segurar_parou_e">O texto parou. %1$s</string>
+    <string name="tp_segurar_nao_chegou">O último comando ainda não chegou ao prompter.</string>
+    <string name="tp_segurar_conectando">Conectando ao prompter em %1$s…</string>
+    <string name="tp_segurar_nao_responde">O prompter não responde. Esperando…</string>
+    <string name="tp_segurar_sem_conexao">Sem conexão com o prompter.</string>
+    <string name="tp_controlando_par">Controlando “%1$s”</string>
+    <string name="tp_sem_sessao">Sem sessão</string>
+    <string name="tp_segurar_velocidade">Velocidade: %1$.2f linhas/s</string>
+    <string name="tp_inverter_como">Para inverter os botões, segure “Inverter botões”.</string>
+    <string name="tp_inverter_solte">Solte o botão de rolar para inverter.</string>
+    <string name="tp_inverter_descricao_ligado">Inverter botões, ligado: segure para trocar</string>
+    <string name="tp_inverter_descricao_desligado">Inverter botões, desligado: segure para trocar</string>
+    <string name="tp_sair_como">Para sair do modo, segure “Sair”, no canto.</string>
+
+    <!-- A tela R5: a faixa, a prévia, a gravação (ui/PrompterComCameraActivity.kt, ui/DivisaoDaTela.kt, teleprompter/DecisaoDaGravacao.kt). -->
+    <string name="r5_lado_voltou">O lado do texto voltou ao automático; se a câmera deste aparelho fica em outra borda, escolha em Ajustes.</string>
+    <string name="r5_aguarde">Aguarde… abrindo a câmera</string>
+    <string name="r5_abrir_ajustes">Abrir os Ajustes</string>
+    <string name="r5_chip_texto">Texto</string>
+    <string name="r5_chip_camera">Câmera</string>
+    <string name="r5_ajustes_da_camera">Ajustes da câmera</string>
+    <string name="r5_esconder_previa">Esconder a prévia</string>
+    <string name="r5_mostrar_previa">Mostrar a prévia</string>
+    <string name="r5_folha_camera_titulo">Receber a câmera deste aparelho</string>
+    <string name="r5_folha_camera_instrucao">No outro aparelho, abra o Quall → Exibir, e digite:</string>
+    <string name="r5_camera_nao_esperando">A câmera ainda não está esperando quem recebe.</string>
+    <string name="r5_sem_frontal">Este aparelho não tem câmera frontal. O texto funciona; a câmera, não.</string>
+    <string name="r5_video_nao_subiu">O vídeo não subiu: %1$s</string>
+    <string name="r5_sem_permissao">O Quall não tem acesso à câmera deste aparelho. Abra Ajustes → Apps → Quall → Permissões → Câmera e permita; o texto continua funcionando enquanto isso.</string>
+    <string name="r5_nucleo_nao_carregou">O núcleo do Quall não carregou (%1$s): o texto e a câmera não funcionam neste aparelho.</string>
+    <string name="r5_frontal_nao_abriu">A câmera frontal não abriu: %1$s</string>
+    <string name="r5_desativado">desativado: %1$s</string>
+    <string name="r5_gravando">Gravando</string>
+    <string name="r5_gravacao_em_transicao">Gravação começando ou fechando</string>
+    <string name="r5_gravando_sem_som">Gravando SEM SOM — ligue o microfone</string>
+    <string name="r5_gravando_sem_som_ainda">Gravando: sem som ainda — o microfone está abrindo</string>
+    <string name="r5_transmitindo_720p">Transmitindo em 720p</string>
+    <string name="r5_microfone_desligado">Microfone desligado: %1$s</string>
+    <string name="r5_abrir_ajustes_microfone">Abrir os Ajustes (microfone)</string>
+    <string name="r5_microfone_aviso">Microfone: %1$s</string>
+    <string name="r5_nao_abriu_teleprompter">Não consegui abrir o teleprompter: %1$s</string>
+    <string name="r5_estado_parado">parado</string>
+    <string name="r5_estado_controle_desconectado">controle desconectado</string>
+    <string name="r5_estado_esperando_controle">esperando o controle</string>
+    <string name="r5_estado_controle_conectado">controle conectado</string>
+    <string name="r5_estado_controlado_por">controlado por %1$s</string>
+    <string name="r5_camera_sem_acesso">sem acesso</string>
+    <string name="r5_camera_abrindo">abrindo</string>
+    <string name="r5_camera_enviando">enviando</string>
+    <string name="r5_camera_enviando_para">enviando para %1$s</string>
+    <string name="r5_camera_esperando">esperando quem recebe</string>
+    <string name="r5_camera_parou">parou</string>
+    <string name="r5_nao_da_gravar_espelhamento">Não dá para gravar aqui: a câmera está com o espelhamento comum.</string>
+    <string name="r5_nao_da_gravar_fechada">Não dá para gravar: a câmera não está aberta.</string>
+    <string name="r5_gravar_voltou">O Gravar voltou: a próxima gravação tenta de novo.</string>
+    <string name="r5_continua_sem_gravar">Continua sem gravar: %1$s</string>
+    <string name="r5_nao_gravou">Não gravou: %1$s</string>
+    <string name="r5_recusa_espelhamento">a câmera está com o espelhamento comum, fora desta tela</string>
+    <string name="r5_recusa_camera_fechada">a câmera não está aberta</string>
+    <string name="r5_recusa_reserva">não deu para gravar</string>
+    <string name="r5_indicador_abrindo">● Abrindo a gravação…</string>
+    <string name="r5_indicador_fechando">● Fechando o arquivo…</string>
+    <string name="r5_indicador_gravando">● Gravando %1$s</string>
+    <string name="r5_indicador_sem_som">SEM SOM — ligue o microfone</string>
+    <string name="r5_indicador_sem_som_ainda">sem som ainda: o microfone está abrindo</string>
+    <string name="r5_indicador_sobram">sobram %1$s</string>
+    <string name="r5_gravar_sem_som">● Gravar (sem som)</string>
+    <string name="r5_abrindo">● Abrindo…</string>
+    <string name="r5_parar_gravacao">■ Parar gravação</string>
+    <string name="r5_fechando">■ Fechando…</string>
+    <string name="r5_previa_como_espelho">Prévia como espelho</string>
+    <string name="r5_previa_legenda">Só a imagem desta tela. Quem recebe a câmera a vê sempre sem espelho.</string>
+    <string name="r5_lado_do_texto">Lado do texto</string>
+    <string name="r5_lado_legenda">Automático: o texto fica em cima, perto da câmera, também deitado; de ponta-cabeça, embaixo. Se neste aparelho a câmera estiver em outra borda, escolha aqui.</string>
+    <string name="r5_lado_automatico">Automático</string>
+    <string name="r5_lado_cima">Em cima</string>
+    <string name="r5_lado_baixo">Embaixo</string>
+    <string name="r5_lado_esquerda">À esquerda</string>
+    <string name="r5_lado_direita">À direita</string>
+    <string name="r5_borda_descricao">Borda entre o texto e a prévia. Arraste para dividir.</string>
+    <string name="r5_borda_estado">texto com %1$.0f %% da tela</string>
+</resources>

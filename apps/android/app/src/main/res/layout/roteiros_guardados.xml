@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Roteiros guardados" (§11.5 e §11.7): as cópias que a pergunta do texto e a fusão guardaram no
+  controle, a mais nova primeiro, com ver, usar e apagar. Abre mesmo sem conexão: as cópias moram no
+  salvo deste aparelho.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:defaultFocusHighlightEnabled="false"
+    android:id="@+id/roteirosRaiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tp_roteiros_guardados"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/buttonFecharRoteiros"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tp_fechar"
+            android:textAllCaps="false" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textRoteirosVazio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/tp_nenhum_roteiro_guardado"
+        android:textColor="#B3FFFFFF"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
+    <ScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/listaDeRoteiros"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,25 @@
+/* Traduções exclusivas do monitor virtual; fora dos recursos da primeira release. */
+"Fixada em %@ pelo argumento --tela-estendida desta abertura." = "Fixed at %@ by this launch's --tela-estendida argument.";
+"A tela inteira do aparelho como espaço de trabalho, na resolução dela — a letra fica pequena." = "The whole device screen as workspace, at its own resolution — text gets small.";
+"Escala da tela estendida" = "Extended display scale";
+"60 fps na tela estendida" = "60 fps on the extended display";
+"Mais fluido, e o dobro de dados. Aparelho que não decodifica rápido o bastante mostra a imagem quebrando — aí volte para 30." = "Smoother, and twice the data. A device that can't decode fast enough shows a broken picture — then go back to 30.";
+"Quall — tela estendida" = "Quall — extended display";
+"Tela estendida" = "Extended display";
+"Um monitor novo para cada aparelho" = "A new display for each device";
+"novo monitor · " = "new display · ";
+"Uma tela, a tela estendida ou uma câmera. Quem exibe escolhe este Mac na lista." = "A screen, the extended display or a camera. The receiving device picks this Mac in its list.";
+"Tela estendida: esperando um aparelho" = "Extended display: waiting for a device";
+"Tela estendida: %@" = "Extended display: %@";
+"novo monitor · %@ · %@ fps" = "new display · %@ · %@ fps";
+"Este macOS não tem a API de monitor virtual (CGVirtualDisplay)." = "This macOS doesn't have the virtual display API (CGVirtualDisplay).";
+"O macOS recusou criar o monitor virtual: %@" = "macOS refused to create the virtual display: %@";
+"O monitor virtual foi criado mas não ficou online em %@ ms." = "The virtual display was created but didn't come online within %@ ms.";
+"O monitor virtual ficou online mas não ganhou modo de exibição em %@ ms." = "The virtual display came online but got no display mode within %@ ms.";
+"O monitor virtual não oferece o modo %@. Oferecidos: %@" = "The virtual display doesn't offer mode %@. Offered: %@";
+"Não consegui fixar o modo do monitor virtual (%@, CGError %@)." = "Couldn't set the virtual display's mode (%@, CGError %@).";
+"O monitor virtual ficou em %@, e não em %@." = "The virtual display ended up at %@, not %@.";
+"O auxiliar %@ não está ao lado do app." = "The helper %@ isn't next to the app.";
+"O auxiliar do monitor virtual não subiu: %@" = "The virtual display helper didn't start: %@";
+"O auxiliar do monitor virtual respondeu algo ilegível: %@" = "The virtual display helper replied with something unreadable: %@";
+"Letra do tamanho da do Mac. Se a tela do aparelho tem menos de 1060 pixels de altura, o macOS não aceita 2x nela: o monitor é desenhado maior e reduzido para a tela, sem sair 1:1." = "Text the same size as on the Mac. If the device screen is under 1060 pixels tall, macOS won't accept 2x on it: the display is drawn larger and scaled down to the screen, not 1:1.";

@@ -1,0 +1,189 @@
+// Endereços de exemplo sintéticos.
+/* Quall iOS — textos em inglês do teleprompter (pasta Teleprompter/, menos a tela com câmera, que
+   tem a sua em ComCamera.strings): o prompter, o controle, os ajustes, o editor, o "segurar para
+   rolar", a pergunta do texto e os roteiros guardados.
+   A chave é o texto em português, exatamente como está no código em tr("…").
+   Ver Comum/Idioma.swift e docs/traducao.md (seção iOS).
+   As mensagens que viajam pelo protocolo do teleprompter não passam por aqui. */
+
+/* O prompter (TelaDoPrompter) */
+"sem rede" = "no network";
+"Mostrar o endereço e o PIN em letra grande" = "Show the address and PIN in large type";
+"Parado" = "Stopped";
+"Esperando o controle" = "Waiting for the remote";
+"Controle conectado" = "Remote connected";
+"Controlado por %@" = "Controlled by %@";
+"Controle desconectado" = "Remote disconnected";
+"Sair" = "Exit";
+"Editar" = "Edit";
+"Ajustes" = "Settings";
+"Voltar ao começo" = "Back to Start";
+"Mais devagar" = "Slower";
+"Pausar" = "Pause";
+"Rolar" = "Scroll";
+"Mais depressa" = "Faster";
+"Espelho" = "Mirror";
+"Tela cheia" = "Full screen";
+"%.2f linhas/s · %.0f pt · %.0f %%" = "%.2f lines/s · %.0f pt · %.0f %%";
+
+/* O endereço em letra grande (FolhaDoEndereco) */
+"Controlar este teleprompter" = "Control this teleprompter";
+"No outro aparelho, abra o Quall → Teleprompter → Controlar, e digite:" = "On the other device, open Quall → Teleprompter → Remote, and enter:";
+"Fechar" = "Close";
+
+/* O controle (TelaDoControle) */
+"Controlar um teleprompter" = "Control a teleprompter";
+"Do outro lado: Quall → Teleprompter → Mostrar o texto." = "On the other side: Quall → Teleprompter → Show the text.";
+"área de transferência" = "clipboard";
+"Colar endereço" = "Paste Address";
+"Isso não é um endereço do Quall (%@)." = "That's not a Quall address (%@).";
+"Digite o endereço que aparece no prompter, como 192.168.55.10:7979." = "Enter the address shown on the prompter, like 192.168.55.10:7979.";
+"O PIN tem seis dígitos." = "The PIN has six digits.";
+"Conectando em %@…" = "Connecting to %@…";
+"Cancelar" = "Cancel";
+"Desconectar" = "Disconnect";
+"Conectado ao prompter" = "Connected to the prompter";
+"Conectado a %@" = "Connected to %@";
+"Conexão perdida — tentando de novo" = "Connection lost — trying again";
+"Conectando…" = "Connecting…";
+"Leitura" = "Reading";
+"Voltar 5 %" = "Back 5 %";
+"Voltar 1 %" = "Back 1 %";
+"Pular 1 %" = "Forward 1 %";
+"Pular 5 %" = "Forward 5 %";
+"Roteiro" = "Script";
+"Sem roteiro." = "No script.";
+"Editar ou colar o roteiro" = "Edit or paste the script";
+
+/* Avisos do modelo (ModeloDoTeleprompter) */
+"Não foi possível sortear o PIN." = "Couldn't generate the PIN.";
+"O roteiro tem %ld KiB e o teto é %ld KiB (~20 mil palavras). Corte um pedaço e confirme de novo." = "The script is %ld KiB and the limit is %ld KiB (~20,000 words). Cut part of it and confirm again.";
+"O roteiro não entrou (%@): %@" = "The script wasn't accepted (%@): %@";
+"Controle desconectado — o texto continua como estava. Esperando o controle voltar." = "Remote disconnected — the text stays as it was. Waiting for the remote to come back.";
+"Conexão perdida com o prompter — tentando de novo. O texto lá continua como estava." = "Connection to the prompter lost — trying again. The text there stays as it was.";
+"Controle sem sinal há %ld s — o texto continua como estava." = "No signal from the remote for %ld s — the text stays as it was.";
+"Prompter sem sinal há %ld s." = "No signal from the prompter for %ld s.";
+"O último comando ainda não chegou ao outro lado (há %.1f s)." = "The last command hasn't reached the other side yet (%.1f s).";
+"O outro aparelho fala outra versão do teleprompter. Atualize o app nos dois." = "The other device uses a different teleprompter version. Update the app on both.";
+"O relógio de um dos aparelhos está adiantado mais de um dia: edições dele estão sendo recusadas (%@). Acerte a data e a hora." = "One device's clock is more than a day ahead: its edits are being rejected (%@). Set the date and time.";
+"O roteiro não passou para o outro lado: o relógio de um dos aparelhos está errado em mais de um dia. Acerte a data e a hora." = "The script didn't reach the other side: one device's clock is off by more than a day. Set the date and time.";
+"Uma mensagem não coube no canal e foi descartada (%@)." = "A message didn't fit in the channel and was dropped (%@).";
+
+/* A sessão (SessaoDoTeleprompter) */
+"Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing didn't complete. For security, the PIN changed.";
+"Um controle que não está pareado com este aparelho tentou entrar. Digite nele o PIN desta tela." = "A remote that isn't paired with this device tried to connect. Enter this screen's PIN on it.";
+"Um aparelho com outra versão do Quall tentou entrar. Atualize o app nos dois." = "A device with a different Quall version tried to connect. Update the app on both.";
+"A porta %@ está ocupada neste aparelho. Tentando de novo…" = "Port %@ is in use on this device. Trying again…";
+"O teleprompter não conseguiu esperar o controle: %@" = "The teleprompter couldn't wait for the remote: %@";
+"O controle entrou, mas os dois aparelhos não acharam caminho um até o outro." = "The remote connected, but the two devices couldn't find a path to each other.";
+"A espera recomeçou: %@" = "Waiting again: %@";
+"O prompter continua ocupado: %@. Tentando de novo…" = "The prompter is still busy: %@. Trying again…";
+"O prompter está ocupado — tentando de novo…" = "The prompter is busy — trying again…";
+"PIN errado. O prompter trocou o PIN por segurança: digite o número que aparece na tela dele agora." = "Wrong PIN. The prompter changed its PIN for security: enter the number on its screen now.";
+"O prompter não reconhece este aparelho. Digite o PIN que aparece na tela dele." = "The prompter doesn't recognize this device. Enter the PIN shown on its screen.";
+"O pareamento foi recusado (%@). Digite o PIN que aparece na tela do prompter." = "Pairing was refused (%@). Enter the PIN shown on the prompter's screen.";
+"Esse aparelho não é um teleprompter do Quall, ou fala outra versão. %@" = "That device isn't a Quall teleprompter, or uses a different version. %@";
+"Endereço inválido: %@" = "Invalid address: %@";
+"Os dois aparelhos não acharam caminho um até o outro. Confira se estão na mesma rede Wi‑Fi e se \"%@\" está ligada para o Quall nos %@." = "The two devices couldn't find a path to each other. Check that they're on the same Wi‑Fi network and that \"%@\" is on for Quall in %@.";
+"Rede Local" = "Local Network";
+"Ninguém atendeu nesse endereço. Confira se o prompter está com a tela aberta e se o endereço e a porta estão certos." = "No one answered at that address. Check that the prompter has its screen open and that the address and port are correct.";
+"Não deu para conectar: %@" = "Couldn't connect: %@";
+
+/* Os controles do texto, os ajustes e o editor (PainelDeAjustes) */
+"Velocidade" = "Speed";
+"%.2f linhas/s" = "%.2f lines/s";
+"Fonte" = "Font size";
+"%.0f pt (automática)" = "%.0f pt (automatic)";
+"Margem" = "Margin";
+"%.0f %% de cada lado" = "%.0f %% on each side";
+"Linha de leitura" = "Reading line";
+"%.0f %% do alto" = "%.0f %% from the top";
+"Inverte o texto na horizontal, para ler no reflexo do vidro." = "Flips the text horizontally, to read it in the glass's reflection.";
+"Ajustes do texto" = "Text Settings";
+"Pronto" = "Done";
+"O roteiro mudou no outro aparelho enquanto você editava." = "The script changed on the other device while you were editing.";
+"O seu rascunho não foi tocado. Se confirmar, ele vale — é a edição mais recente." = "Your draft wasn't touched. If you confirm, it wins — it's the most recent edit.";
+"Carregar o novo" = "Load the New One";
+"Manter o meu" = "Keep Mine";
+"Colar" = "Paste";
+"Texto de exemplo" = "Sample Text";
+"Limpar" = "Clear";
+"Confirmar" = "Confirm";
+"%.1f de %ld KiB" = "%.1f of %ld KiB";
+
+/* O roteiro de exemplo (TextoDeExemplo) */
+"Boa noite, e obrigado por estar aqui.\n\nEste é o teleprompter do Quall. O texto sobe devagar, sempre na mesma velocidade, e a linha amarela marca onde o olho deve ficar.\n\nDo outro aparelho dá para tocar e pausar, mudar a velocidade, voltar ao começo e pular um pedaço. O tamanho da letra, a margem e a linha de leitura também mudam de lá — ou daqui.\n\nPara usar com um vidro na frente da câmera, ligue o espelho: o texto aparece invertido aqui e certo no reflexo.\n\nSe o controle perder a conexão, nada muda nesta tela: o texto continua como estava, e um aviso fica no alto até o controle voltar.\n\nQuando terminar, é só pausar. Boa gravação." = "Good evening, and thank you for being here.\n\nThis is the Quall teleprompter. The text rises slowly, always at the same speed, and the yellow line marks where your eyes should stay.\n\nFrom the other device you can play and pause, change the speed, go back to the start and skip ahead. The text size, the margin and the reading line can also be changed from there — or from here.\n\nTo use it with glass in front of the camera, turn on the mirror: the text appears flipped here and correct in the reflection.\n\nIf the remote loses the connection, nothing changes on this screen: the text stays as it was, and an alert stays at the top until the remote comes back.\n\nWhen you're done, just pause. Happy recording.";
+
+/* Ajustes deste aparelho: fonte automática e enquadramento (AjustesLocais) */
+"Fonte automática desligada: o controle mudou a fonte" = "Automatic font size off: the remote changed the font size";
+"Enquadramento: %.0f %% a %.0f %%" = "Framing: %.0f %% to %.0f %%";
+"Enquadramento, borda esquerda" = "Framing, left edge";
+"Enquadramento, borda direita" = "Framing, right edge";
+"Fonte automática" = "Automatic font size";
+"Enquadramento" = "Framing";
+"Arraste os triângulos do alto para enquadrar o texto. Só deste aparelho." = "Drag the triangles at the top to frame the text. This device only.";
+"Largura inteira" = "Full Width";
+"A maior fonte em que cada linha tem pelo menos duas palavras. Só deste aparelho." = "The largest font size where every line has at least two words. This device only.";
+"Calculando…" = "Calculating…";
+"Agora: %.0f pt. Só deste aparelho." = "Now: %.0f pt. This device only.";
+"Ligada. Só deste aparelho." = "On. This device only.";
+
+/* A linha de leitura arrastável (AlcasDaLinhaDeLeitura) */
+"Linha de leitura: %.0f %% do alto" = "Reading line: %.0f %% from the top";
+
+/* A vista do roteiro (VistaDoRoteiro) */
+"Sem roteiro.\nToque em Editar, ou mande o texto pelo controle." = "No script.\nTap Edit, or send the text from the remote.";
+
+/* Segurar para rolar (SegurarParaRolar, DedosNosBotoes) */
+"Sair do modo?" = "Exit the mode?";
+"Toque de novo para sair do modo segurar" = "Tap again to exit hold mode";
+"Pede confirmação antes de sair do modo segurar" = "Asks for confirmation before exiting hold mode";
+"Trocar os botões?" = "Swap the buttons?";
+"Inverter botões" = "Swap buttons";
+"ligado" = "on";
+"desligado" = "off";
+"Toque de novo para trocar o sentido dos dois botões" = "Tap again to swap the direction of both buttons";
+"Pede confirmação antes de trocar o sentido dos dois botões" = "Asks for confirmation before swapping the direction of both buttons";
+"Conectado" = "Connected";
+"Prompter sem sinal" = "No signal from the prompter";
+"O texto chegou ao fim." = "The text reached the end.";
+"O texto parou. Solte e aperte de novo." = "The text stopped. Release and press again.";
+"O prompter não aceitou o aperto. Solte e aperte de novo." = "The prompter didn't accept the press. Release and press again.";
+"Sem conexão com o prompter: os botões voltam quando ela voltar." = "No connection to the prompter: the buttons come back when it does.";
+"Esperando o prompter…" = "Waiting for the prompter…";
+"Atualize o app do prompter para usar este modo" = "Update the app on the prompter to use this mode";
+"Solte e aperte de novo." = "Release and press again.";
+"O texto está rolando pelo play normal. Aperte e solte um botão para parar." = "The text is scrolling with the regular play. Press and release a button to stop.";
+"segurando" = "holding";
+"Toque duas vezes e segure para rolar; solte para parar" = "Double-tap and hold to scroll; release to stop";
+"Segurar para rolar" = "Hold to scroll";
+"A tela fica só com dois botões grandes: segure para rolar, solte para parar. Na velocidade ajustada. Fica guardado neste aparelho." = "The screen shows just two big buttons: hold to scroll, release to stop. At the set speed. Saved on this device.";
+"volta o texto" = "moves the text back";
+"avança o texto" = "moves the text forward";
+"Rolar para cima" = "Scroll up";
+"Rolar para baixo" = "Scroll down";
+
+/* A pergunta do texto e os roteiros guardados (PerguntaDoTexto, CaixaDaPergunta).
+   Literais nas quatro telas: as outras plataformas usam este mesmo inglês. */
+"O prompter %@ tem outro roteiro." = "The prompter %@ has a different script.";
+"No prompter" = "On the prompter";
+"Neste aparelho" = "On this device";
+"Usar o do prompter" = "Use the prompter's";
+"Mandar o meu" = "Send mine";
+"O roteiro que sair fica em Roteiros guardados." = "The script that's replaced stays in Saved scripts.";
+"Conferindo o roteiro do prompter…" = "Checking the prompter's script…";
+"O prompter saiu. A pergunta volta quando ele voltar." = "The prompter left. The question comes back when it returns.";
+"O roteiro do prompter mudou. Confira de novo." = "The prompter's script changed. Check again.";
+"Roteiros guardados" = "Saved scripts";
+"Do prompter %@" = "From the prompter %@";
+"Deste aparelho, antes de %@" = "From this device, before %@";
+"Ver" = "View";
+"Usar este" = "Use this one";
+"Apagar" = "Delete";
+"Usar este roteiro? Ele substitui o roteiro atual, também no prompter conectado." = "Use this script? It replaces the current script, also on the connected prompter.";
+"Usar" = "Use";
+"Apagar este roteiro guardado?" = "Delete this saved script?";
+"Nenhum roteiro guardado." = "No saved scripts.";
+"1 palavra" = "1 word";
+"%@ palavras" = "%@ words";
+"Esse roteiro não está mais guardado." = "That script is no longer saved.";

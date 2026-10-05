@@ -1,0 +1,11 @@
+# As funções que o OBS procura por dlsym num módulo. Tudo o que não está aqui fica interno —
+# ver a explicação em CMakeLists.txt (colisão com a libdatachannel do próprio OBS).
+_obs_module_load
+_obs_module_unload
+_obs_module_set_pointer
+_obs_module_ver
+_obs_module_set_locale
+_obs_module_free_locale
+_obs_module_get_string
+_obs_module_name
+_obs_module_description

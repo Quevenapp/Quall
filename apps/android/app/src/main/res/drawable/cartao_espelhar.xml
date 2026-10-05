@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O cartão de papel Espelhar (§4): o acento, cantos de 22, com o toque do Android por cima. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#24FFFFFF">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/q_acento" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+</ripple>

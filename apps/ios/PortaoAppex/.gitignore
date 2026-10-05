@@ -1,0 +1,7 @@
+# O .gitignore da raiz cobre "apps/ios/**/DD/", mas aqui há uma pasta de derived data por
+# aparelho (o build-for-testing precisa de uma por destino). Nenhuma delas é versionada.
+DD*/
+medida/
+# As corridas do degrau 4 deixam syslog cru e `.h264` de centenas de MB. O que vira registro do
+# projeto é o número no relato, não o material bruto.
+medida-degrau4/

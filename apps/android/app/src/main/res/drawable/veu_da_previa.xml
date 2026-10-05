@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O véu entre a prévia da câmera e o texto da tela de espelhamento (docs/telas-estudio.md §6.5): o
+  degradê preto no alto (0,72 → 0) e no pé (0 → 0,82). O meio fica limpo: é a parte da imagem que a
+  pessoa usa para enquadrar, e o texto mora só em cima (a pílula, o cartão de vidro) e embaixo (os
+  controles). Escurecer o meio igual às pontas deixaria o texto legível e a prévia inútil.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:gravity="top" android:height="240dp">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:endColor="#00000000" android:startColor="#B8000000" />
+        </shape>
+    </item>
+    <item android:gravity="bottom" android:height="320dp">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:endColor="#D1000000" android:startColor="#00000000" />
+        </shape>
+    </item>
+</layer-list>

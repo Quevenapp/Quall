@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O interruptor nativo tingido de acento (§4): o trilho ligado no acento a 60 %. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#1FFFFFFF" android:state_enabled="false" />
+    <item android:color="#996A5AF9" android:state_checked="true" />
+    <item android:color="#33FFFFFF" />
+</selector>

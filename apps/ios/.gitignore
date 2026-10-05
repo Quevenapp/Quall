@@ -1,0 +1,3 @@
+# Artefato da corrida iOS -> iOS combinada (prova-ios-para-ios.sh): builds, logs, syslogs.
+saida-ios-para-ios/
+.corrida-ios-para-ios.pid

@@ -1,0 +1,7 @@
+# Cabeçalhos do libobs, buscados por `buscar-libobs.sh` numa tag fixa. Não são nossos e não
+# entram no repositório.
+.libobs/
+
+# Saída do CMake.
+build/
+bancada/.restaurar.json

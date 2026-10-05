@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Primeira release pela Mac App Store. Entitlements não concedem permissões TCC. -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <!-- WebRTC, descoberta mDNS e esperas locais existentes: emitir/conectar e escutar. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <!-- GravadorLocal salva vídeos em Movies/Quall, sem escolher uma pasta externa por painel. -->
+    <key>com.apple.security.assets.movies.read-write</key>
+    <true/>
+    <!--
+      Sob hardened runtime, **isto não é opcional** e a ausência dele não produz erro legível.
+      Medido em 2026-08-24 na câmera virtual: com `requestAccess` chamado corretamente, o pedido
+      continuava voltando `denied` porque o TCC recusa *antes de existir diálogo* quando o
+      entitlement falta. Eram dois defeitos empilhados, e consertar o primeiro só revelou uma
+      mensagem de erro igualmente muda. Ver `docs/regras-de-frente.md`.
+    -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <!--
+      O microfone junto da câmera (R5 fase 4). Sob hardened runtime, sem isto o TCC recusa antes de
+      existir diálogo — o mesmo defeito mudo da câmera acima.
+    -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>

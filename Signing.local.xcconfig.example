@@ -1,0 +1,6 @@
+// Copie para Signing.local.xcconfig (que o Git ignora) e ajuste se necessário.
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Manual
+
+// Piso do produto. Para distribuição, configure sua própria equipe e perfis locais.
+IPHONEOS_DEPLOYMENT_TARGET = 15.0

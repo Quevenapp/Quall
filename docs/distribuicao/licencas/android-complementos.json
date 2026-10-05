@@ -1,0 +1,1072 @@
+{
+  "componentes": [
+    {
+      "componente": "androidx.activity:activity-ktx:1.9.3",
+      "versao": "1.9.3",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/activity/activity-ktx/1.9.3/activity-ktx-1.9.3.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.activity:activity:1.9.3",
+      "versao": "1.9.3",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/activity/activity/1.9.3/activity-1.9.3.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.annotation:annotation-experimental:1.4.1",
+      "versao": "1.4.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/annotation/annotation-experimental/1.4.1/annotation-experimental-1.4.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.annotation:annotation-jvm:1.8.1",
+      "versao": "1.8.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/annotation/annotation-jvm/1.8.1/annotation-jvm-1.8.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.annotation:annotation:1.8.1",
+      "versao": "1.8.1",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/annotation/annotation/1.8.1/annotation-1.8.1.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.appcompat:appcompat-resources:1.7.0",
+      "versao": "1.7.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/appcompat/appcompat-resources/1.7.0/appcompat-resources-1.7.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.appcompat:appcompat:1.7.0",
+      "versao": "1.7.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/appcompat/appcompat/1.7.0/appcompat-1.7.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.arch.core:core-common:2.2.0",
+      "versao": "2.2.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/arch/core/core-common/2.2.0/core-common-2.2.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.arch.core:core-runtime:2.2.0",
+      "versao": "2.2.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/arch/core/core-runtime/2.2.0/core-runtime-2.2.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.camera:camera-camera2:1.4.2",
+      "versao": "1.4.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/camera/camera-camera2/1.4.2/camera-camera2-1.4.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt",
+        "docs/distribuicao/licencas/textos/android/CameraX-1.4.2-LICENSE.txt"
+      ]
+    },
+    {
+      "componente": "androidx.camera:camera-core:1.4.2",
+      "versao": "1.4.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0 AND BSD-3-Clause",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/camera/camera-core/1.4.2/camera-core-1.4.2.pom",
+      "nota": "AAR contém libimage_processing_util_jni.so e libsurface_util_jni.so; POM declara BSD por libyuv. Versão exata da libyuv incorporada não declarada no POM.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt",
+        "docs/distribuicao/licencas/textos/android/CameraX-1.4.2-LICENSE.txt",
+        "docs/distribuicao/licencas/textos/android/libyuv-BSD-3-Clause.txt"
+      ]
+    },
+    {
+      "componente": "androidx.camera:camera-lifecycle:1.4.2",
+      "versao": "1.4.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/camera/camera-lifecycle/1.4.2/camera-lifecycle-1.4.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt",
+        "docs/distribuicao/licencas/textos/android/CameraX-1.4.2-LICENSE.txt"
+      ]
+    },
+    {
+      "componente": "androidx.camera:camera-video:1.4.2",
+      "versao": "1.4.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/camera/camera-video/1.4.2/camera-video-1.4.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt",
+        "docs/distribuicao/licencas/textos/android/CameraX-1.4.2-LICENSE.txt"
+      ]
+    },
+    {
+      "componente": "androidx.camera:camera-view:1.4.2",
+      "versao": "1.4.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/camera/camera-view/1.4.2/camera-view-1.4.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt",
+        "docs/distribuicao/licencas/textos/android/CameraX-1.4.2-LICENSE.txt"
+      ]
+    },
+    {
+      "componente": "androidx.cardview:cardview:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/cardview/cardview/1.0.0/cardview-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.collection:collection:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/collection/collection/1.1.0/collection-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.concurrent:concurrent-futures-ktx:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/concurrent/concurrent-futures-ktx/1.1.0/concurrent-futures-ktx-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.concurrent:concurrent-futures:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/concurrent/concurrent-futures/1.1.0/concurrent-futures-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.constraintlayout:constraintlayout-solver:2.0.1",
+      "versao": "2.0.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/constraintlayout/constraintlayout-solver/2.0.1/constraintlayout-solver-2.0.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.constraintlayout:constraintlayout:2.0.1",
+      "versao": "2.0.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/constraintlayout/constraintlayout/2.0.1/constraintlayout-2.0.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.coordinatorlayout:coordinatorlayout:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/coordinatorlayout/coordinatorlayout/1.1.0/coordinatorlayout-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.core:core-ktx:1.13.1",
+      "versao": "1.13.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/core/core-ktx/1.13.1/core-ktx-1.13.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.core:core:1.13.1",
+      "versao": "1.13.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/core/core/1.13.1/core-1.13.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.cursoradapter:cursoradapter:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/cursoradapter/cursoradapter/1.0.0/cursoradapter-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.customview:customview-poolingcontainer:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/customview/customview-poolingcontainer/1.0.0/customview-poolingcontainer-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.customview:customview:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/customview/customview/1.1.0/customview-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.databinding:viewbinding:8.7.0",
+      "versao": "8.7.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/databinding/viewbinding/8.7.0/viewbinding-8.7.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.documentfile:documentfile:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/documentfile/documentfile/1.0.0/documentfile-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.drawerlayout:drawerlayout:1.1.1",
+      "versao": "1.1.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/drawerlayout/drawerlayout/1.1.1/drawerlayout-1.1.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.dynamicanimation:dynamicanimation:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/dynamicanimation/dynamicanimation/1.0.0/dynamicanimation-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.emoji2:emoji2-views-helper:1.3.0",
+      "versao": "1.3.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/emoji2/emoji2-views-helper/1.3.0/emoji2-views-helper-1.3.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.emoji2:emoji2:1.3.0",
+      "versao": "1.3.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/emoji2/emoji2/1.3.0/emoji2-1.3.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.exifinterface:exifinterface:1.3.2",
+      "versao": "1.3.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/exifinterface/exifinterface/1.3.2/exifinterface-1.3.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.fragment:fragment:1.5.4",
+      "versao": "1.5.4",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/fragment/fragment/1.5.4/fragment-1.5.4.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.interpolator:interpolator:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/interpolator/interpolator/1.0.0/interpolator-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.legacy:legacy-support-core-utils:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/legacy/legacy-support-core-utils/1.0.0/legacy-support-core-utils-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-common-jvm/2.8.7/lifecycle-common-jvm-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-common:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-common/2.8.7/lifecycle-common-2.8.7.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-livedata-core-ktx/2.8.7/lifecycle-livedata-core-ktx-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-livedata-core/2.8.7/lifecycle-livedata-core-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-livedata:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-livedata/2.8.7/lifecycle-livedata-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-process:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-process/2.8.7/lifecycle-process-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime-android/2.8.7/lifecycle-runtime-android-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime-ktx-android/2.8.7/lifecycle-runtime-ktx-android-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime-ktx/2.8.7/lifecycle-runtime-ktx-2.8.7.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-runtime:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime/2.8.7/lifecycle-runtime-2.8.7.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-service:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-service/2.8.7/lifecycle-service-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-viewmodel-android/2.8.7/lifecycle-viewmodel-android-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-viewmodel-ktx/2.8.7/lifecycle-viewmodel-ktx-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-viewmodel-savedstate/2.8.7/lifecycle-viewmodel-savedstate-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+      "versao": "2.8.7",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-viewmodel/2.8.7/lifecycle-viewmodel-2.8.7.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.loader:loader:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/loader/loader/1.0.0/loader-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/localbroadcastmanager/localbroadcastmanager/1.0.0/localbroadcastmanager-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.print:print:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/print/print/1.0.0/print-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.profileinstaller:profileinstaller:1.3.1",
+      "versao": "1.3.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.3.1/profileinstaller-1.3.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.recyclerview:recyclerview:1.3.2",
+      "versao": "1.3.2",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.3.2/recyclerview-1.3.2.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+      "versao": "1.0.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/resourceinspection/resourceinspection-annotation/1.0.1/resourceinspection-annotation-1.0.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.savedstate:savedstate-ktx:1.2.1",
+      "versao": "1.2.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/savedstate/savedstate-ktx/1.2.1/savedstate-ktx-1.2.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.savedstate:savedstate:1.2.1",
+      "versao": "1.2.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/savedstate/savedstate/1.2.1/savedstate-1.2.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.startup:startup-runtime:1.1.1",
+      "versao": "1.1.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.1.1/startup-runtime-1.1.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.tracing:tracing-ktx:1.2.0",
+      "versao": "1.2.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/tracing/tracing-ktx/1.2.0/tracing-ktx-1.2.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.tracing:tracing:1.2.0",
+      "versao": "1.2.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/tracing/tracing/1.2.0/tracing-1.2.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.transition:transition:1.5.0",
+      "versao": "1.5.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/transition/transition/1.5.0/transition-1.5.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/vectordrawable/vectordrawable-animated/1.1.0/vectordrawable-animated-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.vectordrawable:vectordrawable:1.1.0",
+      "versao": "1.1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/vectordrawable/vectordrawable/1.1.0/vectordrawable-1.1.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.versionedparcelable:versionedparcelable:1.1.1",
+      "versao": "1.1.1",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/versionedparcelable/versionedparcelable/1.1.1/versionedparcelable-1.1.1.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.viewpager2:viewpager2:1.1.0-beta02",
+      "versao": "1.1.0-beta02",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/viewpager2/viewpager2/1.1.0-beta02/viewpager2-1.1.0-beta02.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "androidx.viewpager:viewpager:1.0.0",
+      "versao": "1.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/androidx/viewpager/viewpager/1.0.0/viewpager-1.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "com.google.android.material:material:1.12.0",
+      "versao": "1.12.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/com/google/android/material/material/1.12.0/material-1.12.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "com.google.auto.value:auto-value-annotations:1.6.3",
+      "versao": "1.6.3",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-annotations/1.6.3/auto-value-annotations-1.6.3.pom",
+      "nota": "Licença herdada do POM pai, conferida no repositório Maven Central oficial.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "com.google.errorprone:error_prone_annotations:2.15.0",
+      "versao": "2.15.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.15.0/error_prone_annotations-2.15.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "com.google.guava:listenablefuture:1.0",
+      "versao": "1.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/1.0/listenablefuture-1.0.pom",
+      "nota": "Licença herdada do POM pai, conferida no repositório Maven Central oficial.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlin:kotlin-bom:1.8.22",
+      "versao": "1.8.22",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-bom/1.8.22/kotlin-bom-1.8.22.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.21",
+      "versao": "2.0.21",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/2.0.21/kotlin-stdlib-common-2.0.21.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22",
+      "versao": "1.8.22",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.8.22/kotlin-stdlib-jdk7-1.8.22.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22",
+      "versao": "1.8.22",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.8.22/kotlin-stdlib-jdk8-1.8.22.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlin:kotlin-stdlib:2.0.21",
+      "versao": "2.0.21",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.0.21/kotlin-stdlib-2.0.21.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3",
+      "versao": "1.7.3",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-android/1.7.3/kotlinx-coroutines-android-1.7.3.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.3",
+      "versao": "1.7.3",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-bom/1.7.3/kotlinx-coroutines-bom-1.7.3.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3",
+      "versao": "1.7.3",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.7.3/kotlinx-coroutines-core-jvm-1.7.3.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3",
+      "versao": "1.7.3",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.7.3/kotlinx-coroutines-core-1.7.3.pom",
+      "nota": "Apenas metadados/BOM/resolução de variante; nenhum JAR/AAR próprio na configuração releaseRuntimeClasspath.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "org.jetbrains:annotations:23.0.0",
+      "versao": "23.0.0",
+      "tipo": "android-runtime",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/annotations/23.0.0/annotations-23.0.0.pom",
+      "nota": "",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:libavcodec/libavformat/libavutil",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "LGPL-2.1-or-later",
+      "fonte": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz",
+      "nota": "Fonte oficial e receita disponíveis; bibliotecas dinâmicas LGPL pretendidas, sem certificação de binário deste snapshot.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-LGPL-2.1.txt",
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-LICENSE.md"
+      ]
+    },
+    {
+      "componente": "FFmpeg:Independent JPEG Group",
+      "versao": "integrado no FFmpeg 9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "IJG",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavcodec/jrevdct.c",
+      "nota": "Crédito preservado: This software is based in part on the work of the Independent JPEG Group.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-IJG.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:avsscanf (Rich Felker et al.)",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "MIT",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/avsscanf.c",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-avsscanf-MIT.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:fixed_dsp (MIPS Technologies)",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "BSD-3-Clause AND LGPL-2.1-or-later",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/fixed_dsp.c",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-fixed-dsp-BSD-3-Clause.txt",
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-LGPL-2.1.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:uuid (Theodore Ts'o)",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "BSD-3-Clause AND LGPL-2.1-or-later",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/uuid.c",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-uuid-BSD-3-Clause.txt",
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-LGPL-2.1.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:Boost-derived erf/Bessel algorithms",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "BSL-1.0",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/mathematics.c",
+      "nota": "Preserva os avisos de libm.h/mathematics.c. A licença dispensa inclusão para mero código objeto, mas o texto acompanha o pacote de fontes.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-Boost-BSL-1.0.txt"
+      ]
+    },
+    {
+      "componente": "FFmpeg:SHA1/SHA2 (Steve Reid/Aaron Gifford)",
+      "versao": "9.0.1",
+      "tipo": "nativo",
+      "licenca_declarada": "LGPL-2.1-or-later AND BSD-3-Clause",
+      "fonte": "https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/sha.c",
+      "nota": "sha.c credita SHA1 de Steve Reid em domínio público e SHA2 BSD de Aaron Gifford. Texto BSD do código do mesmo autor obtido no repositório oficial OpenBSD; revisão-base exata do SHA2 incorporado no FFmpeg não identificada no tarball.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-sha-notice.txt",
+        "docs/distribuicao/licencas/textos/android/FFmpeg-9.0.1-LGPL-2.1.txt",
+        "docs/distribuicao/licencas/textos/android/SHA2-Aaron-Gifford-BSD-3-Clause.txt"
+      ]
+    },
+    {
+      "componente": "Android NDK:libc++_shared.so (libc++/libc++abi/libunwind/compiler-rt)",
+      "versao": "27.2.12479018 (r27c, LLVM 18.0.3)",
+      "tipo": "nativo",
+      "licenca_declarada": "Apache-2.0 WITH LLVM-exception AND (MIT OR NCSA)",
+      "fonte": "https://android.googlesource.com/toolchain/llvm-project/+/d8003a456d14a3deb8054cdaa529ffbf02d9b262/libcxx/LICENSE.TXT",
+      "nota": "Avisos do runtime NDK indicado preservados; este snapshot não inclui nem verifica runtimes compilados.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/NDK-r27c-compiler-rt-LICENSE.txt",
+        "docs/distribuicao/licencas/textos/android/NDK-r27c-libcxx-LICENSE.txt",
+        "docs/distribuicao/licencas/textos/android/NDK-r27c-libcxxabi-LICENSE.txt",
+        "docs/distribuicao/licencas/textos/android/NDK-r27c-libunwind-LICENSE.txt"
+      ]
+    },
+    {
+      "componente": "Android Gradle Plugin",
+      "versao": "8.7.0",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/8.7.0/gradle-8.7.0.pom",
+      "nota": "Ferramenta de compilação; não integra o runtime do APK.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "Kotlin Gradle plugin",
+      "versao": "2.0.21",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.0.21/kotlin-gradle-plugin-2.0.21.pom",
+      "nota": "Ferramenta de compilação; não integra o runtime do APK.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "Gradle",
+      "versao": "8.10.2",
+      "tipo": "android-build",
+      "licenca_declarada": "Apache-2.0",
+      "fonte": "https://github.com/gradle/gradle/blob/v8.10.2/LICENSE",
+      "nota": "Distribuição do Gradle instalada no host; não é embarcada no APK.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Apache-2.0.txt"
+      ]
+    },
+    {
+      "componente": "CameraX:libyuv",
+      "versao": "incorporada em camera-core 1.4.2; revisão não identificada no POM",
+      "tipo": "nativo",
+      "licenca_declarada": "BSD-3-Clause",
+      "fonte": "https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/LICENSE",
+      "nota": "Biblioteca incorporada em libimage_processing_util_jni.so do AAR CameraX. Copyright 2011 The LibYuv Project Authors. Mesma licença declarada no POM camera-core; revisão exata permanece sem identificação.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/libyuv-BSD-3-Clause.txt"
+      ]
+    },
+    {
+      "componente": "junit:junit:4.13.2",
+      "versao": "4.13.2",
+      "tipo": "android-build",
+      "licenca_declarada": "EPL-1.0",
+      "fonte": "https://repo.maven.apache.org/maven2/junit/junit/4.13.2/junit-4.13.2.pom",
+      "nota": "Apenas testes JVM, fora do APK. Texto de licença extraído integralmente do JAR em cache. SHA256 JAR 8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/JUnit-4.13.2-EPL-1.0.txt"
+      ]
+    },
+    {
+      "componente": "org.hamcrest:hamcrest-core:1.3",
+      "versao": "1.3",
+      "tipo": "android-build",
+      "licenca_declarada": "BSD-3-Clause",
+      "fonte": "https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.pom",
+      "nota": "Apenas testes JVM, fora do APK. Texto de licença extraído integralmente do JAR em cache. SHA256 JAR 66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/android/Hamcrest-1.3-BSD-3-Clause.txt"
+      ]
+    }
+  ],
+  "limite_snapshot": "Referência de licenças/versões; não nova resolução, build ou validação de binários."
+}

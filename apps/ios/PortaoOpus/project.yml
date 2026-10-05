@@ -1,0 +1,54 @@
+name: PortaoOpus
+options:
+  bundleIdPrefix: br.com.queven.quall
+  deploymentTarget:
+    iOS: "15.0"
+configFiles:
+  Debug: ../../../Signing.local.xcconfig
+  Release: ../../../Signing.local.xcconfig
+
+# ---------------------------------------------------------------------------------------------
+# **Alvo de bancada, não de produto.** Existe para responder uma pergunta que `docs/audio.md` §13
+# deixou aberta em voz alta: *"iOS não rodou em aparelho"* — a libopus compila para
+# `aarch64-apple-ios` e o custo de **tamanho** está medido (+342 KiB), mas nenhum iPhone jamais
+# executou um quadro de Opus, e **memória em execução ninguém mediu**.
+#
+# Ele linka a **mesma** `libopus.a` que o `cargo` produz a partir do mesmo `build.rs` de
+# `crates/quall-opus` — copiada para `lib/` por `medir-opus.sh`, porque o caminho do `OUT_DIR`
+# carrega um hash que muda por máquina. Nenhum arquivo de `crates/**` é modificado: o alvo
+# **lê** aquele build, não o altera.
+#
+# **Por que não passa pelo núcleo**: não há FFI de áudio. `crates/quall-ffi/include/quall.h` não
+# declara `quall_track_send_audio`, `quall_track_on_audio` nem `quall_opus_*` — o áudio existe em
+# Rust (`quall-opus`, `quall-core::Track::enviar_audio`) e **não atravessa a fronteira C**. Além
+# disso `quall-ffi` sequer depende de `quall-opus`: só `quall-probe` depende, e nenhum roteiro de
+# iOS constrói o `quall-probe`. Logo `libquall.a` para iOS não contém uma linha de libopus hoje.
+# Chegar ao encoder pelo caminho de produto exigiria mexer em `crates/**`, que é de outra frente.
+#
+# Bundle id próprio para não substituir nada instalado: `br.com.queven.quall` é compartilhado por
+# `Quall` e `PortaoAppex`, e instalar um substitui o outro no aparelho.
+# ---------------------------------------------------------------------------------------------
+
+targets:
+  PortaoOpus:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [Fontes]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.portaoopus
+        PRODUCT_NAME: PortaoOpus
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Portao Opus
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+
+        SWIFT_OBJC_BRIDGING_HEADER: Fontes/Ponte.h
+        # Os cabeçalhos de upstream, direto do diretório vendorizado — só leitura.
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../../crates/quall-opus/vendor/opus/include
+        # O arquivo inteiro por caminho, pelo mesmo motivo que o receptor documenta: com `-lopus`
+        # o `ld` poderia achar outra libopus (Homebrew) e linkar a do MacBook.
+        OTHER_LDFLAGS: $(SRCROOT)/lib/libopus.a

@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A folha de Ajustes, a engrenagem do Início, de Espelhar e de Exibir (`docs/telas-estudio.md` §6.3):
+  "Ajustes" e "Pronto"; os grupos QUALIDADE DO ESPELHAMENTO, PAREAMENTO e SOBRE. Inflada **uma vez só**
+  no `onCreate` de quem a abre (§11.3): os grupos de qualidade são preenchidos e lidos pelo código da
+  mesma forma que eram em Espelhar, e só mudaram de lugar. A folha pode rolar (§11.1).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="16dp">
+
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/alca_da_folha" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:accessibilityHeading="true"
+            android:text="@string/ajustes"
+            android:textColor="@color/q_texto"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/buttonProntoAjustes"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="4dp"
+            android:text="@string/pronto"
+            android:textColor="@color/q_acento_claro"
+            android:textSize="15sp"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/rolagemDosAjustes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- ======== a qualidade (saiu de Espelhar) ======== -->
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="8dp"
+                android:paddingStart="4dp"
+                android:text="@string/in_qualidade_do_espelhamento" />
+
+            <LinearLayout
+                style="@style/Quall.Folha.Grupo"
+                android:padding="12dp">
+
+                <RadioGroup
+                    android:id="@+id/radioGroupResolucao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/grupo_de_segmentos"
+                    android:orientation="horizontal"
+                    android:padding="2dp" />
+
+                <RadioGroup
+                    android:id="@+id/radioGroupQuadros"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/grupo_de_segmentos"
+                    android:orientation="horizontal"
+                    android:padding="2dp" />
+
+                <TextView
+                    android:id="@+id/textResolucaoNota"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:lineSpacingMultiplier="1.1"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="18dp"
+                android:paddingStart="4dp"
+                android:text="@string/aj_tela" />
+
+            <LinearLayout style="@style/Quall.Folha.Grupo">
+                <LinearLayout style="@style/Quall.Folha.Linha">
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:labelFor="@id/switchManterTelaLigada"
+                        android:text="@string/aj_manter_tela_ligada" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchManterTelaLigada"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/aj_manter_tela_ligada" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="@string/aj_manter_tela_ligada_nota"
+                android:textColor="@color/q_texto3"
+                android:textSize="12sp" />
+
+            <!-- ======== a câmera (R9b): o controle remoto da câmera, desligado por padrão ======== -->
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="18dp"
+                android:paddingStart="4dp"
+                android:text="@string/aj_camera" />
+
+            <LinearLayout style="@style/Quall.Folha.Grupo">
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:labelFor="@id/switchControleRemoto"
+                        android:text="@string/aj_permitir_controle_remoto" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchControleRemoto"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/aj_permitir_controle_remoto" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:lineSpacingMultiplier="1.1"
+                android:text="@string/aj_permitir_controle_remoto_nota"
+                android:textColor="@color/q_texto3"
+                android:textSize="12sp" />
+
+            <!-- ======== o pareamento ======== -->
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="18dp"
+                android:paddingStart="4dp"
+                android:text="@string/in_pareamento" />
+
+            <LinearLayout style="@style/Quall.Folha.Grupo">
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_aparelhos_pareados" />
+
+                    <TextView
+                        android:id="@+id/textParesContagem"
+                        style="@style/Quall.Folha.Valor" />
+                </LinearLayout>
+
+                <View style="@style/Quall.Folha.Fio" />
+
+                <LinearLayout
+                    android:id="@+id/linhaEsquecerPares"
+                    style="@style/Quall.Folha.Linha"
+                    android:background="@drawable/linha_da_folha"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:id="@+id/textEsquecerPares"
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_esquecer_pareados"
+                        android:textColor="@color/q_perigo_texto" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ======== sobre ======== -->
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="18dp"
+                android:paddingStart="4dp"
+                android:text="@string/in_sobre" />
+
+            <LinearLayout style="@style/Quall.Folha.Grupo">
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_este_aparelho" />
+
+                    <TextView
+                        android:id="@+id/textEsteAparelho"
+                        style="@style/Quall.Folha.Valor"
+                        android:maxWidth="200dp" />
+                </LinearLayout>
+
+                <View style="@style/Quall.Folha.Fio" />
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_aparece_como" />
+
+                    <TextView
+                        android:id="@+id/textNomeNaLista"
+                        style="@style/Quall.Folha.Valor"
+                        android:fontFamily="sans-serif"
+                        android:maxWidth="170dp"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <View style="@style/Quall.Folha.Fio" />
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_versao" />
+
+                    <TextView
+                        android:id="@+id/textVersao"
+                        style="@style/Quall.Folha.Valor" />
+                </LinearLayout>
+
+                <View style="@style/Quall.Folha.Fio" />
+
+                <LinearLayout style="@style/Quall.Folha.Linha">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_nucleo" />
+
+                    <TextView
+                        android:id="@+id/textNucleo"
+                        style="@style/Quall.Folha.Valor" />
+                </LinearLayout>
+
+                <View style="@style/Quall.Folha.Fio" />
+
+                <!-- A `.so` do FFmpeg (LGPL) vai em todo APK arm64, e a licença pede o aviso ao usuário
+                     (decisão do Pessoa Exemplo, 22/09/2026). Só no Android; saiu do Início para cá (§6.1). -->
+                <LinearLayout
+                    android:id="@+id/linhaLicencas"
+                    style="@style/Quall.Folha.Linha"
+                    android:background="@drawable/linha_da_folha"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/in_licencas" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_q_seta_direita"
+                        app:tint="@color/q_texto3" />
+                </LinearLayout>
+                <View style="@style/Quall.Folha.Fio" />
+                <LinearLayout
+                    android:id="@+id/linhaPrivacidade"
+                    style="@style/Quall.Folha.Linha"
+                    android:background="@drawable/linha_da_folha"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/site_privacidade" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_q_seta_direita"
+                        app:tint="@color/q_texto3" />
+                </LinearLayout>
+                <View style="@style/Quall.Folha.Fio" />
+                <LinearLayout
+                    android:id="@+id/linhaSuporte"
+                    style="@style/Quall.Folha.Linha"
+                    android:background="@drawable/linha_da_folha"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <TextView
+                        style="@style/Quall.Folha.Titulo"
+                        android:text="@string/site_suporte" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_q_seta_direita"
+                        app:tint="@color/q_texto3" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

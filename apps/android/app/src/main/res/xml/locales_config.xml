@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Os idiomas do app (Android 13+: Ajustes > Apps > Quall > Idioma). O mesmo par do seletor PT | EN do
+     Início; ver `core/Idioma.kt` e `docs/traducao.md`. Não acrescente `localeFilters` no Gradle: com eles
+     um sistema [de, pt] passaria a cair em português, e o contrato é "qualquer outro → inglês". -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="pt-BR" />
+</locale-config>

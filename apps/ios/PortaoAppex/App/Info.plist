@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Só o que o `GENERATE_INFOPLIST_FILE` não sabe gerar. O resto continua vindo dos
+	     `INFOPLIST_KEY_*` do project.yml: as duas fontes convivem, e é assim que a appex já
+	     fazia desde o degrau 2. -->
+
+	<!-- Desde o iOS 14 o tráfego de saída para a LAN é barrado até a pessoa autorizar, e o
+	     diálogo é do app — uma Broadcast Upload Extension não tem como apresentá-lo. Sem esta
+	     chave o diálogo não aparece e o pedido é negado em silêncio; o sintoma seria o ICE do
+	     libjuice nunca fechar, três camadas longe da causa. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Quall precisa da rede local para enviar a tela deste iPhone ao aparelho que vai exibi-la. Nada sai da sua rede.</string>
+
+	<!-- Navegar Bonjour no iOS 14+ exige declarar os tipos de serviço. É o gatilho da
+	     permissão acima; a descoberta de verdade do núcleo é por socket multicast cru, que
+	     depende do entitlement `com.apple.developer.networking.multicast` e está desligada. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_quall._tcp</string>
+	</array>
+</dict>
+</plist>

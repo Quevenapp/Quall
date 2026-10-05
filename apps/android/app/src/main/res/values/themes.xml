@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O tema do "Estúdio de bolso" (`docs/telas-estudio.md` §1–§4): **escuro sempre**, com o violeta Quall
+  no lugar do roxo e do verde-água padrão do Material (#6200EE / #03DAC6), que saíam em todo botão e
+  interruptor sem tinta própria. Herdar do escuro fixo, e não do DayNight, é o "o app deixa de seguir o
+  tema claro do sistema" da §1: as telas fora desta rodada (Placa, DVD, editor…) ganham as mesmas cores.
+-->
+<resources>
+    <style name="Theme.Quall" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/q_acento</item>
+        <item name="colorPrimaryVariant">#FF5446E0</item>
+        <item name="colorOnPrimary">#FFFFFFFF</item>
+        <item name="colorSecondary">@color/q_acento_claro</item>
+        <item name="colorSecondaryVariant">@color/q_acento</item>
+        <item name="colorOnSecondary">@color/q_fundo</item>
+        <item name="colorSurface">@color/q_superficie</item>
+        <item name="colorOnSurface">@color/q_texto</item>
+        <item name="colorError">@color/q_no_ar</item>
+        <item name="android:colorBackground">@color/q_fundo</item>
+        <item name="colorOnBackground">@color/q_texto</item>
+        <item name="colorControlActivated">@color/q_acento</item>
+        <item name="colorControlHighlight">#24FFFFFF</item>
+        <item name="android:windowBackground">@color/q_fundo</item>
+        <item name="android:textColorPrimary">@color/q_texto</item>
+        <item name="android:textColorSecondary">@color/q_texto2</item>
+        <item name="android:textColorHint">@color/q_texto3</item>
+        <!-- As barras do sistema escuras (até o Android 14; do 15 em diante a janela é de ponta a ponta
+             e o fundo da tela aparece atrás delas). -->
+        <item name="android:statusBarColor">@color/q_fundo</item>
+        <item name="android:navigationBarColor">@color/q_fundo</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="materialButtonStyle">@style/Widget.Quall.Botao</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Quall.Botao.Contornado</item>
+        <item name="switchStyle">@style/Widget.Quall.Interruptor</item>
+        <item name="bottomSheetDialogTheme">@style/Theme.Quall.Folha</item>
+        <item name="alertDialogTheme">@style/Theme.Quall.Dialogo</item>
+        <item name="materialAlertDialogTheme">@style/Theme.Quall.Dialogo</item>
+    </style>
+
+    <!-- As folhas de baixo (Ajustes, o endereço em letra grande): sempre escuras, com os cantos de cima
+         arredondados e o fundo da folha (`docs/telas-estudio.md` §6.3). -->
+    <style name="Theme.Quall.Folha" parent="Theme.MaterialComponents.BottomSheetDialog">
+        <item name="colorPrimary">@color/q_acento</item>
+        <item name="colorOnPrimary">#FFFFFFFF</item>
+        <item name="colorSecondary">@color/q_acento_claro</item>
+        <item name="colorOnSecondary">@color/q_fundo</item>
+        <item name="colorSurface">@color/q_folha</item>
+        <item name="colorOnSurface">@color/q_texto</item>
+        <item name="colorControlActivated">@color/q_acento</item>
+        <item name="android:textColorPrimary">@color/q_texto</item>
+        <item name="android:textColorSecondary">@color/q_texto2</item>
+        <item name="android:textColorHint">@color/q_texto3</item>
+        <item name="materialButtonStyle">@style/Widget.Quall.Botao</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Quall.Botao.Contornado</item>
+        <item name="switchStyle">@style/Widget.Quall.Interruptor</item>
+        <item name="bottomSheetStyle">@style/Widget.Quall.Folha</item>
+        <item name="android:navigationBarColor">@color/q_folha</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <style name="Widget.Quall.Folha" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <item name="backgroundTint">@color/q_folha</item>
+        <item name="shapeAppearance">@style/Quall.FormaDaFolha</item>
+    </style>
+
+    <style name="Quall.FormaDaFolha" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="Theme.Quall.Dialogo" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorPrimary">@color/q_acento_claro</item>
+        <item name="colorSurface">@color/q_grupo</item>
+        <item name="colorOnSurface">@color/q_texto</item>
+        <item name="android:textColorPrimary">@color/q_texto</item>
+        <item name="android:textColorSecondary">@color/q_texto2</item>
+    </style>
+
+    <!-- Os botões da barra do prompter: compactos, legíveis sobre o preto, sem ocupar o texto. -->
+    <style name="BotaoDoPrompter" parent="Widget.MaterialComponents.Button.UnelevatedButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:minWidth">64dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+</resources>

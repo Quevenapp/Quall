@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Conjunto de fontes `debug`: o que está aqui entra no `app-debug.apk` que `tools/portao.sh`
+  compila e **não existe** no `release`.
+
+  A `SondaDeFatiasActivity` é `exported` porque `am start` numa Activity não exportada é recusado
+  com `SecurityException` — o que já custou uma rodada a este projeto e está registrado em
+  `apps/android/tools/aparelho.py`. Uma Activity exportada é superfície de ataque, e esta não serve
+  ao produto para nada: ela existe para responder, em aparelho físico, se o `MediaCodec` decodifica
+  uma unidade de acesso com fatias faltando. Por isso mora aqui e não em `main`.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="com.quall.android.sonda.SondaDeFatiasActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="Quall · sonda de fatias"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- A porta de bancada do teleprompter (F6b): repassa os extras do `am start` para as
+             telas de verdade, que não são exportadas. Ver `BancadaDoTeleprompterActivity`.
+
+             `taskAffinity` vazio **de propósito**: na tarefa do app, a intenção dela vira a raiz da
+             tarefa, e um segundo `am start` com a tela do prompter de pé só traz a tarefa para a
+             frente ("intent has been delivered to currently running top-most instance", medido no
+             tablet em 13/09) — o pedido de bancada se perde. Numa tarefa própria, que some quando
+             ela fecha, cada `am start` chega ao `onCreate`. -->
+        <activity
+            android:name="com.quall.android.bancada.BancadaDoTeleprompterActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="Quall · bancada do teleprompter"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- A porta de bancada da câmera DV (fase B): sobe o MirrorService com a fonte DV sem
+             toque, por cima do bloqueio. Ver `BancadaDaCameraDvActivity`. -->
+        <activity
+            android:name="com.quall.android.bancada.BancadaDaCameraDvActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="Quall · bancada da câmera DV"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- A vitrine das telas (o "Estúdio de bolso", `docs/telas-estudio.md` §9): um estado de
+             mentira nos barramentos e a tela que o desenha, para os retratos sem transmitir
+             (`apps/android/tools/retratos-das-telas.py`). Ver `VitrineDasTelasActivity`. -->
+        <activity
+            android:name="com.quall.android.bancada.VitrineDasTelasActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="Quall · vitrine das telas"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- A porta de bancada do DVD para MP4 (a D1): um VOB da pasta do app pelo serviço do
+             produto, sem leitor. Ver `BancadaDoDvdActivity`. -->
+        <activity
+            android:name="com.quall.android.bancada.BancadaDoDvdActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="Quall · bancada do DVD"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- A porta de bancada dos controles de câmera (R9): aplica um ajuste na câmera já aberta pelo
+             produto, sem toque, por `am broadcast -n`. Um receptor, e não uma Activity: o `am start -W`
+             da Activity sem tela ficou pendurado no A10s. Não abre câmera. Ver
+             `BancadaDosControlesReceiver`. Sem filtro de intenção: só o pedido explícito chega. -->
+        <receiver
+            android:name="com.quall.android.bancada.BancadaDosControlesReceiver"
+            android:exported="true" />
+    </application>
+</manifest>

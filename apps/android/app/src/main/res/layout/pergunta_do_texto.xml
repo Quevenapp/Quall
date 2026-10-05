@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A "pergunta do texto" (`docs/contrato-teleprompter.md` §11.7), por cima de tudo na tela do
+  controle: o prompter tem outro roteiro, e a pessoa escolhe qual fica. Os textos são literais, os
+  mesmos nas quatro telas (`teleprompter/PerguntaDoTexto.kt`). `clickable` na raiz: o toque não
+  cai no painel nem nos botões de segurar de baixo.
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:defaultFocusHighlightEnabled="false"
+    android:id="@+id/perguntaRaiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo"
+    android:clickable="true"
+    android:fillViewport="true"
+    android:focusable="true"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/textPerguntaTitulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textPerguntaAviso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="#FFFF8C00"
+            android:padding="10dp"
+            android:textColor="#FF000000"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/blocosDaPergunta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/tp_no_prompter"
+                android:textColor="#FFFFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textPalavrasDoPrompter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#B3FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textPreviaDoPrompter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@color/q_superficie"
+                android:ellipsize="end"
+                android:maxLines="6"
+                android:padding="10dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/tp_neste_aparelho"
+                android:textColor="#FFFFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textPalavrasDaqui"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#B3FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textPreviaDaqui"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@color/q_superficie"
+                android:ellipsize="end"
+                android:maxLines="6"
+                android:padding="10dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/botoesDaPergunta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/buttonUsarODoPrompter"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="@string/tp_usar_o_do_prompter"
+                android:textAllCaps="false"
+                android:textSize="17sp" />
+
+            <Button
+                android:id="@+id/buttonMandarOMeu"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/tp_mandar_o_meu"
+                android:textAllCaps="false"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textPerguntaGuardado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/tp_o_que_sair_fica_guardado"
+            android:textColor="#B3FFFFFF"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

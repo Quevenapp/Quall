@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endereços de exemplo sintéticos. -->
+
+<!-- O receptor: a tela de Exibir, a lista de aparelhos e os avisos da sessão (docs/fluxo-de-uso.md, docs/telas-estudio.md §6.6 e §11.3) (docs/traducao.md, Android). O português é o texto-fonte; o inglês mora em values/. O painel de números (textReceptorStats) é de bancada e fica fora. -->
+<resources>
+    <!-- A tela de escolha -->
+    <string name="rx_cabecalho">Exibir</string>
+    <string name="rx_titulo">Assistir outro aparelho</string>
+    <string name="rx_subtitulo">Toque em quem está espelhando. Na primeira vez, digite o PIN que aparece lá.</string>
+    <string name="rx_na_rede_agora">Na rede agora</string>
+    <string name="rx_procurando">procurando</string>
+    <string name="rx_procurar_de_novo">Procurar de novo na rede</string>
+    <string name="rx_pin_vazio_se_pareados">Deixe vazio se os dois já parearam.</string>
+    <string name="rx_conectar">Conectar</string>
+    <!-- %1$s é o endereço guardado (192.168.55.10:7877). -->
+    <string name="rx_usar_o_ultimo">Usar o último · %1$s</string>
+    <!-- %1$s é o nome que o aparelho anunciou. -->
+    <string name="rx_sem_endereco_anunciado">%1$s não anunciou endereço utilizável.</string>
+    <!-- %1$s é o motivo técnico do carregador. -->
+    <string name="rx_nucleo_nao_carregou">O núcleo nativo não carregou: %1$s</string>
+    <string name="rx_digite_o_endereco">Digite o endereço que aparece na tela do aparelho que está espelhando.</string>
+    <string name="rx_digite_o_pin">Digite o PIN de seis dígitos que aparece na tela do outro aparelho.</string>
+
+    <!-- A tela do vídeo -->
+    <!-- %1$s é o endereço. -->
+    <string name="rx_conectando_em">Conectando em %1$s…</string>
+    <string name="rx_parar">Parar</string>
+    <string name="rx_mostrar_numeros">Mostrar os números</string>
+    <string name="rx_esconder_numeros">Esconder os números</string>
+    <string name="rx_idr_pedido">IDR pedido — medindo a recuperação</string>
+    <string name="rx_dica_tela_cheia">Toque na tela para sair da tela cheia.</string>
+    <!-- O nome do outro lado quando ele não disse nenhum. -->
+    <string name="rx_par_sem_nome">emissor</string>
+
+    <!-- Os avisos da sessão (ReceptorBus.Aviso): a tela monta a frase na hora de desenhar. -->
+    <string name="rx_aviso_retomando">Retomando pareamento…</string>
+    <string name="rx_aviso_conectando_e_pareando">Conectando e pareando…</string>
+    <string name="rx_aviso_cancelado">Cancelado</string>
+    <string name="rx_aviso_precisa_de_pin">O outro aparelho não reconhece mais este. Digite o PIN de seis dígitos que aparece na tela dele.</string>
+    <string name="rx_aviso_sem_rota">Os dois aparelhos não acharam caminho um para o outro. Confira se estão na mesma rede Wi-Fi.</string>
+    <!-- %1$s é o endereço. -->
+    <string name="rx_aviso_sem_resposta">%1$s não respondeu a tempo. O outro aparelho ainda está esperando?</string>
+    <!-- %1$s é o endereço; %2$s o motivo técnico do núcleo. -->
+    <string name="rx_aviso_nao_conectou">Não consegui conectar em %1$s: %2$s</string>
+    <!-- %1$s é o motivo técnico do carregador. -->
+    <string name="rx_aviso_nucleo_nao_carregou">O núcleo nativo não carregou neste aparelho: %1$s</string>
+    <!-- %1$s é a exceção (classe: mensagem). -->
+    <string name="rx_aviso_recepcao_morreu">Recepção morreu: %1$s</string>
+    <string name="rx_aviso_esperando_a_imagem">Esperando a imagem…</string>
+    <!-- %1$s é o nome do outro aparelho. -->
+    <string name="rx_aviso_sem_track">%1$s conectou mas não abriu nenhuma track de mídia</string>
+    <string name="rx_aviso_sem_caixa">Não consegui criar a caixa de quadros (memória?)</string>
+    <!-- %1$s é o status da fronteira C. -->
+    <string name="rx_aviso_tratador_recusado">quall_track_on_frame recusou: %1$s</string>
+    <!-- %1$s é o rótulo da track (tela, câmera…). -->
+    <string name="rx_aviso_emissor_saiu">%1$s: o emissor saiu</string>
+    <string name="rx_aviso_transporte_falhou">%1$s: o transporte falhou</string>
+    <!-- %1$s é o rótulo da track; %2$d os segundos. -->
+    <string name="rx_aviso_sem_quadro">%1$s: %2$d s sem nenhum quadro</string>
+    <string name="rx_aviso_recepcao_encerrada">Recepção encerrada</string>
+    <string name="rx_aviso_recepcao_terminou">A recepção terminou</string>
+    <string name="rx_aviso_so_som">Recebendo só som</string>
+    <!-- %1$s é o número do evento do núcleo. -->
+    <string name="rx_aviso_sessao_caiu">A sessão caiu (evento %1$s)</string>
+    <string name="rx_aviso_audio_nao_toca">O áudio não está tocando</string>
+
+    <!-- A linha da lista (item_device) -->
+    <string name="rx_pareado_selo">PAREADO</string>
+    <string name="rx_pareado_falado">pareado</string>
+    <string name="rx_sem_endereco">sem endereço utilizável</string>
+    <string name="rx_papel_tela">tela</string>
+    <string name="rx_papel_camera">câmera</string>
+    <string name="rx_papel_exibe">exibe</string>
+    <string name="rx_papel_teleprompter">teleprompter</string>
+    <string name="rx_sem_capacidade">sem capacidade declarada</string>
+</resources>

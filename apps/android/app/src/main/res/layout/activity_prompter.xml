@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O prompter, no modelo da `TelaDoPrompter` do iOS (pedido do Pessoa Exemplo, 28/09;
+  `docs/telas-android-como-ios.md` §4): o texto rolando, de ponta a ponta, sobre preto, e por cima:
+
+  - no alto, a faixa do estado (a bolinha, "Esperando o controle" / "Controlado por X", o PIN e o
+    endereço, e o botão de letra grande) e, embaixo dela, os avisos em faixas — os avisos ficam
+    também na tela cheia (o do controle sumido, até ele voltar: a regra do usuário, 13/09);
+  - no pé, a legenda (linhas/s · fonte · posição) e a barra de ícones: Sair, Editar, Ajustes,
+    tartaruga, play/pausa, coelho, Tela cheia (e, em tablet, Voltar ao começo e Espelho);
+  - o editor do roteiro.
+
+  Um toque no texto alterna a tela cheia: somem a faixa do alto e a barra; os avisos ficam. O resto
+  dos ajustes mora na folha de Ajustes (`FolhaDeAjustesDoPrompter`).
+
+  Na tela com câmera (R5) o alto e o pé saem daqui: a faixa do iOS dela mora no lado longe do texto —
+  nada entre o texto e a lente (`PrompterComCameraActivity`, 24/09 e 28/09).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/raizPrompter"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <com.quall.android.ui.VistaDoRoteiro
+        android:id="@+id/vistaRoteiro"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/altoPrompter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="12dp">
+
+        <!-- A faixa do estado (`faixaDeCima` do iOS). -->
+        <LinearLayout
+            android:id="@+id/faixaDeCimaPrompter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/faixa_do_prompter"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="10dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/bolinhaPrompter"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:id="@+id/textEstadoPrompter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:text="@string/tp_esperando_o_controle"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/textPinPrompter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:maxLines="1"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textEnderecoPrompter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="monospace"
+                        android:maxLines="1"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- O endereço e o PIN em letra grande (`FolhaDoEndereco`). O QR saiu em 24/09. -->
+            <ImageView
+                android:id="@+id/buttonLetraGrandePrompter"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@string/tp_letra_grande_descricao"
+                android:padding="8dp"
+                android:src="@drawable/ic_q_letra_grande"
+                app:tint="#FFFFFFFF" />
+        </LinearLayout>
+
+        <!-- Os avisos, empilhados, cada um com ícone e cor (`AvisosDoTeleprompter`). -->
+        <LinearLayout
+            android:id="@+id/avisosPrompter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/pePrompter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="6dp">
+
+        <!-- A legenda acima da barra: velocidade, fonte e posição. -->
+        <TextView
+            android:id="@+id/textResumoPrompter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="monospace"
+            android:gravity="center_horizontal"
+            android:textColor="#FF8E8E93"
+            android:textSize="11sp" />
+
+        <!-- A barra de ícones: os botões entram pelo código (`BotaoDeIcone`). -->
+        <LinearLayout
+            android:id="@+id/barraPrompter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/faixa_do_prompter"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <include
+        android:id="@+id/editorPrompter"
+        layout="@layout/editor_de_texto" />
+
+</FrameLayout>

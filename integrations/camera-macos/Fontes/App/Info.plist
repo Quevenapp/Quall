@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<!-- Esta frase já foi "o Quall precisa falar com a câmera virtual que ele mesmo
+	     instala", e era **falsa por medição**: o processo que fala com a câmera virtual
+	     (o `receber`, que empurra quadro pelo fluxo .sink) nunca pede permissão nenhuma —
+	     na corrida de 2026-08-24 ele fez uma requisição só ao tccd, e foi de ListenEvent.
+	     Quem pede é o instrumento de bancada, que abre a câmera pelo AVFoundation para ler
+	     o relógio desenhado nos pixels. O diálogo tem que dizer o motivo verdadeiro. -->
+	<string>O Quall abre a câmera para conferir, medindo nos próprios quadros, que o vídeo recebido está chegando ao aplicativo que vai usá-lo.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Quall recebe vídeo de aparelhos da sua rede local. Nada sai da rede.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_quall._tcp</string>
+	</array>
+</dict>
+</plist>

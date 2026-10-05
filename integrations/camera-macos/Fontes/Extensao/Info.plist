@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundlePackageType</key>
+	<string>SYSX</string>
+	<!-- O CoreMediaIO só reconhece o bundle como extensão de câmera por esta chave; sem ela o
+	     `.systemextension` instala e nunca é lançado. O nome do serviço mach precisa começar
+	     pelo prefixo do time, senão o App Sandbox recusa o registro. -->
+	<key>CMIOExtension</key>
+	<dict>
+		<key>CMIOExtensionMachServiceName</key>
+		<string>$(TeamIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	</dict>
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>Faz o vídeo recebido pelo Quall aparecer como webcam nos apps de videoconferência.</string>
+</dict>
+</plist>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A moldura do segmentado: a cápsula com a borda branca a 18 %. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#00000000" />
+    <stroke android:width="1dp" android:color="#2EFFFFFF" />
+    <corners android:radius="999dp" />
+</shape>

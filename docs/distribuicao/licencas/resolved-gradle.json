@@ -1,0 +1,1189 @@
+{
+  "configuration": "releaseRuntimeClasspath",
+  "components": [
+    {
+      "group": "androidx.activity",
+      "name": "activity-ktx",
+      "version": "1.9.3",
+      "id": "androidx.activity:activity-ktx:1.9.3"
+    },
+    {
+      "group": "androidx.activity",
+      "name": "activity",
+      "version": "1.9.3",
+      "id": "androidx.activity:activity:1.9.3"
+    },
+    {
+      "group": "androidx.annotation",
+      "name": "annotation-experimental",
+      "version": "1.4.1",
+      "id": "androidx.annotation:annotation-experimental:1.4.1"
+    },
+    {
+      "group": "androidx.annotation",
+      "name": "annotation-jvm",
+      "version": "1.8.1",
+      "id": "androidx.annotation:annotation-jvm:1.8.1"
+    },
+    {
+      "group": "androidx.annotation",
+      "name": "annotation",
+      "version": "1.8.1",
+      "id": "androidx.annotation:annotation:1.8.1"
+    },
+    {
+      "group": "androidx.appcompat",
+      "name": "appcompat-resources",
+      "version": "1.7.0",
+      "id": "androidx.appcompat:appcompat-resources:1.7.0"
+    },
+    {
+      "group": "androidx.appcompat",
+      "name": "appcompat",
+      "version": "1.7.0",
+      "id": "androidx.appcompat:appcompat:1.7.0"
+    },
+    {
+      "group": "androidx.arch.core",
+      "name": "core-common",
+      "version": "2.2.0",
+      "id": "androidx.arch.core:core-common:2.2.0"
+    },
+    {
+      "group": "androidx.arch.core",
+      "name": "core-runtime",
+      "version": "2.2.0",
+      "id": "androidx.arch.core:core-runtime:2.2.0"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-camera2",
+      "version": "1.4.2",
+      "id": "androidx.camera:camera-camera2:1.4.2"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-core",
+      "version": "1.4.2",
+      "id": "androidx.camera:camera-core:1.4.2"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-lifecycle",
+      "version": "1.4.2",
+      "id": "androidx.camera:camera-lifecycle:1.4.2"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-video",
+      "version": "1.4.2",
+      "id": "androidx.camera:camera-video:1.4.2"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-view",
+      "version": "1.4.2",
+      "id": "androidx.camera:camera-view:1.4.2"
+    },
+    {
+      "group": "androidx.cardview",
+      "name": "cardview",
+      "version": "1.0.0",
+      "id": "androidx.cardview:cardview:1.0.0"
+    },
+    {
+      "group": "androidx.collection",
+      "name": "collection",
+      "version": "1.1.0",
+      "id": "androidx.collection:collection:1.1.0"
+    },
+    {
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures-ktx",
+      "version": "1.1.0",
+      "id": "androidx.concurrent:concurrent-futures-ktx:1.1.0"
+    },
+    {
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures",
+      "version": "1.1.0",
+      "id": "androidx.concurrent:concurrent-futures:1.1.0"
+    },
+    {
+      "group": "androidx.constraintlayout",
+      "name": "constraintlayout-solver",
+      "version": "2.0.1",
+      "id": "androidx.constraintlayout:constraintlayout-solver:2.0.1"
+    },
+    {
+      "group": "androidx.constraintlayout",
+      "name": "constraintlayout",
+      "version": "2.0.1",
+      "id": "androidx.constraintlayout:constraintlayout:2.0.1"
+    },
+    {
+      "group": "androidx.coordinatorlayout",
+      "name": "coordinatorlayout",
+      "version": "1.1.0",
+      "id": "androidx.coordinatorlayout:coordinatorlayout:1.1.0"
+    },
+    {
+      "group": "androidx.core",
+      "name": "core-ktx",
+      "version": "1.13.1",
+      "id": "androidx.core:core-ktx:1.13.1"
+    },
+    {
+      "group": "androidx.core",
+      "name": "core",
+      "version": "1.13.1",
+      "id": "androidx.core:core:1.13.1"
+    },
+    {
+      "group": "androidx.cursoradapter",
+      "name": "cursoradapter",
+      "version": "1.0.0",
+      "id": "androidx.cursoradapter:cursoradapter:1.0.0"
+    },
+    {
+      "group": "androidx.customview",
+      "name": "customview-poolingcontainer",
+      "version": "1.0.0",
+      "id": "androidx.customview:customview-poolingcontainer:1.0.0"
+    },
+    {
+      "group": "androidx.customview",
+      "name": "customview",
+      "version": "1.1.0",
+      "id": "androidx.customview:customview:1.1.0"
+    },
+    {
+      "group": "androidx.databinding",
+      "name": "viewbinding",
+      "version": "8.7.0",
+      "id": "androidx.databinding:viewbinding:8.7.0"
+    },
+    {
+      "group": "androidx.documentfile",
+      "name": "documentfile",
+      "version": "1.0.0",
+      "id": "androidx.documentfile:documentfile:1.0.0"
+    },
+    {
+      "group": "androidx.drawerlayout",
+      "name": "drawerlayout",
+      "version": "1.1.1",
+      "id": "androidx.drawerlayout:drawerlayout:1.1.1"
+    },
+    {
+      "group": "androidx.dynamicanimation",
+      "name": "dynamicanimation",
+      "version": "1.0.0",
+      "id": "androidx.dynamicanimation:dynamicanimation:1.0.0"
+    },
+    {
+      "group": "androidx.emoji2",
+      "name": "emoji2-views-helper",
+      "version": "1.3.0",
+      "id": "androidx.emoji2:emoji2-views-helper:1.3.0"
+    },
+    {
+      "group": "androidx.emoji2",
+      "name": "emoji2",
+      "version": "1.3.0",
+      "id": "androidx.emoji2:emoji2:1.3.0"
+    },
+    {
+      "group": "androidx.exifinterface",
+      "name": "exifinterface",
+      "version": "1.3.2",
+      "id": "androidx.exifinterface:exifinterface:1.3.2"
+    },
+    {
+      "group": "androidx.fragment",
+      "name": "fragment",
+      "version": "1.5.4",
+      "id": "androidx.fragment:fragment:1.5.4"
+    },
+    {
+      "group": "androidx.interpolator",
+      "name": "interpolator",
+      "version": "1.0.0",
+      "id": "androidx.interpolator:interpolator:1.0.0"
+    },
+    {
+      "group": "androidx.legacy",
+      "name": "legacy-support-core-utils",
+      "version": "1.0.0",
+      "id": "androidx.legacy:legacy-support-core-utils:1.0.0"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-common-jvm",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-common-jvm:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-common",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-common:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core-ktx",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-livedata-core:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-livedata:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-process",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-process:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-android",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-runtime-android:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-ktx-android",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-runtime-ktx-android:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-ktx",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-runtime:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-service",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-service:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-android",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-ktx",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-savedstate",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel",
+      "version": "2.8.7",
+      "id": "androidx.lifecycle:lifecycle-viewmodel:2.8.7"
+    },
+    {
+      "group": "androidx.loader",
+      "name": "loader",
+      "version": "1.0.0",
+      "id": "androidx.loader:loader:1.0.0"
+    },
+    {
+      "group": "androidx.localbroadcastmanager",
+      "name": "localbroadcastmanager",
+      "version": "1.0.0",
+      "id": "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0"
+    },
+    {
+      "group": "androidx.print",
+      "name": "print",
+      "version": "1.0.0",
+      "id": "androidx.print:print:1.0.0"
+    },
+    {
+      "group": "androidx.profileinstaller",
+      "name": "profileinstaller",
+      "version": "1.3.1",
+      "id": "androidx.profileinstaller:profileinstaller:1.3.1"
+    },
+    {
+      "group": "androidx.recyclerview",
+      "name": "recyclerview",
+      "version": "1.3.2",
+      "id": "androidx.recyclerview:recyclerview:1.3.2"
+    },
+    {
+      "group": "androidx.resourceinspection",
+      "name": "resourceinspection-annotation",
+      "version": "1.0.1",
+      "id": "androidx.resourceinspection:resourceinspection-annotation:1.0.1"
+    },
+    {
+      "group": "androidx.savedstate",
+      "name": "savedstate-ktx",
+      "version": "1.2.1",
+      "id": "androidx.savedstate:savedstate-ktx:1.2.1"
+    },
+    {
+      "group": "androidx.savedstate",
+      "name": "savedstate",
+      "version": "1.2.1",
+      "id": "androidx.savedstate:savedstate:1.2.1"
+    },
+    {
+      "group": "androidx.startup",
+      "name": "startup-runtime",
+      "version": "1.1.1",
+      "id": "androidx.startup:startup-runtime:1.1.1"
+    },
+    {
+      "group": "androidx.tracing",
+      "name": "tracing-ktx",
+      "version": "1.2.0",
+      "id": "androidx.tracing:tracing-ktx:1.2.0"
+    },
+    {
+      "group": "androidx.tracing",
+      "name": "tracing",
+      "version": "1.2.0",
+      "id": "androidx.tracing:tracing:1.2.0"
+    },
+    {
+      "group": "androidx.transition",
+      "name": "transition",
+      "version": "1.5.0",
+      "id": "androidx.transition:transition:1.5.0"
+    },
+    {
+      "group": "androidx.vectordrawable",
+      "name": "vectordrawable-animated",
+      "version": "1.1.0",
+      "id": "androidx.vectordrawable:vectordrawable-animated:1.1.0"
+    },
+    {
+      "group": "androidx.vectordrawable",
+      "name": "vectordrawable",
+      "version": "1.1.0",
+      "id": "androidx.vectordrawable:vectordrawable:1.1.0"
+    },
+    {
+      "group": "androidx.versionedparcelable",
+      "name": "versionedparcelable",
+      "version": "1.1.1",
+      "id": "androidx.versionedparcelable:versionedparcelable:1.1.1"
+    },
+    {
+      "group": "androidx.viewpager2",
+      "name": "viewpager2",
+      "version": "1.1.0-beta02",
+      "id": "androidx.viewpager2:viewpager2:1.1.0-beta02"
+    },
+    {
+      "group": "androidx.viewpager",
+      "name": "viewpager",
+      "version": "1.0.0",
+      "id": "androidx.viewpager:viewpager:1.0.0"
+    },
+    {
+      "group": "com.google.android.material",
+      "name": "material",
+      "version": "1.12.0",
+      "id": "com.google.android.material:material:1.12.0"
+    },
+    {
+      "group": "com.google.auto.value",
+      "name": "auto-value-annotations",
+      "version": "1.6.3",
+      "id": "com.google.auto.value:auto-value-annotations:1.6.3"
+    },
+    {
+      "group": "com.google.errorprone",
+      "name": "error_prone_annotations",
+      "version": "2.15.0",
+      "id": "com.google.errorprone:error_prone_annotations:2.15.0"
+    },
+    {
+      "group": "com.google.guava",
+      "name": "listenablefuture",
+      "version": "1.0",
+      "id": "com.google.guava:listenablefuture:1.0"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-bom",
+      "version": "1.8.22",
+      "id": "org.jetbrains.kotlin:kotlin-bom:1.8.22"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib-common",
+      "version": "2.0.21",
+      "id": "org.jetbrains.kotlin:kotlin-stdlib-common:2.0.21"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib-jdk7",
+      "version": "1.8.22",
+      "id": "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib-jdk8",
+      "version": "1.8.22",
+      "id": "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib",
+      "version": "2.0.21",
+      "id": "org.jetbrains.kotlin:kotlin-stdlib:2.0.21"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-android",
+      "version": "1.7.3",
+      "id": "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-bom",
+      "version": "1.7.3",
+      "id": "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.3"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-core-jvm",
+      "version": "1.7.3",
+      "id": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-core",
+      "version": "1.7.3",
+      "id": "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
+    },
+    {
+      "group": "org.jetbrains",
+      "name": "annotations",
+      "version": "23.0.0",
+      "id": "org.jetbrains:annotations:23.0.0"
+    },
+    {
+      "group": "quall-android",
+      "name": "app",
+      "version": "unspecified",
+      "id": "project :app"
+    }
+  ],
+  "artifacts": [
+    {
+      "group": "androidx.activity",
+      "name": "activity-ktx",
+      "version": "1.9.3",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "activity-ktx-1.9.3.aar"
+    },
+    {
+      "group": "androidx.activity",
+      "name": "activity",
+      "version": "1.9.3",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "activity-1.9.3.aar"
+    },
+    {
+      "group": "androidx.annotation",
+      "name": "annotation-experimental",
+      "version": "1.4.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "annotation-experimental-1.4.1.aar"
+    },
+    {
+      "group": "androidx.annotation",
+      "name": "annotation-jvm",
+      "version": "1.8.1",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "annotation-jvm-1.8.1.jar"
+    },
+    {
+      "group": "androidx.appcompat",
+      "name": "appcompat-resources",
+      "version": "1.7.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "appcompat-resources-1.7.0.aar"
+    },
+    {
+      "group": "androidx.appcompat",
+      "name": "appcompat",
+      "version": "1.7.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "appcompat-1.7.0.aar"
+    },
+    {
+      "group": "androidx.arch.core",
+      "name": "core-common",
+      "version": "2.2.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "core-common-2.2.0.jar"
+    },
+    {
+      "group": "androidx.arch.core",
+      "name": "core-runtime",
+      "version": "2.2.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "core-runtime-2.2.0.aar"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-camera2",
+      "version": "1.4.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "camera-camera2-1.4.2.aar"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-core",
+      "version": "1.4.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "camera-core-1.4.2.aar"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-lifecycle",
+      "version": "1.4.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "camera-lifecycle-1.4.2.aar"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-video",
+      "version": "1.4.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "camera-video-1.4.2.aar"
+    },
+    {
+      "group": "androidx.camera",
+      "name": "camera-view",
+      "version": "1.4.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "camera-view-1.4.2.aar"
+    },
+    {
+      "group": "androidx.cardview",
+      "name": "cardview",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "cardview-1.0.0.aar"
+    },
+    {
+      "group": "androidx.collection",
+      "name": "collection",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "collection-1.1.0.jar"
+    },
+    {
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures-ktx",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "concurrent-futures-ktx-1.1.0.jar"
+    },
+    {
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "concurrent-futures-1.1.0.jar"
+    },
+    {
+      "group": "androidx.constraintlayout",
+      "name": "constraintlayout-solver",
+      "version": "2.0.1",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "constraintlayout-solver-2.0.1.jar"
+    },
+    {
+      "group": "androidx.constraintlayout",
+      "name": "constraintlayout",
+      "version": "2.0.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "constraintlayout-2.0.1.aar"
+    },
+    {
+      "group": "androidx.coordinatorlayout",
+      "name": "coordinatorlayout",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "coordinatorlayout-1.1.0.aar"
+    },
+    {
+      "group": "androidx.core",
+      "name": "core-ktx",
+      "version": "1.13.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "core-ktx-1.13.1.aar"
+    },
+    {
+      "group": "androidx.core",
+      "name": "core",
+      "version": "1.13.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "core-1.13.1.aar"
+    },
+    {
+      "group": "androidx.core",
+      "name": "core",
+      "version": "1.13.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "core-1.13.1.aar"
+    },
+    {
+      "group": "androidx.cursoradapter",
+      "name": "cursoradapter",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "cursoradapter-1.0.0.aar"
+    },
+    {
+      "group": "androidx.customview",
+      "name": "customview-poolingcontainer",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "customview-poolingcontainer-1.0.0.aar"
+    },
+    {
+      "group": "androidx.customview",
+      "name": "customview",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "customview-1.1.0.aar"
+    },
+    {
+      "group": "androidx.databinding",
+      "name": "viewbinding",
+      "version": "8.7.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "viewbinding-8.7.0.aar"
+    },
+    {
+      "group": "androidx.documentfile",
+      "name": "documentfile",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "documentfile-1.0.0.aar"
+    },
+    {
+      "group": "androidx.drawerlayout",
+      "name": "drawerlayout",
+      "version": "1.1.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "drawerlayout-1.1.1.aar"
+    },
+    {
+      "group": "androidx.dynamicanimation",
+      "name": "dynamicanimation",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "dynamicanimation-1.0.0.aar"
+    },
+    {
+      "group": "androidx.emoji2",
+      "name": "emoji2-views-helper",
+      "version": "1.3.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "emoji2-views-helper-1.3.0.aar"
+    },
+    {
+      "group": "androidx.emoji2",
+      "name": "emoji2",
+      "version": "1.3.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "emoji2-1.3.0.aar"
+    },
+    {
+      "group": "androidx.exifinterface",
+      "name": "exifinterface",
+      "version": "1.3.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "exifinterface-1.3.2.aar"
+    },
+    {
+      "group": "androidx.fragment",
+      "name": "fragment",
+      "version": "1.5.4",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "fragment-1.5.4.aar"
+    },
+    {
+      "group": "androidx.interpolator",
+      "name": "interpolator",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "interpolator-1.0.0.aar"
+    },
+    {
+      "group": "androidx.legacy",
+      "name": "legacy-support-core-utils",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "legacy-support-core-utils-1.0.0.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-common-jvm",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "lifecycle-common-jvm-2.8.7.jar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core-ktx",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-livedata-core-ktx-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-livedata-core-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-livedata-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-livedata-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-process",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-process-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-android",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-runtime-release.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-ktx-android",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-runtime-ktx-release.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-service",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-service-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-android",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-viewmodel-release.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-ktx",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-viewmodel-ktx-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-savedstate",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-viewmodel-savedstate-2.8.7.aar"
+    },
+    {
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel",
+      "version": "2.8.7",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "lifecycle-viewmodel-2.8.7.aar"
+    },
+    {
+      "group": "androidx.loader",
+      "name": "loader",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "loader-1.0.0.aar"
+    },
+    {
+      "group": "androidx.localbroadcastmanager",
+      "name": "localbroadcastmanager",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "localbroadcastmanager-1.0.0.aar"
+    },
+    {
+      "group": "androidx.print",
+      "name": "print",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "print-1.0.0.aar"
+    },
+    {
+      "group": "androidx.profileinstaller",
+      "name": "profileinstaller",
+      "version": "1.3.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "profileinstaller-1.3.1.aar"
+    },
+    {
+      "group": "androidx.recyclerview",
+      "name": "recyclerview",
+      "version": "1.3.2",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "recyclerview-1.3.2.aar"
+    },
+    {
+      "group": "androidx.resourceinspection",
+      "name": "resourceinspection-annotation",
+      "version": "1.0.1",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "resourceinspection-annotation-1.0.1.jar"
+    },
+    {
+      "group": "androidx.savedstate",
+      "name": "savedstate-ktx",
+      "version": "1.2.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "savedstate-ktx-1.2.1.aar"
+    },
+    {
+      "group": "androidx.savedstate",
+      "name": "savedstate",
+      "version": "1.2.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "savedstate-1.2.1.aar"
+    },
+    {
+      "group": "androidx.startup",
+      "name": "startup-runtime",
+      "version": "1.1.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "startup-runtime-1.1.1.aar"
+    },
+    {
+      "group": "androidx.tracing",
+      "name": "tracing-ktx",
+      "version": "1.2.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "tracing-ktx-1.2.0.aar"
+    },
+    {
+      "group": "androidx.tracing",
+      "name": "tracing",
+      "version": "1.2.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "tracing-1.2.0.aar"
+    },
+    {
+      "group": "androidx.transition",
+      "name": "transition",
+      "version": "1.5.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "transition-1.5.0.aar"
+    },
+    {
+      "group": "androidx.vectordrawable",
+      "name": "vectordrawable-animated",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "vectordrawable-animated-1.1.0.aar"
+    },
+    {
+      "group": "androidx.vectordrawable",
+      "name": "vectordrawable",
+      "version": "1.1.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "vectordrawable-1.1.0.aar"
+    },
+    {
+      "group": "androidx.versionedparcelable",
+      "name": "versionedparcelable",
+      "version": "1.1.1",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "versionedparcelable-1.1.1.aar"
+    },
+    {
+      "group": "androidx.viewpager2",
+      "name": "viewpager2",
+      "version": "1.1.0-beta02",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "viewpager2-1.1.0-beta02.aar"
+    },
+    {
+      "group": "androidx.viewpager",
+      "name": "viewpager",
+      "version": "1.0.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "viewpager-1.0.0.aar"
+    },
+    {
+      "group": "com.google.android.material",
+      "name": "material",
+      "version": "1.12.0",
+      "classifier": null,
+      "type": "aar",
+      "extension": "aar",
+      "artifact_filename": "material-1.12.0.aar"
+    },
+    {
+      "group": "com.google.auto.value",
+      "name": "auto-value-annotations",
+      "version": "1.6.3",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "auto-value-annotations-1.6.3.jar"
+    },
+    {
+      "group": "com.google.errorprone",
+      "name": "error_prone_annotations",
+      "version": "2.15.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "error_prone_annotations-2.15.0.jar"
+    },
+    {
+      "group": "com.google.guava",
+      "name": "listenablefuture",
+      "version": "1.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "listenablefuture-1.0.jar"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib-jdk7",
+      "version": "1.8.22",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "kotlin-stdlib-jdk7-1.8.22.jar"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib-jdk8",
+      "version": "1.8.22",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "kotlin-stdlib-jdk8-1.8.22.jar"
+    },
+    {
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib",
+      "version": "2.0.21",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "kotlin-stdlib-2.0.21.jar"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-android",
+      "version": "1.7.3",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "kotlinx-coroutines-android-1.7.3.jar"
+    },
+    {
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-core-jvm",
+      "version": "1.7.3",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "kotlinx-coroutines-core-jvm-1.7.3.jar"
+    },
+    {
+      "group": "org.jetbrains",
+      "name": "annotations",
+      "version": "23.0.0",
+      "classifier": null,
+      "type": "jar",
+      "extension": "jar",
+      "artifact_filename": "annotations-23.0.0.jar"
+    }
+  ]
+}

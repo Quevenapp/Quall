@@ -1,0 +1,127 @@
+name: PortaoAppex
+options:
+  bundleIdPrefix: br.com.queven.quall
+  deploymentTarget:
+    iOS: "15.0"
+configFiles:
+  Debug: ../../../Signing.local.xcconfig
+  Release: ../../../Signing.local.xcconfig
+
+targets:
+  # Alvo 1: o app hospedeiro. Bundle id real do produto.
+  PortaoAppex:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [App, Comum]
+    dependencies:
+      - target: Difusao
+        embed: true
+        codeSign: true
+      # O ensaio do degrau 4 encoda no próprio app, com o mesmo `CodificadorH264` da appex.
+      - sdk: VideoToolbox.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall
+        PRODUCT_NAME: PortaoAppex
+        # Sem isto a assinatura falha com "target does not have an Info.plist file",
+        # mensagem que não sugere a causa. Custou caro uma vez; fica registrado aqui.
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Quall
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        # As duas fontes de Info.plist convivem: o arquivo entra como base e o Xcode acrescenta
+        # o que os INFOPLIST_KEY_* pedem. É o mesmo arranjo que a appex usa desde o degrau 2.
+        # Aqui o arquivo existe por NSLocalNetworkUsageDescription e NSBonjourServices.
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/PortaoAppex.entitlements
+        MARKETING_VERSION: "0.0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+
+        # --- o núcleo no app também, e não por simetria ------------------------------------
+        #
+        # Iniciar uma transmissão custa **um toque humano** que o iPhone 7 não automatiza. Ligar
+        # o mesmo `libquall.a` no app hospedeiro permite conferir, **sem gastar toque**, o que
+        # mais poderia dar errado antes de a appex existir: que o arquivo estático linka, que o
+        # dyld carrega, que os inicializadores estáticos de C++ do OpenSSL e da libdatachannel
+        # correm num processo iOS 15 arm64, e que uma função Rust executa e devolve o valor
+        # certo. Se isso quebrar, quebra no lançamento do app, num roteiro que ninguém precisa
+        # ficar olhando.
+        #
+        # O que ele **não** prova é a appex: outro processo, outro teto de memória, outro
+        # provisionamento. É pré-voo, não medição.
+        SWIFT_OBJC_BRIDGING_HEADER: Comum/Ponte.h
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../../crates/quall-ffi/include
+        OTHER_LDFLAGS: $(SRCROOT)/../../../target/aarch64-apple-ios/release/libquall.a -lc++
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: COM_NUCLEO
+    scheme:
+      testTargets:
+        - TestesDeInterface
+
+  # Alvo 2: a Broadcast Upload Extension. Vazia no degrau 2; no degrau 4 ela carrega o núcleo.
+  Difusao:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [Extensao, Comum]
+    dependencies:
+      - sdk: ReplayKit.framework
+      - sdk: VideoToolbox.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.broadcast
+        PRODUCT_NAME: Difusao
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Extensao/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensao/Difusao.entitlements
+        MARKETING_VERSION: "0.0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+
+        # --- degrau 4: o núcleo dentro da appex -------------------------------------------
+        #
+        # O header **não** é copiado para cá: ele é gerado pelo cbindgen a cada build do Rust,
+        # e uma cópia envelheceria em silêncio numa fronteira onde divergência de assinatura
+        # vira corrupção de memória em vez de erro de compilação.
+        SWIFT_OBJC_BRIDGING_HEADER: Comum/Ponte.h
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../../crates/quall-ffi/include
+        # O arquivo **inteiro**, por caminho, e não `-lquall` com `LIBRARY_SEARCH_PATHS`.
+        #
+        # O `crate-type` do `quall-ffi` é `["staticlib", "cdylib", "rlib"]`, então o cargo põe
+        # `libquall.a` **e** `libquall.dylib` na mesma pasta — e o `ld` prefere o dinâmico. Com
+        # `-lquall` o link passa, o binário fica com 90 KB e grava como dependência
+        # `/Users/…/target/aarch64-apple-ios/release/deps/libquall.dylib`, um caminho do
+        # MacBook que não existe no iPhone. A appex morreria no dyld, e o sintoma — transmissão
+        # que começa e acaba na hora, sem uma linha nossa no log — não aponta para o link.
+        #
+        # `libquall.a` é staticlib do Rust e já traz dentro a libdatachannel, o OpenSSL, o
+        # usrsctp, a libsrtp e o libjuice (1687 membros de arquivo). O que falta é a runtime
+        # de C++.
+        OTHER_LDFLAGS: $(SRCROOT)/../../../target/aarch64-apple-ios/release/libquall.a -lc++
+        #
+        # Medir "quanto custou só existir" exige o mesmo código sem o núcleo. O roteiro
+        # `degrau4.sh` constrói essa variante passando
+        #   OTHER_LDFLAGS="" SWIFT_ACTIVE_COMPILATION_CONDITIONS=""
+        # na linha do xcodebuild — daí todo o código do núcleo estar atrás de `#if COM_NUCLEO`.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: COM_NUCLEO
+
+  # Alvo 3: só existe para tentar dispensar o toque humano no seletor de transmissão.
+  # Se o XCUITest não alcançar o iPhone 7, este alvo sai e fica o registro do porquê.
+  TestesDeInterface:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [Testes]
+    dependencies:
+      - target: PortaoAppex
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.testes
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: PortaoAppex
+        TARGETED_DEVICE_FAMILY: "1"
+        # O xcodegen põe BUNDLE_LOADER mesmo em pacote de teste de interface, e com
+        # TEST_HOST vazio o Xcode conclui "logic test", que em aparelho não roda.
+        BUNDLE_LOADER: ""

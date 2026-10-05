@@ -1,0 +1,30 @@
+)]}'
+{
+  "id": "14bb72fdb1fb0f045c7f8af662616504654e2cac",
+  "entries": [
+    {
+      "mode": 33188,
+      "type": "blob",
+      "id": "e2e34ae21772951f5b86053dcf58c0e695ace0d6",
+      "name": "CMakeLists.txt"
+    },
+    {
+      "mode": 33188,
+      "type": "blob",
+      "id": "b7becfa2239d02ddf8401d40ff7f53b303eed003",
+      "name": "image_processing_util_jni.cc"
+    },
+    {
+      "mode": 33188,
+      "type": "blob",
+      "id": "e324a17b1092f1364cdae330841eca9dbca5a728",
+      "name": "jni.lds"
+    },
+    {
+      "mode": 33188,
+      "type": "blob",
+      "id": "d2a8437e5591bedc368bb4b5caaca8f46f8928ea",
+      "name": "surface_util_jni.cc"
+    }
+  ]
+}

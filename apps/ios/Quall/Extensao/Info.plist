@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sem CFBundleDisplayName a instalação falha com
+	     "This app or a bundle it contains does not define the CFBundleDisplayName key".
+	     A appex precisa dele porque é o nome que aparece no seletor de transmissão do sistema —
+	     o app hospedeiro sozinho não basta. -->
+	<key>CFBundleDisplayName</key>
+	<string>Quall Studio Tela</string>
+
+	<!-- A permissão de Rede Local é do **app**, e uma Broadcast Upload Extension não tem como
+	     apresentar diálogo nenhum. A chave fica aqui também porque, se um dia for a appex a
+	     primeira a tocar a rede, é este `Info.plist` que o iOS consulta para escrever o texto do
+	     alerta — e um alerta sem texto é um alerta que não aparece. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Quall precisa da rede local para enviar a tela deste iPhone ao aparelho que vai exibi-la. Nada sai da sua rede.</string>
+
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.broadcast-services-upload</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ManipuladorDeTela</string>
+		<key>RPBroadcastProcessMode</key>
+		<string>RPBroadcastProcessModeSampleBuffer</string>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  O editor do roteiro, o mesmo nas duas telas (prompter e controle): o texto se edita dos dois
+  lados, e vale o último que mudou (`docs/contrato-teleprompter.md`).
+
+  `set_text` só sai no "Confirmar" — nunca a cada tecla (§6). O painel laranja é a regra desta
+  tela para o texto que chega do outro lado enquanto se edita (`teleprompter/EdicaoDoTexto.kt`):
+  o rascunho nunca é apagado sem a pessoa escolher.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:defaultFocusHighlightEnabled="false"
+    android:id="@+id/editorRaiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:visibility="gone">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/tp_editar_titulo"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textEditorTamanho"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#B3FFFFFF"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:id="@+id/painelConflito"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="#FFFF8C00"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textConflito"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/tp_conflito"
+            android:textColor="#FF000000"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/buttonUsarONovo"
+                android:letterSpacing="0"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="@string/tp_usar_o_novo" />
+
+            <Button
+                android:id="@+id/buttonManterOMeu"
+                android:letterSpacing="0"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
+                android:textAllCaps="false"
+                android:textSize="13sp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/tp_manter_o_meu" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/editRoteiro"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:background="@color/q_superficie"
+        android:gravity="top|start"
+        android:hint="@string/tp_roteiro_dica"
+        android:importantForAutofill="no"
+        android:inputType="textMultiLine|textCapSentences"
+        android:padding="10dp"
+        android:scrollbars="vertical"
+        android:textColor="#FFFFFFFF"
+        android:textColorHint="#80FFFFFF"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/buttonEditorCancelar"
+            android:letterSpacing="0"
+            android:maxLines="1"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="@string/cancelar" />
+
+        <Button
+            android:id="@+id/buttonEditorLimpar"
+            android:letterSpacing="0"
+            android:maxLines="1"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="@string/tp_limpar" />
+
+        <Button
+            android:id="@+id/buttonEditorColar"
+            android:letterSpacing="0"
+            android:maxLines="1"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="@string/tp_colar" />
+
+        <Button
+            android:id="@+id/buttonEditorConfirmar"
+            android:letterSpacing="0"
+            android:maxLines="1"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.3"
+            android:text="@string/tp_confirmar" />
+    </LinearLayout>
+
+</LinearLayout>

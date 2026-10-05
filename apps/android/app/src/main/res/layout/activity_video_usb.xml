@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Placa de captura e filmadora" (`docs/placa-de-captura-usb.md` §13: o ladrilho "Placa e filmadora" do
+  Início abre esta tela), no "Estúdio de bolso" e no R16 desde 30/09 (decisão do Pessoa Exemplo; a emenda da §11 de
+  `docs/telas-estudio.md`): cabe sem rolar no A07, no A10s e no tablet, em pé e deitado. A tela é uma
+  função do `GravacaoBus`, do `MirrorBus` e do `DonoDaPlaca`; o comportamento é o de antes.
+
+  De cima para baixo: voltar · "Placa e filmadora" · engrenagem; a pílula de estado (AGUARDANDO,
+  CONECTADO, REC, NO AR) com o nome do aparelho; o aviso do aparelho (nenhum, as permissões, os erros) com
+  o botão dele; a escolha, com mais de um aparelho; a imagem ao vivo (estica: fica com a altura que sobra,
+  no máximo 4:3), com o recado da imagem que parou por cima; Ouvir e Foto; a gravação; Gravar e Transmitir;
+  o chip das opções da placa (abre a engrenagem); a transmissão (o PIN em casas, o endereço que copia, o
+  som); a frase do fim da transmissão.
+
+  Deitado, duas colunas (`ColunasDaTela`, no código, sem `layout-land`: a tela trata a rotação por
+  `configChanges`): a imagem à esquerda, com Ouvir, Foto e a gravação; os botões, as opções e a
+  transmissão à direita. No tablet, a coluna de até 560 dp (520 cada, deitado), centrada.
+
+  **Na engrenagem** (o que não cabe): as cinco opções da placa (§14.4: formato, tamanho, quadros por
+  segundo com os que chegam, codec e qualidade da gravação) e as notas que moravam no pé da tela.
+  Os ids de antes continuam (nenhum roteiro de bancada os lê; `vuOpcoes` é agora o chip das opções).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo">
+
+    <androidx.core.widget.NestedScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/vuRolagem"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/vuColunas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            app:centralizarNaAltura="true">
+
+            <!-- Voltar · "Placa e filmadora" · engrenagem. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <ImageButton
+                    android:id="@+id/vuVoltar"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/voltar"
+                    android:src="@drawable/ic_q_voltar" />
+
+                <TextView
+                    style="@style/Quall.TituloDoCabecalho"
+                    android:accessibilityHeading="true"
+                    android:text="@string/placa_titulo_curto" />
+
+                <ImageButton
+                    android:id="@+id/vuAjustes"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/placa_ajustes_descricao"
+                    android:src="@drawable/ic_q_engrenagem" />
+            </LinearLayout>
+
+            <!-- A luz de estúdio e o aparelho. -->
+            <LinearLayout
+                android:id="@+id/vuLinhaDeEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <com.quall.android.ui.PilulaDeEstado
+                    android:id="@+id/vuPilula"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <!-- Gravando com a transmissão no ar: as duas luzes. -->
+                <com.quall.android.ui.PilulaDeEstado
+                    android:id="@+id/vuPilulaRec"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/vuRotulo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- O aparelho: nenhum, as permissões, os erros (o aviso some com a imagem à mostra). -->
+            <com.quall.android.ui.AvisoDaTela
+                android:id="@+id/vuAparelho"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/vuAcaoDoAparelho"
+                style="@style/Widget.Quall.Botao.Principal"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <!-- Mais de um aparelho de vídeo no USB: a escolha (some com um só). -->
+            <RadioGroup
+                android:id="@+id/vuEscolha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/cartao_da_captura"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:visibility="gone"
+                app:coluna="esquerda" />
+
+            <!-- O que a tela faz: só sem a imagem (com ela, a tela já diz). -->
+            <TextView
+                android:id="@+id/vuExplicacao"
+                style="@style/Quall.Corpo2"
+                android:layout_marginTop="12dp"
+                android:text="@string/placa_explicacao"
+                app:coluna="direita" />
+
+            <!-- A imagem ao vivo: a `SurfaceView` da `PreviaDv` (a mesma do Espelhar e da gravação), a
+                 imagem encaixada no aspecto pelo `RenderizadorDv`. Estica: a altura que sobra na coluna,
+                 entre 140 dp e 4:3 da largura. O recado da imagem que parou fica por cima, no pé. -->
+            <FrameLayout
+                android:id="@+id/vuSecaoDaImagem"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/quadro_da_previa"
+                android:minHeight="140dp"
+                android:visibility="gone"
+                app:coluna="esquerda"
+                app:estica="true"
+                app:proporcaoMaxima="0.75">
+
+                <SurfaceView
+                    android:id="@+id/vuPrevia"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/placa_previa_descricao" />
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/vuRecado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:layout_margin="10dp"
+                    android:visibility="gone"
+                    app:tipoDoAviso="ambar" />
+            </FrameLayout>
+
+            <!-- Ouvir e Foto: da imagem (deitado, embaixo dela). -->
+            <LinearLayout
+                android:id="@+id/vuBotoesDaImagem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                app:coluna="esquerda">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/vuOuvir"
+                    style="@style/Widget.Quall.Botao.Pequeno"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/placa_ouvir"
+                    app:icon="@drawable/ic_q_som" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/vuFoto"
+                    style="@style/Widget.Quall.Botao.Pequeno"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/placa_foto"
+                    app:icon="@drawable/ic_q_camera" />
+            </LinearLayout>
+
+            <!-- A gravação: o nome, o tempo, o tamanho, o espaço livre e os avisos dela. -->
+            <LinearLayout
+                android:id="@+id/vuSecaoDaGravacao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="esquerda">
+
+                <TextView
+                    android:id="@+id/vuGravacao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/aviso_info"
+                    android:lineSpacingMultiplier="1.1"
+                    android:paddingStart="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="8dp"
+                    android:textColor="@color/q_texto"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Gravar e Transmitir (parar, no ar: o botão de perigo). -->
+            <LinearLayout
+                android:id="@+id/vuBotoes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/vuGravar"
+                    style="@style/Widget.Quall.Botao.Principal"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:maxLines="2"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/placa_gravar"
+                    android:textSize="15sp"
+                    app:icon="@drawable/ic_q_gravar"
+                    app:iconPadding="6dp"
+                    app:iconSize="18dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/vuTransmitir"
+                    style="@style/Widget.Quall.Botao.Principal"
+                    android:layout_width="0dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:maxLines="2"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/placa_transmitir"
+                    android:textSize="15sp"
+                    app:icon="@drawable/ic_q_espelhar"
+                    app:iconPadding="6dp"
+                    app:iconSize="18dp" />
+            </LinearLayout>
+
+            <!-- Por que um botão está apagado (a filmadora com um dono só; outra transmissão no ar). -->
+            <TextView
+                android:id="@+id/vuNota"
+                style="@style/Quall.Legenda"
+                android:layout_marginTop="6dp"
+                android:lineSpacingMultiplier="1.1"
+                android:visibility="gone"
+                app:coluna="direita" />
+
+            <!-- As opções da placa num chip (formato · tamanho · quadros): o toque abre a engrenagem, onde
+                 moram as cinco linhas (§14.4). -->
+            <TextView
+                android:id="@+id/vuOpcoes"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/capsula"
+                android:drawablePadding="8dp"
+                android:ellipsize="end"
+                android:fontFamily="monospace"
+                android:gravity="center_vertical"
+                android:maxLines="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/q_texto"
+                android:textSize="14sp"
+                android:visibility="gone"
+                app:coluna="direita"
+                app:drawableEndCompat="@drawable/ic_q_seta_direita"
+                app:drawableTint="@color/q_acento_claro" />
+
+            <!-- A transmissão: a manchete; esperando, o PIN e o endereço (lado a lado, deitado); enviando,
+                 para quem; e o som da placa ou da fita, que o toque liga e desliga. -->
+            <LinearLayout
+                android:id="@+id/vuSecaoDaTransmissao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/cartao_da_captura"
+                android:orientation="vertical"
+                android:paddingStart="14dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="6dp"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <TextView
+                    android:id="@+id/vuManchete"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/q_texto"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/vuLinhaDoPin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/vuBlocoDoPin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/vuPinRotulo"
+                            style="@style/RotuloDeSecao"
+                            android:layout_width="wrap_content"
+                            android:text="@string/placa_pin" />
+
+                        <com.quall.android.ui.LetreiroDoPin
+                            android:id="@+id/vuPin"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/vuBlocoDoEndereco"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/vuEnderecoRotulo"
+                            style="@style/RotuloDeSecao"
+                            android:layout_width="wrap_content"
+                            android:text="@string/placa_digite_este_endereco" />
+
+                        <com.quall.android.ui.ChipDeEndereco
+                            android:id="@+id/vuEndereco"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/vuOutros"
+                    style="@style/Quall.Legenda"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="monospace" />
+
+                <TextView
+                    android:id="@+id/vuPara"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="15sp" />
+
+                <!-- O som da placa (ou da fita) na transmissão: começa ligado; o toque liga e desliga. -->
+                <TextView
+                    android:id="@+id/vuSom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    android:minHeight="44dp"
+                    android:textColor="@color/q_acento_claro"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_q_mic"
+                    app:drawableTint="@color/q_acento_claro" />
+            </LinearLayout>
+
+            <!-- A transmissão que terminou, ou a que não abriu: a frase, à vista até a próxima ação. -->
+            <com.quall.android.ui.AvisoDaTela
+                android:id="@+id/vuMensagem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:coluna="direita"
+                app:tipoDoAviso="info" />
+        </com.quall.android.ui.ColunasDaTela>
+    </androidx.core.widget.NestedScrollView>
+</FrameLayout>

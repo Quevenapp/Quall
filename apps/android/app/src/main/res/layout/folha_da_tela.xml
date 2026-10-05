@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A folha da engrenagem das telas de captura (a placa e o DVD; `ui/FolhaDaTela.kt`, 30/09): "Ajustes" e
+  "Pronto", e o corpo que a tela preenche por código (os grupos no molde da folha de Ajustes, §6.3). A
+  folha pode rolar (§11.1).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="16dp">
+
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/alca_da_folha" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/folhaTitulo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:accessibilityHeading="true"
+            android:text="@string/ajustes"
+            android:textColor="@color/q_texto"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/folhaPronto"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="4dp"
+            android:text="@string/placa_folha_pronto"
+            android:textColor="@color/q_acento_claro"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/rolagemDaFolhaDaTela"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:id="@+id/folhaCorpo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp" />
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

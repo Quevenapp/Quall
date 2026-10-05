@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- MediaProjection exige foreground service do tipo mediaProjection (obrigatório desde a
+         API 29, e a permissão especial FOREGROUND_SERVICE_MEDIA_PROJECTION desde a API 34/36,
+         que é o targetSdk deste app). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- Câmera como foreground service (API 34+, targetSdk 36): mesmo raciocínio da permissão de
+         mediaProjection acima, para o tipo "camera". Sem ela, startForeground() com o tipo camera
+         recusa com SecurityException. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <!-- API 33+: notificação do foreground service precisa de permissão em runtime. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Descoberta mDNS: sem isto o Android filtra multicast em economia de energia (achado do
+         M2, ver README). -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- `WifiLock.acquire()` exige WAKE_LOCK, e sem ela lança SecurityException em vez de
+         degradar: medido no A10s em 05/09/2026. Ver `core/RadioAcordado.kt` e §8.33. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Câmera: preset `camera`, CameraX. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- A filmadora DV pelo USB (capture/dv/, atrás da bandeira `camera_dv`). Opcional: aparelho
+         sem USB host instala do mesmo jeito. -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+
+    <!-- Áudio.
+
+         RECORD_AUDIO serve a DUAS capturas, e quem audita o manifesto precisa ler as duas:
+
+         1. **O microfone, só com a câmera** (desde 24/09/2026, fase 2 do R5,
+            `docs/teleprompter-com-camera.md` §4). Até ali este comentário dizia que o app nunca
+            abria o microfone e que a regra não se negociava; o Pessoa Exemplo a revogou para todo emissor de
+            câmera. O que ficou: o microfone é um BOTÃO que começa desligado, a permissão é pedida no
+            primeiro toque (nunca ao abrir a tela), o som é cru (`MIC`, sem NS, AEC nem AGC), e só a
+            classe `audio/MicrofoneCru` abre `MediaRecorder.AudioSource.MIC`. A bancada continua
+            sintética (`docs/audio.md` §8): prova de áudio só com tom.
+         2. **O som que o próprio app toca**, na tela: `AudioPlaybackCapture`, que por construção
+            não alcança cápsula nenhuma e sai restrita ao UID deste app (`addMatchingUid`). A tela
+            não tem microfone.
+
+         `maxSdkVersion` não cabe aqui, e `usesPermissionFlags="neverForLocation"` também não —
+         nenhum dos dois se aplica a áudio.
+
+         FOREGROUND_SERVICE_MICROPHONE é o tipo que o Android 14+ exige para um serviço em
+         primeiro plano que segure um `AudioRecord` — o do microfone da câmera (acrescentado ao
+         serviço quando o botão liga, medido na S-A5) e o do playback capture da tela. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <!-- O DVD para MP4 (`docs/dvd-para-mp4.md` §2.7): o serviço da conversão é do tipo
+         `mediaProcessing` no Android 15+ (feito para transcodificar; 6 h por dia, e o `onTimeout`
+         fecha o parcial) e `dataSync` abaixo dele. A declaração do tipo vai também no Play Console. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Transmitir o DVD (`docs/dvd-para-mp4.md` §9): o `MirrorService` com o DVD como fonte é um
+         vídeo tocado para outro aparelho — o tipo `mediaPlayback`, sem câmera nem captura de tela. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:theme="@style/Theme.Quall"
+        android:usesCleartextTraffic="true">
+
+        <!-- **A rotação não recria esta tela**, e o motivo é a transmissão.
+
+             Recriar a Activity dispara `onStop` (`PreviaDaCamera.ligar(null)`) e `onStart`
+             (`ligar(provedor)`). Esse par é exatamente o gesto que, com o codificador no ar, faz o
+             CameraX inserir um `SurfaceProcessorNode` e descartar a superfície do encoder — medido
+             no S24 em 09/09/2026, e a razão de a prévia passar a ser suspensa durante a sessão.
+
+             Com a suspensão em vigor, girar deixava de derrubar a transmissão mas **perdia a
+             prévia para o resto da sessão**, inclusive numa conexão recém-feita. Tratar a rotação
+             aqui resolve os dois: sem recriação não há `onStop`/`onStart`, o provedor nunca se
+             desliga, e a prévia sobrevive junto com a transmissão.
+
+             `screenSize` e `smallestScreenSize` entram junto com `orientation` porque desde a API
+             13 a mudança de orientação também muda essas duas — declarar só `orientation` deixaria
+             a Activity ser recriada do mesmo jeito.
+
+             `uiMode` desde o "Estúdio de bolso" (`docs/telas-estudio.md` §11.3): o tema é escuro fixo, e a
+             troca automática claro/escuro do sistema recriaria a tela à toa.
+
+             `locale|layoutDirection` em todas as telas de sessão (`docs/traducao.md`, Android): a troca de
+             idioma pelos Ajustes do sistema (13+) recriaria a tela no meio de uma sessão. Estas mudam de
+             idioma na próxima abertura; a MainActivity se recria ela mesma quando não há sessão no ar. -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|locale|layoutDirection"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- O lado que exibe. `configChanges` é o ponto: sem ele, uma rotação destrói a
+             Activity, com ela a `Surface`, e com a `Surface` a sessão inteira — o usuário perderia
+             a imagem por virar o tablet. `keepScreenOn` fica no código (FLAG_KEEP_SCREEN_ON),
+             junto da razão. -->
+        <!-- **Bancada, não produto.** Codifica YUV de arquivo para medir o custo de imagem de um
+             bitrate contra outro com a MESMA entrada — a §8.41 mostrou que com câmera viva isso é
+             impossível, porque o ruído do sensor não se repete. Exportada porque quem a dispara é
+             `adb shell am start`; ela não aparece no lançador e não tem `intent-filter` de MAIN. -->
+        <activity
+            android:name=".bancada.CodificaYuvActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- NÃO usar `Theme.NoDisplay`: ele exige `finish()` antes do `onResume` terminar, e
+             esta tela fica viva enquanto codifica. Medido: derruba com CalledFromWrongThread
+             /"did not call finish()" no A07. -->
+
+        <!-- `uiMode` (§11.3): a troca automática claro/escuro do sistema recriaria esta tela, e o
+             `onDestroy` dela para a recepção. O tema é escuro fixo. -->
+        <activity
+            android:name=".ui.ReceptorActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|locale|layoutDirection"
+            android:label="@string/exibir_titulo" />
+
+        <!-- O teleprompter (F6b, `docs/contrato-teleprompter.md`): mostrar o texto e controlar.
+             Não exportadas: só o próprio app as abre (a bancada entra pela Activity de `debug`).
+
+             `configChanges` largo **de propósito**: recriar a tela derruba a sessão com o controle
+             (e o texto para de rolar por um instante) — numa rotação, no modo escuro que liga ao
+             anoitecer, ou ao mudar o tamanho da letra do sistema. As duas tratam essas mudanças
+             sem recriar (`onConfigurationChanged`). -->
+        <activity
+            android:name=".ui.PrompterActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|fontScale|density|navigation|locale|layoutDirection"
+            android:label="@string/tp_prompter_titulo"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- "Teleprompter com câmera" (R5, docs/teleprompter-com-camera.md): o prompter com a
+             frontal ao lado. O mesmo `configChanges` largo, e aqui por mais um motivo: recriar a
+             tela derrubaria também a prévia (a câmera, não — ela é do MirrorService). -->
+        <activity
+            android:name=".ui.PrompterComCameraActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|fontScale|density|navigation|locale|layoutDirection"
+            android:label="@string/r5_titulo"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.ControleActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|smallestScreenSize|uiMode|fontScale|density|navigation|locale|layoutDirection"
+            android:label="@string/tp_controle_titulo"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- foregroundServiceType="mediaProjection" é obrigatório a partir da API 29; sem ele o
+             sistema recusa o startForeground() com SecurityException. -->
+        <service
+            android:name=".capture.ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <!-- Espelhamento de verdade: hospeda a sessão, espera o receptor e emite pela track.
+             Dois tipos declarados porque a origem — escolhida antes do PIN, ver
+             docs/fluxo-de-uso.md — pode ser a tela (mediaProjection) ou uma câmera (camera); o
+             serviço pede em runtime só o tipo que a sessão em curso está usando. -->
+        <service
+            android:name=".mirror.MirrorService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection|camera|microphone|mediaPlayback" />
+
+        <!-- A gravação da filmadora DV no aparelho (Galeria, Movies/Quall), sem espelhar. Tipo
+             `camera`: a fonte é a filmadora pelo USB, e a permissão CAMERA já foi dada. E
+             `microphone` para a placa de captura (a P4 adiantada, docs/placa-de-captura-usb.md
+             §9.6): o som dela é um AudioRecord da entrada USB; o tipo só é pedido no
+             startForeground quando há RECORD_AUDIO. -->
+        <service
+            android:name=".capture.dv.GravacaoDvService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone" />
+
+        <!-- O DVD para MP4 (`docs/dvd-para-mp4.md`, a D4): a tela aberta pelo cartão da tela
+             inicial, e o serviço da conversão. `configChanges`: girar o telefone no meio da leitura
+             do disco não recria a tela (o leitor é de um comando por vez). -->
+        <activity
+            android:name=".ui.ConversaoDvdActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale|locale|layoutDirection"
+            android:label="@string/dvd_titulo_da_tela" />
+
+        <!-- A placa de captura e a filmadora DV (`docs/placa-de-captura-usb.md` §13): a tela aberta pelo
+             cartão da tela inicial, com a prévia, o Gravar e o Transmitir. Os serviços são os de sempre
+             (`GravacaoDvService`, `MirrorService`). `configChanges`: girar o telefone não recria a tela
+             (a superfície da prévia fica, e o dono não solta e reabre o USB). -->
+        <activity
+            android:name=".ui.VideoUsbActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale|locale|layoutDirection"
+            android:label="@string/placa_titulo_da_tela" />
+
+        <service
+            android:name=".dvd.ConversaoDvdService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProcessing|dataSync" />
+
+        <!-- **O idioma escolhido no seletor PT | EN, guardado abaixo do Android 13** (`core/Idioma.kt`,
+             `docs/traducao.md`). No 13+ quem guarda é o sistema (`localeConfig` acima); no 9–12 o
+             AppCompat guarda num arquivo dele quando este serviço declara `autoStoreLocales`. Ele nunca
+             roda: `enabled="false"` é o que a documentação do AndroidX pede. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <!-- Instrumento de bancada para o preset `camera` — mesmo papel que ScreenCaptureService
+             tem para `screen`: captura por tempo fixo e grava .h264+.json, sem tocar em rede. -->
+        <service
+            android:name=".capture.CameraCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
+
+    </application>
+</manifest>

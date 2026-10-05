@@ -1,0 +1,14 @@
+# Saídas de build do NDK/CMake do Gradle.
+app/.cxx/
+
+# `libquall.so` e `libc++_shared.so` são **gerados** por `tools/compila-nucleo.sh`, não fonte.
+# São ~19 MB somando as duas ABIs, mudam a cada build do núcleo, e versioná-los é justamente
+# como uma `.so` obsoleta do M0 quase entrou num APK: ela instala, carrega e só morre na
+# primeira chamada de verdade. Quem clonar roda o script.
+app/src/main/jniLibs/
+
+# Cache do Kotlin 2.x por projeto (inclui registros de queda do daemon), não fonte.
+.kotlin/
+
+# FFmpeg da câmera DV (LGPL, só arm64): gerado por `tools/compila-ffmpeg-dv.sh`, não fonte.
+app/src/main/jniLibsDv/

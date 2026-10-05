@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A barra fina no pé do vídeo (§6.6, §11.1): preto a 85 %, cantos de 16. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#D9000000" />
+    <corners android:radius="16dp" />
+</shape>

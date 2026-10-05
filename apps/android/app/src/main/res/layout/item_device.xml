@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Uma linha da lista de aparelhos na rede (Exibir, Controlar; `docs/telas-estudio.md` §6.6): o ícone, o
+  nome, o endereço em mono e o selo PAREADO verde quando o anúncio traz o id de um par conhecido (§11.1).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="6dp"
+    android:background="@drawable/linha_de_aparelho"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="52dp"
+    android:orientation="horizontal"
+    android:paddingStart="10dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
+
+    <ImageView
+        android:id="@+id/iconeDoAparelho"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@drawable/icone_do_cartao"
+        android:importantForAccessibility="no"
+        android:padding="9dp"
+        android:src="@drawable/ic_q_espelhar"
+        app:tint="@color/q_acento_claro" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textDeviceName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:textColor="@color/q_texto"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/textDeviceDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:maxLines="2"
+            android:textColor="@color/q_texto2"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/seloPareado"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/selo_pareado"
+        android:gravity="center"
+        android:letterSpacing="0.08"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:text="@string/rx_pareado_selo"
+        android:textColor="@color/q_conectado_texto"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+</LinearLayout>

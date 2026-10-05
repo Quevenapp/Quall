@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Segurar para rolar" (`docs/contrato-teleprompter.md` §12.5), por cima do painel do controle: só
+  dois botões grandes, um em cima do outro. Segurando, o texto rola na velocidade ajustada; soltou,
+  para (`ui/ModoSegurar.kt`, as regras em `teleprompter/SegurarParaRolar.kt`).
+
+  O resto é pequeno de propósito: quem está com o controle na mão olha para o prompter, não para
+  cá. A saída ("Sair", no canto) só vale segurando — um toque de raspão não tira ninguém do modo.
+  `clickable` na raiz: o toque fora dos botões não cai no painel de baixo.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:defaultFocusHighlightEnabled="false"
+    android:id="@+id/segurarRaiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textSegurarConexao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#B3FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textSegurarVelocidade"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- O canto: "Sair" e "Inverter botões", os dois pequenos e só segurando. -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/buttonSairDoSegurar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:contentDescription="@string/tp_sair_do_segurar_descricao"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="4dp"
+                android:paddingBottom="6dp"
+                android:text="@string/tp_sair_do_segurar"
+                android:textColor="#99FFFFFF"
+                android:textSize="13sp" />
+
+            <!-- "Inverter botões": a marca ✓ e o fundo mostram que está ligado (`ModoSegurar`). -->
+            <TextView
+                android:id="@+id/buttonInverterBotoes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:minWidth="132dp"
+                android:paddingStart="10dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="6dp"
+                android:text="@string/tp_inverter_botoes"
+                android:textColor="#99FFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Altura fixa (duas linhas) e só invisível sem aviso: um aviso que aparece não empurra os
+         botões debaixo do dedo — senão o dedo parado "sairia" do botão e o texto pararia. -->
+    <TextView
+        android:id="@+id/textSegurarAviso"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="#FFFF8C00"
+        android:ellipsize="end"
+        android:lines="2"
+        android:padding="8dp"
+        android:textColor="#FF000000"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:id="@+id/botaoRolarParaCima"
+        android:contentDescription="@string/tp_rolar_para_cima_descricao"
+        android:importantForAccessibility="yes"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:text="▲"
+            android:textColor="#FFFFFFFF"
+            android:textSize="64sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tp_rolar_para_cima"
+            android:textColor="#FFFFFFFF"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textEfeitoCima"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/botaoRolarParaBaixo"
+        android:contentDescription="@string/tp_rolar_para_baixo_descricao"
+        android:importantForAccessibility="yes"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:text="▼"
+            android:textColor="#FFFFFFFF"
+            android:textSize="64sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tp_rolar_para_baixo"
+            android:textColor="#FFFFFFFF"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textEfeitoBaixo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
+</LinearLayout>

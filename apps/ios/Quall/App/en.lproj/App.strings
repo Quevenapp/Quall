@@ -1,0 +1,145 @@
+/* Quall iOS — textos em inglês das telas do app (pasta App/).
+   A chave é o texto em português, exatamente como está no código em tr("…").
+   Ver Comum/Idioma.swift e docs/traducao.md (seção iOS). */
+
+/* Tela inicial (TelaDeModo) */
+"Ajustes" = "Settings";
+"Seu estúdio na rede local.\nSem nuvem, sem cadastro." = "Your studio on the local network.\nNo cloud, no sign-up.";
+"Espelhar" = "Mirror";
+"Mande a tela ou uma câmera daqui." = "Send this screen or a camera from here.";
+"Exibir" = "Receive";
+"Assista aqui ao que outro aparelho manda." = "Watch here what another device sends.";
+"Teleprompter" = "Teleprompter";
+"Mostrar o texto" = "Show the text";
+"Vira o prompter" = "Becomes the prompter";
+"Controlar" = "Remote";
+"Comanda outro prompter" = "Drives another prompter";
+"Texto + câmera" = "Text + camera";
+"Lê olhando a lente" = "Read looking at the lens";
+"Diagnóstico ligado — registros no console do sistema. Mudanças valem na próxima abertura do app." = "Diagnostics on — logs go to the system console. Changes apply the next time the app opens.";
+"sem rede" = "no network";
+"Aparelhos pareados entram direto, sem PIN." = "Paired devices connect right away, no PIN.";
+"Na primeira vez, um PIN de 6 dígitos. Depois, entra direto." = "The first time, a 6-digit PIN. After that, it connects right away.";
+"Toque para trocar o idioma" = "Tap to switch the language";
+
+/* Espelhar (TelaInicial) */
+"A tela deste %@" = "This %@'s screen";
+"O que vamos espelhar?" = "What should we mirror?";
+"Voltar" = "Back";
+"Aparecer na lista como" = "Show in the list as";
+"Nome do aparelho" = "Device name";
+"Uma origem por vez. Para trocar, pare e escolha de novo." = "One source at a time. To switch, stop and choose again.";
+"Cabo USB" = "USB cable";
+"Sem rede" = "No network";
+"Qualidade %@ quadros por segundo" = "Quality %@ frames per second";
+"Abre os Ajustes" = "Opens Settings";
+"Sem rede. Entre no mesmo Wi-Fi do outro aparelho, ou ligue o cabo." = "No network. Join the same Wi-Fi as the other device, or plug in the cable.";
+
+/* Origens do Espelhar (Origem.nomeNaTela) */
+"Câmera frontal" = "Front camera";
+"Câmera traseira" = "Back camera";
+"(teleobjetiva)" = "(telephoto)";
+"(ultra-angular)" = "(ultra wide)";
+"(grande-angular)" = "(wide)";
+
+/* Pedindo a permissão (TelaDePermissao, em TelaInicial) */
+"Aguardando" = "Waiting";
+"Verificando o acesso à rede local…" = "Checking local network access…";
+"Se o %@ perguntar, toque em **%@**. Sem isso, os dois aparelhos não se acham — e a falha só apareceria depois, como “não conectou”." = "If your %@ asks, tap **%@**. Without it, the two devices can't find each other — and the failure would only show up later, as “didn't connect”.";
+
+/* Nomes da interface do sistema citados nos textos (trSistema: seguem a língua do sistema) */
+"Permitir" = "Allow";
+"Rede Local" = "Local Network";
+"Iniciar Transmissão" = "Start Broadcast";
+"sem rota para o host" = "No route to host";
+"Ajustes → Privacidade e Segurança → Rede Local" = "Settings → Privacy & Security → Local Network";
+
+/* Permissão de Rede Local (PermissaoDeRedeLocal) */
+"O iOS pede sua autorização na primeira vez que este app fala com a rede local. Responda \"%@\" ao aviso do sistema. Enquanto esse primeiro pedido não for respondido, o app nem aparece na lista de %@ dos %@ — então não adianta procurá-lo por lá ainda." = "iOS asks for your permission the first time this app talks to the local network. Answer \"%1$@\" on the system prompt. Until that first request is answered, the app doesn't even show up in the %2$@ list in %3$@ — so there's no point looking for it there yet.";
+"O iOS está pedindo sua autorização para a rede local agora, por cima desta tela. Toque em \"%@\" para continuar." = "iOS is asking for your permission to use the local network right now, on top of this screen. Tap \"%@\" to continue.";
+"Falta a permissão de Rede Local, e o aviso do sistema não está na tela: um pedido já recusado, ou que ficou sem resposta, não é remostrado. Abra %@ e ligue \"%@\". Se o app não estiver na lista, o pedido ficou pendente no sistema e só reiniciar o aparelho o libera. Enquanto isso o iOS bloqueia a conexão antes de ela sair do aparelho e informa \"%@\" — parece problema de Wi-Fi ou de roteador, e não é." = "Local Network permission is missing, and the system prompt isn't on screen: a request that was denied, or left unanswered, isn't shown again. Open %1$@ and turn on \"%2$@\". If the app isn't in the list, the request is stuck in the system and only restarting the device clears it. Until then, iOS blocks the connection before it leaves the device and reports \"%3$@\" — it looks like a Wi-Fi or router problem, but it isn't.";
+"Não deu para falar com o outro aparelho. A causa mais comum é a permissão de Rede Local: abra %@ e confira se \"%@\" está ligado. Se já estiver, confira se o outro aparelho ainda está esperando neste mesmo endereço e na mesma Wi-Fi." = "Couldn't reach the other device. The most common cause is the Local Network permission: open %1$@ and check that \"%2$@\" is on. If it already is, check that the other device is still waiting at this same address and on the same Wi-Fi.";
+
+/* Conselhos do Emissor */
+"O Quall precisa de acesso à rede local para achar o outro aparelho. Abra %@ e ligue." = "Quall needs local network access to find the other device. Open %@ and turn it on.";
+"Não foi possível sortear o PIN da sessão." = "Couldn't generate the session PIN.";
+"Pareamentos esquecidos. Agora peça para o outro aparelho entrar de novo e digitar o PIN que está nesta tela." = "Pairings forgotten. Now ask the other device to join again and enter the PIN shown on this screen.";
+"A transmissão foi encerrada pelo sistema." = "The broadcast was ended by the system.";
+"A transmissão não pôde começar." = "The broadcast couldn't start.";
+
+/* Espera (TelaDeEspera) */
+"Encerrando" = "Ending";
+"Pronto para espelhar" = "Ready to mirror";
+"A transmissão ainda não começou." = "The broadcast hasn't started yet.";
+"Toque abaixo e depois em **%@**, com **%@** marcado." = "Tap below, then tap **%@** with **%@** selected.";
+"Abrir o seletor de transmissão" = "Open Broadcast Picker";
+"No ar" = "Live";
+"Espelhando para" = "Mirroring to";
+"outro aparelho" = "another device";
+"Tudo o que aparece nesta tela vai junto. Conteúdo protegido aparece preto do outro lado — é o iOS que faz isso, em qualquer app de espelhamento." = "Everything on this screen goes along. Protected content shows up black on the other side — iOS does that, in any mirroring app.";
+"Cancelar" = "Cancel";
+"Parar de espelhar" = "Stop Mirroring";
+"Encerrando…" = "Ending…";
+"Na primeira vez, o PIN" = "The first time, the PIN";
+"ou pelo endereço" = "or by address";
+"Aparelhos pareados entram direto." = "Paired devices connect right away.";
+"Aparelho novo?" = "New device?";
+"No outro aparelho, abra o Quall em " = "On the other device, open Quall in ";
+" e escolha " = " and pick ";
+" na lista, ou digite o endereço abaixo." = " from the list, or type the address below.";
+" e digite o endereço abaixo." = " and type the address below.";
+
+/* Peças (Estilo): PIN, endereço, avisos */
+"vazio" = "empty";
+"Toque duas vezes para digitar" = "Double-tap to type";
+"Copiado" = "Copied";
+"Copiar o endereço %@" = "Copy the address %@";
+"Recolher" = "Collapse";
+"+1 aviso" = "+1 alert";
+"+%ld avisos" = "+%ld alerts";
+
+/* Ajustes (FolhaDaEngrenagem) */
+"Licenças de terceiros" = "Third-party licenses";
+"Política de privacidade" = "Privacy policy";
+"Suporte" = "Support";
+"Não foi possível abrir o site." = "Couldn't open the website.";
+"O arquivo de avisos não foi encontrado no app." = "The notices file was not found in the app.";
+"O arquivo de avisos está vazio." = "The notices file is empty.";
+"Não foi possível ler os avisos de terceiros: %@" = "Couldn't read the third-party notices: %@";
+"Pronto" = "Done";
+"Esquecer os aparelhos pareados?" = "Forget paired devices?";
+"Esquecer" = "Forget";
+"Na próxima vez, cada aparelho pede o PIN de novo." = "Next time, each device will ask for the PIN again.";
+"Qualidade do espelhamento" = "Mirroring quality";
+"Resolução" = "Resolution";
+"Quadros" = "Frame rate";
+"%@ a %ld fps pede cerca de %.0f Mbps deste enlace." = "%@ at %ld fps needs about %.0f Mbps from this link.";
+"Num Wi-Fi compartilhado isso é muito; no cabo, folgado." = "That's a lot on shared Wi-Fi; on the cable, plenty of room.";
+"Ao exibir" = "When receiving";
+"Folga de exibição" = "Playback buffer";
+"nenhuma" = "none";
+"Mais folga, imagem mais lisa e um pouco mais atrasada." = "More buffer, smoother picture, a bit more delay.";
+"Pareamento" = "Pairing";
+"Aparelhos pareados" = "Paired devices";
+"nenhum" = "none";
+"Sobre" = "About";
+"Este aparelho" = "This device";
+"Versão" = "Version";
+
+/* Formulário de conectar (MoldeDeConectar) */
+"Endereço" = "Address";
+"Usar o último" = "Use last";
+"Deixe vazio se os dois já parearam." = "Leave empty if the two are already paired.";
+"Conectar" = "Connect";
+
+/* Calor (PoliticaDeCalor) */
+"O aparelho está muito quente: a imagem pode travar. Pare a gravação ou deixe esfriar." = "The device is very hot: the picture may freeze. Stop recording or let it cool down.";
+
+/* Retratos de bancada: valores de exemplo */
+"iPhone de exemplo" = "Example iPhone";
+"MacBook de exemplo" = "Example MacBook";
+
+/* Ajustes: o controle remoto da câmera, R9b (FolhaDaEngrenagem) */
+"Câmera" = "Camera";
+"Permitir controle remoto da câmera" = "Allow remote camera control";
+"Quem recebe a imagem desta câmera pode ajustar exposição, balanço e foco." = "Whoever receives this camera's picture can adjust exposure, white balance and focus.";

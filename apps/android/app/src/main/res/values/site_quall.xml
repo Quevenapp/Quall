@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="site_privacidade">Privacy policy</string>
+    <string name="site_suporte">Support</string>
+    <string name="site_nao_abriu">Couldn\'t open the website.</string>
+</resources>

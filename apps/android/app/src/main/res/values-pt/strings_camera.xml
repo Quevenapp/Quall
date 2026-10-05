@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A área da câmera: os ajustes da câmera (R9), os botões da câmera, a gravação, o som (docs/traducao.md, Android). O português é o texto-fonte; o inglês mora em values/. -->
+<resources>
+    <!-- R9, quem limita (docs/controles-de-camera.md §3.5): uma frase inteira por controle. -->
+    <string name="cam_nao_libera_iso">O fabricante deste aparelho não libera ISO para outros apps.</string>
+    <string name="cam_nao_libera_obturador">O fabricante deste aparelho não libera o obturador para outros apps.</string>
+    <string name="cam_nao_libera_kelvin">O fabricante deste aparelho não libera o Kelvin para outros apps.</string>
+    <string name="cam_nao_libera_presets">O fabricante deste aparelho não libera os presets de balanço para outros apps.</string>
+    <string name="cam_nao_libera_foco_manual">O fabricante deste aparelho não libera o foco manual para outros apps.</string>
+    <string name="cam_nao_libera_anti_cintilacao">O fabricante deste aparelho não libera a anti-cintilação para outros apps.</string>
+    <string name="cam_nao_libera_ev">O fabricante deste aparelho não libera a compensação de exposição para outros apps.</string>
+    <string name="cam_nao_libera_toque">O fabricante deste aparelho não libera o toque para focar para outros apps.</string>
+    <string name="cam_nao_libera_trava_exposicao">O fabricante deste aparelho não libera a trava de exposição para outros apps.</string>
+    <string name="cam_nao_libera_trava_balanco">O fabricante deste aparelho não libera a trava de balanço para outros apps.</string>
+    <string name="cam_nao_libera_trava_foco">O fabricante deste aparelho não libera a trava de foco para outros apps.</string>
+    <string name="cam_nao_libera_iso_e_obturador">O fabricante deste aparelho não libera ISO e o obturador para outros apps.</string>
+    <string name="cam_foco_fixo">Esta câmera tem foco fixo.</string>
+    <string name="cam_sem_calibracao">Esta câmera não publica a calibração de cor que o Kelvin precisa.</string>
+    <string name="cam_travado_de_novo">Travado de novo depois de medir a cena.</string>
+    <!-- A pílula do toque longo na prévia (§4.4). -->
+    <string name="cam_pilula_exposicao_e_foco">Exposição e foco travados</string>
+    <string name="cam_pilula_exposicao">Exposição travada</string>
+    <string name="cam_pilula_foco">Foco travado</string>
+    <!-- R9, as escalas (§3.1–§3.6). -->
+    <string name="cam_sem_cintilacao_60">sem cintilação em luz de 60 Hz</string>
+    <string name="cam_sem_cintilacao_50">sem cintilação em luz de 50 Hz</string>
+    <string name="cam_ganho_digital">ganho digital</string>
+    <string name="cam_ev_com_trava">Destrave a exposição para compensar.</string>
+    <string name="cam_divergencia">A câmera usou %1$s em vez de %2$s.</string>
+    <!-- O painel "Ajustes da câmera" (§4.2–§4.3). O roteiro de bancada prova-r9-controles.py procura "Restaurar automático", "Pronto" e os nomes das abas em português. -->
+    <string name="cam_aba_exposicao">Exposição</string>
+    <string name="cam_aba_iso_e_obturador">ISO e obturador</string>
+    <string name="cam_aba_balanco">Balanço</string>
+    <string name="cam_aba_foco">Foco</string>
+    <string name="cam_aba_escolhida">%1$s, aba escolhida</string>
+    <string name="cam_restaurar_automatico">Restaurar automático</string>
+    <string name="cam_pronto">Pronto</string>
+    <string name="cam_ainda_nao_abriu">A câmera ainda não abriu.</string>
+    <string name="cam_auto">Auto</string>
+    <string name="cam_manual">Manual</string>
+    <string name="cam_opcao_escolhida">%1$s, escolhido</string>
+    <string name="cam_iso_na_aba_ao_lado">ISO e obturador ficam na aba ao lado.</string>
+    <string name="cam_compensacao">Compensação</string>
+    <string name="cam_travar_exposicao">Travar exposição</string>
+    <string name="cam_anti_cintilacao">Anti-cintilação</string>
+    <string name="cam_anti_desligada">Desligada</string>
+    <string name="cam_passe_para_manual">Passe a exposição para Manual para escolher ISO e obturador.</string>
+    <string name="cam_passar_para_manual">Passar para Manual</string>
+    <string name="cam_obturador">Obturador</string>
+    <string name="cam_balanco_incandescente">Incandescente</string>
+    <string name="cam_balanco_fluorescente">Fluorescente</string>
+    <string name="cam_balanco_luz_do_dia">Luz do dia</string>
+    <string name="cam_balanco_nublado">Nublado</string>
+    <string name="cam_temperatura">Temperatura</string>
+    <string name="cam_travar_balanco">Travar balanço</string>
+    <string name="cam_foco_travado">Travado</string>
+    <string name="cam_perto_longe">Perto ↔ Longe</string>
+    <string name="cam_nota_do_toque">Toque na imagem para focar e medir naquele ponto.</string>
+    <!-- O botão do microfone (R5, fase 2; docs/teleprompter-com-camera.md §4.2): o nome, as frases e os motivos. -->
+    <string name="cam_microfone">Microfone</string>
+    <string name="cam_som_da_placa">Som da placa</string>
+    <string name="cam_som_da_fita">Som da fita</string>
+    <string name="cam_mic_ligado">%1$s ligado</string>
+    <string name="cam_mic_desligado">%1$s desligado</string>
+    <string name="cam_mic_desligado_porque">%1$s desligado: %2$s</string>
+    <string name="cam_mic_ligado_espera">%1$s ligado · abre quando o receptor conectar</string>
+    <string name="cam_mic_ligado_espera_ou_gravar">%1$s ligado · abre quando o receptor conectar ou ao gravar</string>
+    <string name="cam_mic_motivo_sem_video">o vídeo da câmera não está no ar</string>
+    <string name="cam_mic_motivo_negada">a permissão de microfone foi negada — toque de novo para pedir</string>
+    <string name="cam_mic_motivo_nos_ajustes">sem permissão de microfone — toque de novo; se o pedido não aparecer, libere em Ajustes do aparelho &gt; Apps &gt; Quall &gt; Permissões &gt; Microfone</string>
+    <string name="cam_mic_motivo_sem_permissao">sem permissão de microfone</string>
+    <!-- Os botões da câmera no ar (docs/telas-estudio.md §6.5): o microfone e o gravar. -->
+    <string name="cam_mic_depois_da_camera">%1$s (depois da câmera)</string>
+    <string name="cam_mic_sem_acesso_placa">Sem acesso ao som da placa</string>
+    <string name="cam_mic_sem_acesso_microfone">Sem acesso ao microfone</string>
+    <string name="cam_mic_nao_abriu_placa">O som da placa não abriu</string>
+    <string name="cam_mic_nao_abriu_fita">O som da fita não abriu</string>
+    <string name="cam_mic_nao_abriu_microfone">O microfone não abriu</string>
+    <string name="cam_ligar_microfone">Ligar o microfone</string>
+    <string name="cam_ligar_som_da_placa">Ligar o som da placa</string>
+    <string name="cam_desligar_som_da_placa">Desligar o som da placa</string>
+    <string name="cam_ligar_som_da_fita">Ligar o som da fita</string>
+    <string name="cam_desligar_som_da_fita">Desligar o som da fita</string>
+    <string name="cam_mic_curta_sem_acesso">Sem acesso</string>
+    <string name="cam_mic_curta_nao_abriu">Não abriu</string>
+    <string name="cam_mic_curta_ligando">Ligando…</string>
+    <string name="cam_mic_curta_ligado">Mic ligado</string>
+    <string name="cam_mic_curta_desligado">Mic desligado</string>
+    <string name="cam_gravar">Gravar</string>
+    <string name="cam_comecando">Começando…</string>
+    <string name="cam_salvando">Salvando…</string>
+    <string name="cam_sem_som">SEM SOM</string>
+    <string name="cam_gravar_sem_som_desc">Gravar, sem som: o microfone está desligado</string>
+    <string name="cam_gravacao_comecando">Gravação começando</string>
+    <string name="cam_fechando_arquivo">Fechando o arquivo</string>
+    <string name="cam_parar_gravacao_desc">Parar a gravação. Gravando há %1$s</string>
+    <string name="cam_parar_gravacao_desc_sem_som">Parar a gravação. Gravando há %1$s, sem som: ligue o microfone</string>
+    <!-- As câmeras do aparelho na escolha da origem (CameraEnumerator). -->
+    <string name="cam_frontal">Frontal</string>
+    <string name="cam_traseira">Traseira</string>
+    <string name="cam_externa">Externa</string>
+    <!-- Por que a câmera parou (CameraState.StateError), dito na tela pelo serviço. -->
+    <string name="cam_erro_em_uso">outro app tomou a câmera</string>
+    <string name="cam_erro_maximo">o aparelho não comporta mais uma câmera aberta agora</string>
+    <string name="cam_erro_desativada">a câmera está desativada por política do aparelho</string>
+    <string name="cam_erro_nao_perturbe">o modo Não Perturbe bloqueou a câmera</string>
+    <string name="cam_erro_fatal">a câmera falhou e precisa ser reaberta</string>
+    <string name="cam_erro_fluxo">a configuração de fluxo foi recusada pela câmera</string>
+    <string name="cam_erro_recuperavel">a câmera teve um erro recuperável</string>
+    <string name="cam_erro_codigo">erro de câmera %1$d</string>
+    <string name="cam_sem_orientacao">Aviso: esta câmera não informa a orientação; a imagem pode sair girada.</string>
+    <!-- Este aparelho não grava (docs/teleprompter-com-camera.md §14.3). -->
+    <string name="cam_nao_grava">Este aparelho não grava vídeo; ele só transmite.</string>
+    <string name="cam_nao_grava_2">Para gravar, use o OBS no computador que recebe.</string>
+    <string name="cam_indisponivel_falhas">a gravação falhou ao abrir %1$d vezes neste aparelho</string>
+    <string name="cam_indisponivel_falhas_na_etapa">a gravação falhou ao abrir %1$d vezes neste aparelho: %2$s</string>
+    <string name="cam_indisponivel_instancias">o codificador H.264 %1$s abre %2$d de cada vez (a rede e a gravação pedem 2)</string>
+    <string name="cam_etapa_codificador_de_video">o codificador de vídeo não abriu</string>
+    <string name="cam_etapa_codificador_de_som">o codificador de som não abriu</string>
+    <string name="cam_etapa_arquivo">o arquivo de vídeo não abriu</string>
+    <string name="cam_etapa_outra">a abertura falhou</string>
+    <!-- A gravação da câmera (docs/teleprompter-com-camera.md §5, §8.6): as recusas e a parada. -->
+    <string name="cam_recusa_tela_fechando">a tela com câmera está fechando</string>
+    <string name="cam_recusa_camera_fechada">a câmera não está aberta</string>
+    <string name="cam_recusa_sem_espaco">sem espaço: sobram %1$d MB (gravar pede ao menos %2$d MB)</string>
+    <string name="cam_recusa_sem_espaco_dobro">sem espaço: sobram %1$d MB (gravar pede ao menos %2$d MB, o dobro neste aparelho: a cópia de segurança vai ao lado)</string>
+    <string name="cam_recusa_sem_imagem">a câmera não está entregando imagem</string>
+    <string name="cam_falha_galeria">a Galeria não aceitou o arquivo novo</string>
+    <string name="cam_falha_arquivo_da_galeria">não abri o arquivo da Galeria</string>
+    <string name="cam_falha_pasta_da_copia">sem a pasta privada do app para a cópia de segurança</string>
+    <string name="cam_falta_primeiro_quadro">a câmera não entregou o primeiro quadro ao arquivo em %1$d s</string>
+    <string name="cam_falta_mp4">o MP4 não abriu em %1$d s (sem o formato do som?)</string>
+    <string name="cam_parou_sem_espaco">o espaço livre acabou (%1$d MB)</string>
+    <string name="cam_parou_sem_imagem">a câmera parou de entregar imagem</string>
+    <string name="cam_fica_para_recuperar">%1$s; o arquivo fica para ser recuperado na próxima abertura</string>
+    <string name="cam_gravacao_salva">Gravação salva na Galeria (Movies/Quall/%1$s)</string>
+    <string name="cam_gravacao_salva_motivo">Gravação salva na Galeria (Movies/Quall/%1$s) — %2$s</string>
+    <!-- Por que o microfone não abriu (FalhaDoMicrofone, audio/FonteDeAudio.kt). -->
+    <string name="cam_falha_mic_recusou">o microfone não abriu (o aparelho recusou a gravação)</string>
+    <string name="cam_falha_mic_ocupado">o microfone está ocupado por outro app</string>
+    <string name="cam_falha_mic_nao_abriu">o microfone não abriu</string>
+
+    <!-- O controle remoto da câmera (R9b, docs/controle-remoto-da-camera.md). -->
+    <string name="aj_camera">Câmera</string>
+    <string name="aj_tela">Tela</string>
+    <string name="aj_manter_tela_ligada">Manter tela ligada</string>
+    <string name="aj_manter_tela_ligada_nota">Evita o bloqueio automático enquanto o Quall está na tela.</string>
+    <string name="aj_permitir_controle_remoto">Permitir controle remoto da câmera</string>
+    <string name="aj_permitir_controle_remoto_nota">Quem recebe a imagem desta câmera pode ajustar exposição, balanço e foco daqui. Vale para a câmera e para o teleprompter com câmera.</string>
+    <string name="cam_controlado_por">Controlado por %1$s</string>
+    <string name="cam_remoto_nao_permitido">O aparelho não permite controle remoto da câmera</string>
+    <string name="cam_remoto_nao_aceitou">Este aparelho não aceitou %1$s.</string>
+    <string name="cam_remoto_nao_aplicou">O aparelho não conseguiu aplicar o ajuste.</string>
+    <string name="cam_remoto_nao_respondeu">O aparelho não respondeu.</string>
+    <string name="cam_brilho">Brilho</string>
+    <string name="cam_ganho">Ganho</string>
+    <!-- Quem limita, por código (R9 §3.5): %1$s é o nome do controle, com o artigo. -->
+    <string name="cam_limite_fabricante">O fabricante deste aparelho não libera %1$s para outros apps.</string>
+    <string name="cam_limite_macos">O macOS não oferece %1$s para câmeras.</string>
+    <string name="cam_limite_ios_cintilacao">O iOS ajusta a cintilação sozinho.</string>
+    <string name="cam_limite_camera_nao_oferece">Esta câmera não oferece %1$s.</string>
+    <string name="cam_limite_outro_app">Outro app está controlando esta câmera. Feche-o para ajustar.</string>
+    <string name="cam_limite_aparelho_nao_oferece">Este aparelho não oferece %1$s.</string>
+    <!-- Os nomes dos controles dentro das frases (R9 §3.5: o artigo faz parte do nome). -->
+    <string name="cam_nome_iso">ISO</string>
+    <string name="cam_nome_obturador">o obturador</string>
+    <string name="cam_nome_iso_e_obturador">ISO e o obturador</string>
+    <string name="cam_nome_kelvin">o Kelvin</string>
+    <string name="cam_nome_presets">os presets de balanço</string>
+    <string name="cam_nome_foco_manual">o foco manual</string>
+    <string name="cam_nome_foco">o foco</string>
+    <string name="cam_nome_anti_cintilacao">a anti-cintilação</string>
+    <string name="cam_nome_ev">a compensação de exposição</string>
+    <string name="cam_nome_exposicao">a exposição</string>
+    <string name="cam_nome_balanco">o balanço</string>
+    <string name="cam_nome_toque">o toque para focar</string>
+    <string name="cam_nome_trava_exposicao">a trava de exposição</string>
+    <string name="cam_nome_trava_balanco">a trava de balanço</string>
+    <string name="cam_nome_trava_foco">a trava de foco</string>
+    <string name="cam_nome_ajuste">o ajuste</string>
+</resources>

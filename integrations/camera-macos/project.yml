@@ -1,0 +1,126 @@
+name: QuallCamera
+options:
+  bundleIdPrefix: br.com.queven.quall.camera
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+
+# O `.xcodeproj` não é versionado (ver `.gitignore` do repositório): `project.yml` é a fonte, e o
+# `xcodegen` gera. Várias frentes trabalham em paralelo e o `pbxproj` é o formato que mais produz
+# conflito sem significado.
+configFiles:
+  Debug: ../../Signing.local.xcconfig
+  Release: ../../Signing.local.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    # Exigido para distribuição por Developer ID e para notarização. Ligado desde já para que a
+    # build de desenvolvimento não esconda um problema que só apareceria no fim.
+    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # A build de produto e a build de sonda diferem em duas coisas, e as duas ficam aqui como
+    # ajuste com padrão: `sondar.sh` as sobrescreve na linha de comando do `xcodebuild`. A sonda
+    # ganha rede — para medir se a extensão **poderia** ser autônoma — e a condição de compilação
+    # que liga a medição de teto de memória.
+    QUALL_ENTITLEMENTS_EXTENSAO: Fontes/Extensao/Extensao.entitlements
+
+targets:
+  # --------------------------------------------------------------------------------------------
+  # O app anfitrião. Carrega a extensão em `Contents/Library/SystemExtensions`, pede a ativação,
+  # e é ele quem tem rede, interface e um responsável de TCC visível para o usuário.
+  # --------------------------------------------------------------------------------------------
+  QuallCamera:
+    type: application
+    platform: macOS
+    sources:
+      - Fontes/App
+      - Fontes/Comum
+      - path: ../../THIRD_PARTY_NOTICES.txt
+        buildPhase: resources
+      - path: ../../LICENSE
+        buildPhase: resources
+      - path: ../../LICENSE-SCOPE.md
+        buildPhase: resources
+      - path: ../../NOTICE.txt
+        buildPhase: resources
+    preBuildScripts:
+      - name: Conferir avisos de terceiros
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ ! -s "$SRCROOT/../../THIRD_PARTY_NOTICES.txt" ]; then
+            echo "error: THIRD_PARTY_NOTICES.txt ausente ou vazio na raiz."
+            exit 1
+          fi
+    dependencies:
+      - target: QuallCameraExtensao
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Library/SystemExtensions
+      - sdk: SystemExtensions.framework
+      - sdk: CoreMediaIO.framework
+      - sdk: CoreMedia.framework
+      - sdk: CoreVideo.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.camera
+        PRODUCT_NAME: QuallCamera
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Fontes/App/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Quall Câmera
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        CODE_SIGN_ENTITLEMENTS: Fontes/App/App.entitlements
+        # A extensão só é aceita se o app que a carrega estiver em /Applications. Isso vale
+        # inclusive em desenvolvimento, porque o modo de desenvolvedor do `systemextensionsctl`
+        # exige SIP desligado — ver o README.
+        SKIP_INSTALL: NO
+
+        SWIFT_OBJC_BRIDGING_HEADER: Fontes/App/Ponte.h
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../crates/quall-ffi/include
+        # O arquivo **inteiro**, por caminho, e não `-lquall` com `LIBRARY_SEARCH_PATHS`: o
+        # `crate-type` do `quall-ffi` põe `libquall.a` **e** `libquall.dylib` na mesma pasta, e o
+        # `ld` prefere o dinâmico — o binário sairia com 90 KB e uma dependência de caminho local.
+        OTHER_LDFLAGS: $(SRCROOT)/../../target/aarch64-apple-darwin/release/libquall.a -lc++
+
+  # --------------------------------------------------------------------------------------------
+  # A extensão de câmera. Roda em processo separado, como o usuário `_cmiodalassistants`, lançada
+  # pelo CoreMediaIO quando algum app abre a câmera. Sem janela, sem terminal, sem usuário.
+  # --------------------------------------------------------------------------------------------
+  QuallCameraExtensao:
+    type: system-extension
+    platform: macOS
+    sources:
+      - Fontes/Extensao
+      - Fontes/Comum
+      - path: ../../THIRD_PARTY_NOTICES.txt
+        buildPhase: resources
+      - path: ../../LICENSE
+        buildPhase: resources
+      - path: ../../LICENSE-SCOPE.md
+        buildPhase: resources
+      - path: ../../NOTICE.txt
+        buildPhase: resources
+    preBuildScripts:
+      - name: Conferir avisos de terceiros
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ ! -s "$SRCROOT/../../THIRD_PARTY_NOTICES.txt" ]; then
+            echo "error: THIRD_PARTY_NOTICES.txt ausente ou vazio na raiz."
+            exit 1
+          fi
+    dependencies:
+      - sdk: CoreMediaIO.framework
+      - sdk: CoreMedia.framework
+      - sdk: CoreVideo.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.camera.extensao
+        PRODUCT_NAME: br.com.queven.quall.camera.extensao
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Fontes/Extensao/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Quall
+        CODE_SIGN_ENTITLEMENTS: $(QUALL_ENTITLEMENTS_EXTENSAO)

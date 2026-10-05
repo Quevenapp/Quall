@@ -1,0 +1,1268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Três telas num arquivo, alternadas por visibilidade — não três Activities: o Início, a escolha do papel
+  (`modoScroll`, [A]); Espelhar (`homeScroll`, [B]); e a espera/espelhamento (`mirrorOverlay`, [C]). O
+  desenho é o do "Estúdio de bolso" (`docs/telas-estudio.md` §6.1, §6.2, §6.4, §6.5 e a §11, que
+  prevalece).
+
+  Cada tela cabe inteira no A07 em retrato sem rolar (o R16); o `ScrollView` de antes fica, e só rola
+  com letra grande, diagnóstico ligado ou fonte USB (§11.1). Em paisagem, `ColunasDaTela` põe os filhos
+  em duas colunas (`app:coluna`), sem `layout-land` e sem reinflar: a `MainActivity` trata a rotação por
+  `configChanges`, e reinflar mataria a prévia.
+
+  **Os ids lidos pela bancada** (`uiautomator`: `tools/emissor_android.py`, `apps/android/tools/aa-corrida.py`,
+  `idr-corrida.py`, `laco-de-audio.py`, `tools/dell-para-android.py`) continuam, com o mesmo papel:
+  `cardEspelhar`, `buttonReceive`, `buttonMirror`, `textPin` (um `TextView` visível cujo texto é "482 719",
+  com e sem pares), `textMirrorAddress` (o `IP:porta` na primeira linha), `buttonCaptureScreen` e
+  `buttonIdrTest` (na seção de diagnóstico, embaixo do botão de Espelhar).
+
+  A tela de espera/espelhamento é a peça central do fluxo de `docs/fluxo-de-uso.md`: depois do
+  consentimento de gravação, o usuário precisa ver PIN, nome na rede, IP e um Cancelar que funciona. O
+  estado vem inteiro do `MirrorBus` e a tela é uma função dele.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo">
+
+    <!-- ============================ [A] o Início ============================
+
+         Marca e engrenagem; a frase; Espelhar e Exibir lado a lado; os três ladrilhos do teleprompter;
+         a captura pelo USB (só com USB host e arm64); o rodapé com a rede e a nota dos pares (§6.1). -->
+    <ScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/modoScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/fundo_inicio"
+        android:fillViewport="true">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/colunasDoInicio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            app:centralizarNaAltura="true"
+            app:fracaoDaDireita="0.58">
+
+            <!-- A marca e a engrenagem; e a frase. -->
+            <LinearLayout
+                android:id="@+id/topoDoInicio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Sete toques na marca ligam o diagnóstico (a seção de bancada de Espelhar). -->
+                    <TextView
+                        android:id="@+id/textAppTitle"
+                        style="@style/Quall.Marca"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:drawablePadding="10dp"
+                        android:gravity="center_vertical"
+                        android:text="@string/app_name"
+                        app:drawableStartCompat="@drawable/marca_quall" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <!-- O seletor de idioma (`docs/traducao.md`, Android): "PT | EN", os dois à vista, o
+                         atual em destaque. **Um elemento só** para o leitor de tela ("Idioma: Português",
+                         e a ação "Mudar para inglês"); as duas etiquetas não são lidas soltas. Um toque
+                         troca. A descrição e o destaque saem de `MainActivity.desenharSeletorDeIdioma`. -->
+                    <LinearLayout
+                        android:id="@+id/seletorDeIdioma"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/capsula"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="4dp">
+
+                        <TextView
+                            android:id="@+id/idiomaPt"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:importantForAccessibility="no"
+                            android:minWidth="36dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:text="@string/idioma_pt"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/idiomaEn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:importantForAccessibility="no"
+                            android:minWidth="36dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:text="@string/idioma_en"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageButton
+                        android:id="@+id/buttonAjustesInicio"
+                        style="@style/Quall.BotaoRedondo"
+                        android:contentDescription="@string/ajustes"
+                        android:src="@drawable/ic_q_engrenagem" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingMultiplier="1.1"
+                    android:text="@string/in_frase"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <!-- Espelhar e Exibir, e o teleprompter. Os ids `cardEspelhar` e `buttonReceive` são os de
+                 antes: as ferramentas de bancada tocam neles. -->
+            <LinearLayout
+                android:id="@+id/papeisDoInicio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                app:coluna="direita">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/cardEspelhar"
+                        style="@style/Quall.CartaoDePapel"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/cartao_espelhar"
+                        android:contentDescription="@string/in_espelhar_descricao">
+
+                        <ImageView
+                            style="@style/Quall.CartaoDePapel.Icone"
+                            android:background="@drawable/icone_do_cartao_espelhar"
+                            android:src="@drawable/ic_q_espelhar"
+                            app:tint="#FFFFFFFF" />
+
+                        <Space
+                            android:layout_width="1dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:minHeight="14dp" />
+
+                        <TextView
+                            style="@style/Quall.CartaoDePapel.Titulo"
+                            android:text="@string/espelhar"
+                            android:textColor="#FFFFFFFF" />
+
+                        <TextView
+                            style="@style/Quall.CartaoDePapel.Detalhe"
+                            android:text="@string/in_espelhar_detalhe"
+                            android:textColor="#DBFFFFFF" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/buttonReceive"
+                        style="@style/Quall.CartaoDePapel"
+                        android:background="@drawable/cartao_exibir"
+                        android:contentDescription="@string/in_exibir_descricao">
+
+                        <ImageView
+                            style="@style/Quall.CartaoDePapel.Icone"
+                            android:background="@drawable/icone_do_cartao_grande"
+                            android:src="@drawable/ic_q_exibir"
+                            app:tint="@color/q_acento_claro" />
+
+                        <Space
+                            android:layout_width="1dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:minHeight="14dp" />
+
+                        <TextView
+                            style="@style/Quall.CartaoDePapel.Titulo"
+                            android:text="@string/in_exibir"
+                            android:textColor="@color/q_texto" />
+
+                        <TextView
+                            style="@style/Quall.CartaoDePapel.Detalhe"
+                            android:text="@string/in_exibir_detalhe"
+                            android:textColor="@color/q_texto2" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    style="@style/RotuloDeSecao"
+                    android:layout_marginTop="20dp"
+                    android:accessibilityHeading="true"
+                    android:text="@string/in_teleprompter" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/buttonPrompter"
+                        style="@style/Quall.Ladrilho"
+                        android:layout_marginEnd="8dp">
+
+                        <ImageView
+                            style="@style/Quall.Ladrilho.Icone"
+                            android:src="@drawable/ic_q_texto" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Titulo"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/in_tp_mostrar" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Legenda"
+                            android:text="@string/in_tp_mostrar_detalhe" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/buttonControle"
+                        style="@style/Quall.Ladrilho"
+                        android:layout_marginEnd="8dp">
+
+                        <ImageView
+                            style="@style/Quall.Ladrilho.Icone"
+                            android:src="@drawable/ic_q_ajustes" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Titulo"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/in_tp_controlar" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Legenda"
+                            android:text="@string/in_tp_controlar_detalhe" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/buttonPrompterComCamera"
+                        style="@style/Quall.Ladrilho">
+
+                        <ImageView
+                            style="@style/Quall.Ladrilho.Icone"
+                            android:src="@drawable/ic_q_texto_camera" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Titulo"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/in_tp_com_camera" />
+
+                        <TextView
+                            style="@style/Quall.Ladrilho.Legenda"
+                            android:text="@string/in_tp_com_camera_detalhe" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- A captura pelo USB: a placa e a filmadora (`docs/placa-de-captura-usb.md` §13) e o DVD
+                 (`docs/dvd-para-mp4.md` §2.9). Só nos aparelhos de 64 bits com USB host (a `MainActivity`
+                 esconde nos outros). Em paisagem, na coluna da esquerda. -->
+            <LinearLayout
+                android:id="@+id/secaoUsb"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <TextView
+                    style="@style/RotuloDeSecao"
+                    android:accessibilityHeading="true"
+                    android:text="@string/in_captura_usb" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/cardVideoUsb"
+                        style="@style/Quall.Ladrilho.Deitado"
+                        android:layout_marginEnd="8dp">
+
+                        <ImageView
+                            style="@style/Quall.Ladrilho.Icone"
+                            android:src="@drawable/ic_q_placa" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/Quall.Ladrilho.Titulo"
+                                android:text="@string/in_placa_e_filmadora" />
+
+                            <TextView
+                                style="@style/Quall.Ladrilho.Legenda"
+                                android:text="@string/in_placa_e_filmadora_detalhe" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/cardConverterDvd"
+                        style="@style/Quall.Ladrilho.Deitado">
+
+                        <ImageView
+                            style="@style/Quall.Ladrilho.Icone"
+                            android:src="@drawable/ic_q_disco" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/Quall.Ladrilho.Titulo"
+                                android:text="@string/in_dvd" />
+
+                            <TextView
+                                style="@style/Quall.Ladrilho.Legenda"
+                                android:text="@string/in_dvd_detalhe" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- O rodapé: a rede (bolinha verde com rede, âmbar sem), o nome e o IP; a nota dos pares. Com
+                 o núcleo que não carregou, o Aviso vermelho no lugar (ele é o motivo de nada funcionar). -->
+            <LinearLayout
+                android:id="@+id/rodapeDoInicio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                app:coluna="esquerda"
+                app:noPe="true">
+
+                <LinearLayout
+                    android:id="@+id/capsulaDaRede"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/capsula"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <View
+                        android:id="@+id/bolinhaDaRede"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp" />
+
+                    <TextView
+                        android:id="@+id/textNomeDoAparelho"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:maxWidth="160dp"
+                        android:textColor="@color/q_texto"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/textIpDoRodape"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="monospace"
+                        android:maxLines="1"
+                        android:textColor="@color/q_texto2"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- Quem já pareou não precisa procurar o PIN; quem não pareou precisa saber que ele existe. -->
+                <TextView
+                    android:id="@+id/textNotaDosPares"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_horizontal"
+                    android:textColor="@color/q_texto3"
+                    android:textSize="12sp" />
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/textCoreState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:tipoDoAviso="vermelho" />
+            </LinearLayout>
+        </com.quall.android.ui.ColunasDaTela>
+    </ScrollView>
+
+    <!-- ============================ [B] Espelhar ============================
+
+         Voltar · "Espelhar" · engrenagem; "O que vamos espelhar?"; as origens em ladrilhos (a origem é
+         escolhida antes do PIN, `docs/fluxo-de-uso.md`, e fica fixa pela sessão); o nome na lista; a
+         linha da rede com o chip da qualidade; os avisos; e o botão (§6.2). A qualidade foi para a
+         folha de Ajustes. -->
+    <ScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/homeScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/colunasDoEspelhar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <ImageButton
+                    android:id="@+id/buttonVoltarDoEspelhar"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/voltar"
+                    android:src="@drawable/ic_q_voltar" />
+
+                <TextView
+                    style="@style/Quall.TituloDoCabecalho"
+                    android:accessibilityHeading="true"
+                    android:text="@string/espelhar" />
+
+                <ImageButton
+                    android:id="@+id/buttonAjustesEspelhar"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/ajustes"
+                    android:src="@drawable/ic_q_engrenagem" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Quall.TituloDeTela"
+                android:layout_marginTop="12dp"
+                android:text="@string/in_o_que_espelhar"
+                app:coluna="esquerda" />
+
+            <!-- Uma origem por ladrilho: "A tela" é fixa; cada câmera entra em runtime
+                 (CameraEnumerator), e o vídeo USB também. Os ladrilhos são `RadioButton`s filhos diretos
+                 deste `RadioGroup` (a grade é só o arranjo). -->
+            <com.quall.android.ui.GradeDeOrigens
+                android:id="@+id/radioGroupFonte"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                app:coluna="esquerda">
+
+                <com.quall.android.ui.LadrilhoDeOrigem
+                    android:id="@+id/radioFonteTela"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/fonte_tela" />
+
+                <!-- câmeras entram aqui em runtime, um LadrilhoDeOrigem por opção de CameraEnumerator -->
+            </com.quall.android.ui.GradeDeOrigens>
+
+            <!-- A placa de captura escolhida: a prévia parada (sem transmitir nem gravar), para navegar no
+                 menu do videocassete (`docs/placa-de-captura-usb.md` §11). A thread `quall-dv` desenha
+                 nela pela GPU (`PreviaDv`), com a posse de prévia do `DonoDaPlaca`. Continua aqui (§6.2):
+                 a tela própria da placa é o lugar dela, e o R16 da placa é outra rodada. -->
+            <LinearLayout
+                android:id="@+id/painelDaPlaca"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="esquerda">
+
+                <SurfaceView
+                    android:id="@+id/placaPreviaDv"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp"
+                    android:contentDescription="@string/in_previa_da_placa" />
+
+                <!-- Ouvir o som da placa no telefone e a foto do quadro (§11, itens 5 e 6). -->
+                <LinearLayout
+                    android:id="@+id/linhaDaPlaca"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonOuvirPlaca"
+                        style="@style/Widget.Quall.Botao.Pequeno"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="@string/in_ouvir" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonFotoPlaca"
+                        style="@style/Widget.Quall.Botao.Pequeno"
+                        android:layout_width="0dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/in_foto" />
+                </LinearLayout>
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/textPlaca"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone"
+                    app:tipoDoAviso="ambar" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/RotuloDeSecao"
+                android:layout_marginTop="18dp"
+                android:text="@string/in_aparece_como"
+                app:coluna="direita" />
+
+            <TextView
+                android:id="@+id/textNomeNaRede"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/campo_leitura"
+                android:ellipsize="end"
+                android:gravity="center_vertical"
+                android:maxLines="1"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/q_texto"
+                android:textSize="17sp"
+                app:coluna="direita" />
+
+            <!-- A linha da rede: o ícone e "Wi-Fi · {ip}" ou "Cabo USB · {ip}"; à direita, o chip da
+                 qualidade, que abre a folha de Ajustes. -->
+            <LinearLayout
+                android:id="@+id/linhaDeRede"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:minHeight="40dp"
+                android:orientation="horizontal"
+                app:coluna="direita">
+
+                <!-- A bolinha da rede (§6.2): verde com rede, âmbar sem; e o ícone do enlace, discreto. -->
+                <View
+                    android:id="@+id/bolinhaDaLinhaDeRede"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="8dp" />
+
+                <ImageView
+                    android:id="@+id/iconeDaRede"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_q_wifi"
+                    app:tint="@color/q_texto2" />
+
+                <TextView
+                    android:id="@+id/textIpNestaRede"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/chipQualidade"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/capsula"
+                    android:drawablePadding="4dp"
+                    android:fontFamily="monospace"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp"
+                    android:textColor="@color/q_texto"
+                    android:textSize="13sp"
+                    app:drawableEndCompat="@drawable/ic_q_seta_direita"
+                    app:drawableTint="@color/q_texto2" />
+            </LinearLayout>
+
+            <!-- Os avisos (a câmera negada, o USB, o fim do espelhamento, sem rede), acima do botão: um à
+                 vista, o resto em "+N" (§11.1). Com a permissão bloqueada, o toque abre os Ajustes. -->
+            <com.quall.android.ui.PilhaDeAvisos
+                android:id="@+id/avisosDoEspelhar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:avisosAVista="1"
+                app:coluna="direita"
+                app:noPe="true">
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/textCameraNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:tipoDoAviso="ambar" />
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/avisoSemRede"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/in_sem_rede_aviso"
+                    android:visibility="gone"
+                    app:tipoDoAviso="ambar" />
+            </com.quall.android.ui.PilhaDeAvisos>
+
+            <!-- Um toque. É o que `docs/fluxo-de-uso.md` conta para o emissor. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonMirror"
+                style="@style/Widget.Quall.Botao.Principal"
+                android:layout_marginTop="16dp"
+                android:text="@string/espelhar"
+                app:coluna="direita"
+                app:icon="@drawable/ic_q_espelhar"
+                app:noPe="true" />
+
+            <TextView
+                style="@style/Quall.Legenda"
+                android:layout_marginTop="8dp"
+                android:gravity="center_horizontal"
+                android:text="@string/in_uma_origem"
+                app:coluna="direita" />
+
+            <!-- Gravar a fita da filmadora DV (ou a placa) no aparelho (Galeria, Movies/Quall), sem
+                 espelhar. Só aparece com o vídeo USB escolhido. Só no Android. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGravarDv"
+                style="@style/Widget.Quall.Botao.Secundario"
+                android:layout_marginTop="12dp"
+                android:text="@string/in_gravar_a_fita"
+                android:visibility="gone"
+                app:coluna="direita" />
+
+            <LinearLayout
+                android:id="@+id/painelGravacao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <!-- A prévia da gravação: a mesma `PreviaDv` do espelhamento (uma de cada vez). -->
+                <SurfaceView
+                    android:id="@+id/gravacaoPreviaDv"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp" />
+
+                <TextView
+                    android:id="@+id/textGravacao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/q_texto"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonPararGravacao"
+                    style="@style/Widget.Quall.Botao.Perigo"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/in_parar_a_gravacao" />
+            </LinearLayout>
+
+            <!-- Diagnóstico/bancada, escondido atrás dos sete toques na marca (docs/ux-m6.md, tarefa 1).
+                 Nada aqui dentro é fluxo de produto: a lista crua do mDNS e os botões de captura e
+                 multicast são instrumento de bancada. Com ele ligado, Espelhar rola até aqui
+                 (`idr-corrida.py` entra por `cardEspelhar` e dá swipe até `buttonCaptureScreen`). -->
+            <LinearLayout
+                android:id="@+id/diagnosticoSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:coluna="direita">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@color/q_contorno" />
+
+                <!-- A lista de produto mora em `ReceptorActivity`. Esta mostra o JSON cru que o
+                     `quall_browser_*` devolveu, o único jeito de distinguir "o núcleo não achou" de "a
+                     casca perdeu" numa rede em que o mDNS morre em silêncio. Tocar leva a exibir. -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/aparelhos_esperando"
+                    android:textColor="@color/q_texto"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/aparelhos_esperando_nota"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/buttonDiscover"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/procurar_aparelhos" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:defaultFocusHighlightEnabled="false"
+                    android:id="@+id/recyclerDevices"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="60dp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@color/q_contorno" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/verificacao_sem_rede"
+                    android:textColor="@color/q_texto"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/bancada_pronto"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/buttonCaptureScreen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/bancada_capturar_tela" />
+
+                <Button
+                    android:id="@+id/buttonIdrTest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/bancada_testar_idr" />
+
+                <Button
+                    android:id="@+id/buttonCaptureCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/bancada_capturar_camera" />
+
+                <Button
+                    android:id="@+id/buttonMulticastTest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/bancada_testar_multicast" />
+
+                <Button
+                    android:id="@+id/buttonMulticastTestNoLock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/bancada_testar_sem_lock" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/bancada_arquivos"
+                    android:textColor="@color/q_texto3"
+                    android:textSize="11sp" />
+            </LinearLayout>
+            <!-- fim de diagnosticoSection -->
+        </com.quall.android.ui.ColunasDaTela>
+    </ScrollView>
+
+    <!-- Conteúdo animado usado pelos testes de captura sem rede: sem ele a tela real fica
+         estática e a VirtualDisplay quase não produz quadro — mediria o app parado. -->
+    <com.quall.android.ui.AnimatedContentView
+        android:id="@+id/animatedContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- ==================== [C] espera / espelhamento (tela cheia) ====================
+
+         A tela (§6.4): os anéis, a pílula AGUARDANDO, "Pronto para espelhar", a instrução, o letreiro do
+         PIN e o chip do endereço (a ordem troca com pares: o endereço primeiro e "Aparelho novo? PIN"
+         embaixo, §11.3), os avisos e "Cancelar"; transmitindo, NO AR, "Espelhando para" e o par, o aviso
+         do conteúdo protegido e "Parar de espelhar".
+
+         A câmera (§6.5): a prévia na tela toda, com o degradê no alto e no pé; no alto a pílula, a
+         resolução em mono e o nome da câmera; esperando, o bloco da espera num cartão de vidro;
+         enviando, "Enviando para" e o par; no pé os avisos, a nota da notificação e os três controles
+         redondos (microfone, gravar, parar). -->
+    <FrameLayout
+        android:id="@+id/mirrorOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FF000000"
+        android:visibility="gone">
+
+        <!-- Fica visível só enquanto espelha, com a bandeira de bancada: dá conteúdo real para a
+             VirtualDisplay capturar quando se está medindo taxa. -->
+        <com.quall.android.ui.AnimatedContentView
+            android:id="@+id/mirrorAnimated"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- A prévia pelo CameraX, do braço de controle de bancada (`camera_comum_pelo_camerax`).
+             `fitCenter`: mostra o fluxo INTEIRO, como a rede (`docs/bancada.md` §8.15). -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/mirrorPrevia"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/previa_da_camera"
+            android:visibility="gone"
+            app:implementationMode="performance"
+            app:scaleType="fitCenter" />
+
+        <!-- A prévia da câmera comum pelo dono da captura (desde 24/09, `docs/teleprompter-com-camera.md`
+             §8.6): a terceira saída do divisor GL, desenhada nesta `SurfaceView`. -->
+        <SurfaceView
+            android:id="@+id/mirrorPreviaDono"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/previa_da_camera"
+            android:visibility="gone" />
+
+        <!-- A prévia da filmadora DV: a thread `quall-dv` desenha nela pela GPU. Ver `PreviaDv`. -->
+        <SurfaceView
+            android:id="@+id/mirrorPreviaDv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <!-- O véu (§6.5): o degradê preto no alto (0,72 → 0) e no pé (0 → 0,82); o meio limpo. -->
+        <View
+            android:id="@+id/mirrorVeu"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/veu_da_previa"
+            android:visibility="gone" />
+
+        <ScrollView
+            android:defaultFocusHighlightEnabled="false"
+            android:id="@+id/mirrorRolagem"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <!-- Os filhos são os de antes, no mesmo pai: a troca de lugar do `pinGroup` com o
+                 `addressGroup` (com pares) continua pelo índice. As colunas da paisagem e o vidro da
+                 câmera são decididos pela `MainActivity` a cada modo (tela ou câmera). -->
+            <com.quall.android.ui.ColunasDaTela
+                android:id="@+id/mirrorContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
+
+                <!-- O alto: a pílula (câmera), a resolução/o entregue em mono pequeno, e o nome da câmera. -->
+                <LinearLayout
+                    android:id="@+id/linhaDoAlto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="32dp"
+                    android:orientation="horizontal">
+
+                    <com.quall.android.ui.PilulaDeEstado
+                        android:id="@+id/pilulaDoAlto"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="10dp" />
+
+                    <!-- O que está no ar, pedido × entregue (`core/Entrega.kt`): só no Android, decisão de
+                         `docs/fluxo-de-uso.md` (escolher sem confirmar é o silêncio). O motivo vira Aviso. -->
+                    <TextView
+                        android:id="@+id/textEntrega"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:fontFamily="monospace"
+                        android:maxLines="1"
+                        android:textColor="#BFFFFFFF"
+                        android:textSize="12sp" />
+
+                    <!-- Qual câmera está no ar. -->
+                    <TextView
+                        android:id="@+id/textMirrorOrigem"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:maxWidth="150dp"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="13sp" />
+
+                    <!-- "Ajustes da câmera" (R9, `docs/controles-de-camera.md` §4.1), com a engrenagem (a decisão do
+                         Pessoa Exemplo de 01/10: o mesmo ícone da R5, onde `ic_q_ajustes` é o "Ajustes" do texto): abre e fecha o painel
+                         próprio, por cima da metade de baixo (deitado, da direita). Com a fonte
+                         `usb-dv:` e sem o dono da captura, abre os Ajustes gerais. Na transmissão da
+                         tela também, para mudar "Manter tela ligada" sem encerrar a sessão. -->
+                    <ImageButton
+                        android:id="@+id/botaoAjustesDaCamera"
+                        style="@style/Quall.BotaoRedondo"
+                        android:layout_marginStart="8dp"
+                        android:contentDescription="@string/in_ajustes_da_camera"
+                        android:src="@drawable/ic_q_engrenagem"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <com.quall.android.ui.AneisDaEspera
+                    android:id="@+id/aneisDaEspera"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp" />
+
+                <com.quall.android.ui.PilulaDeEstado
+                    android:id="@+id/pilulaCentral"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="14dp" />
+
+                <TextView
+                    android:id="@+id/textMirrorTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_horizontal"
+                    android:letterSpacing="-0.01"
+                    android:text="@string/in_pronto_para_espelhar"
+                    android:textColor="@color/q_texto"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <!-- Transmitindo: "Espelhando para" (a tela) ou "Enviando para" (a câmera) e o par. -->
+                <LinearLayout
+                    android:id="@+id/blocoEnviando"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/textEnviandoRotulo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/in_espelhando_para"
+                        android:textColor="@color/q_texto2"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/textEnviandoPar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:gravity="center_horizontal"
+                        android:maxLines="2"
+                        android:textColor="@color/q_texto"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- ======== o bloco da espera (sobre o vidro, na câmera) ======== -->
+
+                <TextView
+                    android:id="@+id/textMirrorInstructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_horizontal"
+                    android:lineSpacingMultiplier="1.15"
+                    android:textColor="@color/q_texto2"
+                    android:textSize="15sp"
+                    app:noVidro="true" />
+
+                <!-- Com pares conhecidos: a frase, e o endereço antes do PIN. -->
+                <TextView
+                    android:id="@+id/blocoParConhecido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/in_pareados_entram_direto"
+                    android:textColor="@color/q_texto"
+                    android:textSize="15sp"
+                    android:visibility="gone"
+                    app:noVidro="true" />
+
+                <!-- O PIN: o letreiro sem pares ("NA PRIMEIRA VEZ, O PIN"); com pares, a linha curta
+                     "Aparelho novo? PIN 482 719" depois do endereço. **Nunca some** na espera: "conheço
+                     algum par" não é "conheço este". `textPin` é um `TextView` só, com o PIN no texto. -->
+                <LinearLayout
+                    android:id="@+id/pinGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    app:noVidro="true">
+
+                    <TextView
+                        android:id="@+id/textPinRotulo"
+                        style="@style/RotuloDeSecao"
+                        android:layout_width="wrap_content"
+                        android:importantForAccessibility="no"
+                        android:text="@string/in_primeira_vez_pin" />
+
+                    <com.quall.android.ui.LetreiroDoPin
+                        android:id="@+id/textPin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp" />
+                </LinearLayout>
+
+                <!-- O endereço: "ou pelo endereço" e o chip, que copia. Fallback obrigatório de rede
+                     (`docs/ux-m6.md`, tarefa 2): na espera, sempre à vista. -->
+                <LinearLayout
+                    android:id="@+id/addressGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    app:noVidro="true">
+
+                    <TextView
+                        android:id="@+id/textEnderecoRotulo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/in_ou_pelo_endereco"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="13sp" />
+
+                    <com.quall.android.ui.ChipDeEndereco
+                        android:id="@+id/textMirrorAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+
+                    <!-- Os outros endereços deste aparelho (o cabo, outra rede), menores. -->
+                    <TextView
+                        android:id="@+id/textOutrosEnderecos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="monospace"
+                        android:gravity="center_horizontal"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <!-- ======== o pé ======== -->
+
+                <!-- Os avisos: o do controlador de taxa e a tentativa anterior, a prévia suspensa, o
+                     conteúdo protegido (a tela no ar), o motivo da entrega, o "sem som" da gravação e o
+                     microfone. No máximo dois à vista, o resto em "+N" (§6.5). -->
+                <com.quall.android.ui.PilhaDeAvisos
+                    android:id="@+id/avisosDaEspera"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:avisosAVista="2"
+                    app:noPe="true">
+
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/textAvisoDaTransmissao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:tipoDoAviso="ambar" />
+
+                    <!-- Dito quando a prévia é suspensa por haver transmissão no ar (braço CameraX). -->
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/textPreviaSuspensa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/previa_suspensa"
+                        android:visibility="gone"
+                        app:tipoDoAviso="ambar" />
+
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/avisoConteudoProtegido"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/in_tudo_vai_junto"
+                        android:visibility="gone"
+                        app:tipoDoAviso="info" />
+
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/avisoDaEntrega"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:tipoDoAviso="info" />
+
+                    <!-- "Gravando SEM SOM — ligue o microfone" (§8.6), ou a mensagem de quem não grava. -->
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/textGravacaoCamera"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:tipoDoAviso="ambar" />
+
+                    <!-- Por que o microfone não ligou; com a permissão bloqueada, o toque abre os Ajustes. -->
+                    <com.quall.android.ui.AvisoDaTela
+                        android:id="@+id/textMicrofone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:tipoDoAviso="ambar" />
+                </com.quall.android.ui.PilhaDeAvisos>
+
+                <TextView
+                    android:id="@+id/textNotaDaNotificacao"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_horizontal"
+                    android:text="@string/in_parar_na_notificacao"
+                    android:textColor="#B8FFFFFF"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    app:noPe="true" />
+
+                <!-- A placa de captura no ar: "Ouvir" e "Foto" (§11, itens 5 e 6), acima dos controles. As
+                     pílulas entram pelo código. -->
+                <LinearLayout
+                    android:id="@+id/linhaDaPlacaNoAr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    app:noPe="true" />
+
+                <!-- Os três controles redondos (§6.5): o microfone, o gravar (o da câmera ou o da placa) e
+                     o parar, cada um na sua casa. Em paisagem, numa coluna na borda direita. -->
+                <LinearLayout
+                    android:id="@+id/linhaDosControlesDaCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="bottom"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    app:noPe="true">
+
+                    <FrameLayout
+                        android:id="@+id/casaDoMicrofone"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <FrameLayout
+                        android:id="@+id/casaDoGravar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <FrameLayout
+                        android:id="@+id/casaDoParar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <!-- Os números técnicos: só com o diagnóstico à mostra (os sete toques na marca). -->
+                <TextView
+                    android:id="@+id/textMirrorStats"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFB8B8C0"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+                <!-- A tela: "Cancelar" (secundário) esperando, "Parar de espelhar" (perigo) no ar. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonMirrorCancel"
+                    style="@style/Widget.Quall.Botao.Secundario"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/cancelar"
+                    app:noPe="true" />
+            </com.quall.android.ui.ColunasDaTela>
+        </ScrollView>
+    </FrameLayout>
+
+</FrameLayout>

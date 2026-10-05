@@ -1,0 +1,32 @@
+[
+  {
+    "upstream_filename": "auto-value-parent-1.6.3.pom",
+    "url": "https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-parent/1.6.3/auto-value-parent-1.6.3.pom",
+    "bytes": 1689
+  },
+  {
+    "upstream_filename": "guava-parent-26.0-android.pom",
+    "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava-parent/26.0-android/guava-parent-26.0-android.pom",
+    "bytes": 10180
+  },
+  {
+    "upstream_filename": "libyuv-LICENSE",
+    "url": "https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/LICENSE?format=TEXT",
+    "bytes": 1506
+  },
+  {
+    "upstream_filename": "libyuv-README.chromium",
+    "url": "https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/README.chromium?format=TEXT",
+    "bytes": 305
+  },
+  {
+    "upstream_filename": "CameraX-CMakeLists.txt",
+    "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/camera/camera-core/src/main/cpp/CMakeLists.txt?format=TEXT",
+    "bytes": 1364
+  },
+  {
+    "upstream_filename": "CameraX-native-tree.json",
+    "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/camera/camera-core/src/main/cpp/?format=JSON",
+    "bytes": 663
+  }
+]

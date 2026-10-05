@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.usb.host" android:required="true" />
+    <!-- O UsbUserPermissionManager recusa sem diálogo o requestPermission de um dispositivo da
+         classe vídeo se o app não tem CAMERA (medido no S24: "Camera permission required for USB
+         video class devices"). O espiao.sh concede por pm grant, sem toque. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <application
+        android:label="Espião DV"
+        android:allowBackup="false">
+        <!-- Sem filtro de USB_DEVICE_ATTACHED: um diálogo só (o do requestPermission), e o
+             espião não abre sozinho quando alguém pluga uma câmera. -->
+        <activity
+            android:name=".EspiaoActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|density">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- O espião do leitor de DVD (docs/dvd-para-mp4.md): só pelo am start. -->
+        <activity
+            android:name=".EspiaoDvdActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|density" />
+    </application>
+</manifest>

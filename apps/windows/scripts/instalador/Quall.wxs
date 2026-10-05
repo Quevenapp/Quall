@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ================================================================================================
+  INSTALADOR DO QUALL STUDIO PARA WINDOWS — MSI (WiX v5/v6)
+  ================================================================================================
+
+  RELEASE ATUAL (05/10/2026): MSI do app x64 para revisão da Microsoft Store, Windows 11 build
+  22000 ou posterior, com a fonte COM da câmera virtual. Sem monitor estendido/SudoVDA. O app
+  atual usa MFVirtualCameraLifetime_Session e CurrentUser (baia.rs), não Lifetime_System.
+  A limpeza preservada abaixo atende também nós legados; ainda exige validação Windows.
+  THIRD_PARTY_NOTICES.txt acompanha o app. O texto seguinte documenta a bancada histórica.
+
+  POR QUE MSI, E NÃO MSIX. A decisão foi tomada contra o que o repositório já tinha começado
+  (`integrations/camera-windows/msix/`), e por quatro razões medidas, não por gosto:
+
+  1. **O MSIX não desfaz o que o produto publica.** O que precisa sair na desinstalação não é só
+     arquivo: é o nó de dispositivo `SWD\VCAMDEVAPI\<hash>` que `MFCreateVirtualCamera` cria em
+     tempo de execução, em QUATRO classes de interface. `Remove-AppxPackage` desinstala o pacote e
+     deixa o nó de pé — o próprio `empacotar-msix.ps1` já registra isso no rodapé. Um MSI tem
+     tabela de registro com desfazer automático e sequência de desinstalação onde uma ação
+     customizada roda **antes** de os arquivos sumirem.
+
+  2. **O MSIX põe o app em contêiner de aplicativo, e ninguém mediu o que isso quebra.**
+     `docs/camera-virtual.md` é explícito: com MSIX o Package SID passa a valer para a DACL do cano
+     nomeado (hoje `SY`+`LS`+`AU`) e para as isenções de rede do AppContainer. "Este é o primeiro
+     lugar onde a travessia de processo pode quebrar — e ninguém testou." Um instalador não é o
+     lugar de estrear um risco desses.
+
+  3. **MSIX sem assinatura não instala** fora do Modo de Desenvolvedor. MSI sem assinatura instala
+     com um aviso do SmartScreen. Os dois querem certificado no fim; só um deles deixa provar o
+     resto do caminho antes de tê-lo.
+
+  4. **A câmera virtual não exige empacotamento** — medido no Windows de teste em 2026-08-25 e registrado em
+     `docs/identidade-windows.md`: `GetPackageFamilyName` devolve `APPMODEL_ERROR_NO_PACKAGE`, a
+     DLL é `NotSigned`, e funciona. O argumento que empurrava para MSIX era falso.
+
+  A identidade do Partner Center (`Quven.Quall`) continua valendo e continua registrada em
+  `docs/identidade-windows.md`: ela é para a Store, e a Store é outro caminho, não este.
+
+  ================================================================================================
+  O QUE ESTE PACOTE PUBLICA — e é a lista que a desinstalação tem de desfazer inteira
+  ================================================================================================
+
+    C:\Program Files\Quall\quall-app.exe                     (o app)
+    C:\Program Files\Quall\quall_camera_fonte.dll            (a fonte de mídia da câmera)
+    C:\Program Files\Quall\camera-desinstalar.ps1            (a varredura de remoção)
+    HKLM\SOFTWARE\Classes\CLSID\{5C75FE52-…}\…               (o registro COM da DLL)
+    Menu Iniciar > Quall Studio                              (o atalho)
+    C:\Program Files\Quall\THIRD_PARTY_NOTICES.txt             (os avisos de terceiros)
+    duas regras de firewall                                  (entrada, sub-rede local)
+    C:\ProgramData\Quall                                     (o diário da DLL)
+
+  **E uma coisa que ele NÃO publica**: o nó da câmera virtual. Quem o cria é o app. Na bancada
+  histórica ele usava `Lifetime_System` e sobrevivia ao app fechar/reiniciar (26/08/2026);
+  o release atual usa `Lifetime_Session`/CurrentUser. A desinstalação precisa tratar também os
+  nós legados que a instalação nunca criou, e é por isso que
+  `camera-desinstalar.ps1` existe e é chamado daqui. Leia o cabeçalho dele antes de mexer: a
+  armadilha é que um removedor que confere menos do que a criação publica **fabrica** o fantasma
+  que promete eliminar.
+
+  ================================================================================================
+  COMO CONSTRUIR
+
+  Os comandos ficam em `construir-msi.ps1` e no README desta pasta, e não aqui, por um motivo
+  mecânico: **comentário de XML não pode conter dois hifens seguidos**, e toda linha de comando do
+  WiX e do dotnet os tem. Escritos aqui, ou o arquivo deixa de ser XML válido, ou viram um traço
+  parecido que quebra quando alguém copia. (Descoberto por `xmllint` neste arquivo, antes de
+  qualquer máquina Windows vê-lo.)
+
+  NADA NESTE ARQUIVO FOI COMPILADO. Ver "O que NÃO foi provado" no README desta pasta.
+  ================================================================================================
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:fire="http://wixtoolset.org/schemas/v4/wxs/firewall">
+
+  <?ifndef Versao ?><?define Versao = "0.1.0" ?><?endif?>
+  <?ifndef Bin ?><?define Bin = "bin" ?><?endif?>
+
+  <!--
+    O CLSID da fonte de mídia. Ele é o MESMO valor de `CLSID_TEXTO` em
+    `integrations/camera-windows/fonte/src/lib.rs` e o mesmo que `camera-desinstalar.ps1` usa para
+    decidir de quem é cada nó. Três lugares com o mesmo GUID escrito à mão é uma divergência
+    esperando para acontecer — por isso `tools/confere-desinstalacao-camera.py` compara os três e
+    reprova se discordarem.
+  -->
+  <?define ClsidFonte = "{5C75FE52-9204-45F6-B143-58B1AC8048E5}" ?>
+
+  <Package Name="Quall Studio"
+           Manufacturer="Veneri &amp; Quellis Ltda."
+           Version="$(var.Versao)"
+           Language="1046"
+           Codepage="1252"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500"
+           UpgradeCode="78BDE14D-1A96-480F-91CA-0F1F496DEBF3">
+
+    <!--
+      `UpgradeCode` é FIXO PARA SEMPRE. Ele é a identidade do produto entre versões: é por ele que
+      a versão 0.2 sabe que precisa desinstalar a 0.1 em vez de conviver com ela. Trocá-lo produz
+      duas instalações do Quall na mesma máquina, cada uma com sua câmera virtual — e a de baixo
+      fica sem desinstalador.
+    -->
+    <MajorUpgrade
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="Já há uma versão mais nova do Quall Studio instalada nesta máquina." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- MFCreateVirtualCamera exige Windows build 22000. VersionNT sozinho não distingue
+         Windows 10 de 11. Installed permite manter/desinstalar uma instalação anterior. -->
+    <Launch Condition="Installed OR (VersionNT64 AND WindowsBuild &gt;= 22000)"
+            Message="O Quall Studio exige Windows 11 de 64 bits (build 22000 ou mais novo)." />
+
+    <!--
+      A arquitetura. `quall-app.exe` é x64 e a DLL da câmera também; o Frame Server que carrega a
+      DLL é x64. Não há build de 32 bits, e não deve haver: a medida de 2026-08-23 mostra que um
+      app de 32 bits consome a câmera **sem nenhuma DLL de 32 bits nossa**, porque a câmera é um
+      dispositivo e não um filtro carregado no processo.
+    -->
+    <Property Id="ARPPRODUCTICON" Value="IconeQuall.exe" />
+    <Property Id="ARPURLINFOABOUT" Value="https://queven.com.br" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <!--
+      Fechar o app antes de mexer nos arquivos dele. Sem isso, atualizar por cima de um Quall
+      aberto deixa o `.exe` travado e o instalador pede reinício — o modo mais comum de um MSI
+      pedir reboot sem precisar.
+    -->
+
+    <util:CloseApplication Id="FecharQuall"
+                           Target="quall-app.exe"
+                           CloseMessage="yes"
+                           RebootPrompt="no"
+                           Description="O Quall Studio está aberto e precisa ser fechado para continuar." />
+
+    <!--
+      OS NOMES DE CONTA SAO TRADUZIDOS, E ISSO DERRUBOU A PRIMEIRA INSTALACAO.
+
+      `util:PermissionEx` resolve o atributo `User` por `LookupAccountName`, que fala o idioma do
+      Windows. Neste Windows de teste (pt-BR) a conta chamada "LOCAL SERVICE" em ingles se chama
+      "SERVICO LOCAL", e o `LookupAccountName` nao acha nenhuma das duas escritas do outro jeito.
+      Medido em 2026-08-30, primeira instalacao deste pacote:
+
+          ExecSecureObjects: Error 0x80070534: failed to get sid for account: LOCAL SERVICE
+          CustomAction Wix4ExecSecureObjects_X64 returned actual error code 1603
+
+      `0x80070534` e ERROR_NONE_MAPPED. E o modo de falha foi PIOR que o previsto no README desta
+      pasta, que temia "ficar mais restritivo do que a DLL precisa, e o sintoma seria o diario
+      parar de ser escrito, silenciosamente": ele nao ficou restritivo, ele ABORTOU A INSTALACAO
+      inteira com 1603 e desfez tudo. Melhor assim (barulho vale mais que silêncio), mas só
+      porque alguem instalou.
+
+      `util:QueryWindowsWellKnownSIDs` traz as propriedades `WIX_ACCOUNT_*`, que a extensao
+      preenche em tempo de instalacao com o nome LOCALIZADO de cada conta bem conhecida, a partir
+      do SID. E o unico jeito de nomear "LocalService" numa maquina cujo idioma nao se sabe.
+    -->
+    <util:QueryWindowsWellKnownSIDs />
+
+    <Feature Id="Principal" Title="Quall Studio" Level="1">
+      <ComponentGroupRef Id="Programa" />
+      <ComponentGroupRef Id="CameraVirtual" />
+      <ComponentGroupRef Id="Atalhos" />
+      <ComponentGroupRef Id="Dados" />
+      <?ifndef SemFirewall ?>
+      <ComponentGroupRef Id="Firewall" />
+      <?endif?>
+    </Feature>
+
+    <!-- =========================================================================================
+         AS AÇÕES CUSTOMIZADAS, E A ORDEM DELAS
+         =========================================================================================
+
+         A ordem importa e não é óbvia. Na desinstalação:
+
+           1. `RemoverCameraVirtual` — precisa rodar enquanto `camera-desinstalar.ps1` AINDA EXISTE
+              no disco, logo antes de `RemoveFiles`.
+           2. `PararFrameServer` — a DLL fica travada enquanto `svchost -k Camera` a tiver
+              carregada, e `RemoveFiles` falharia (ou pediria reinício). O serviço sobe sozinho na
+              próxima vez que alguém abrir uma câmera; pará-lo não deixa a máquina sem nada.
+           3. `RemoveFiles`.
+
+         Na instalação, só `PararFrameServer` roda, e pelo mesmo motivo ao contrário: trocar uma
+         DLL que o Frame Server já carregou exige que ele a solte.
+
+         `Return="ignore"` nas duas, e é decisão, não descuido:
+
+           - Se parar o serviço falhar, o pior caso é o MSI pedir reinício. Abortar seria pior.
+           - Se a remoção da câmera falhar, o script **grava um marcador** em
+             `C:\ProgramData\Quall\REMOCAO-INCOMPLETA.txt` e a pasta fica de pé com ele. Um MSI que
+             se recusa a terminar leva a pessoa a remover à força — e remoção à força é exatamente
+             o que produz o fantasma. A desinstalação termina, e não mente: o marcador fica, e ele
+             diz o comando que falta.
+    -->
+    <!--
+      NENHUMA propriedade dentro do ExeCommand — e o motivo NÃO é o que este comentário dizia.
+
+      Uma ação de tipo 34 (`Directory` + `ExeCommand`) recebe a pasta resolvida como **diretório de
+      trabalho**, e é isso que se usa aqui: o script é chamado pelo nome relativo, e o
+      `powershell.exe` e o `cmd.exe` vêm do PATH (System32 está nele para o serviço do instalador).
+
+      MEDIDO EM 2026-08-30, NO WINDOWS DE TESTE, construindo uma gêmea com o defeito reintroduzido
+      (`prova-gemea.ps1 -Defeito installfolder`):
+
+      1. **A hipótese antiga estava errada.** Escrever `[INSTALLFOLDER]camera-desinstalar.ps1`
+         **não** chega vazio. O log da desinstalação mostra o `Target` já resolvido:
+
+             CustomActionSchedule(Action=RemoverCameraVirtual, ActionType=3170,
+               Source=C:\Program Files\Quall-Prova\,
+               Target=powershell.exe … -File C:\Program Files\Quall-Prova\camera-desinstalar.ps1)
+
+         O `Target` de uma ação adiada é formatado quando ela é **agendada**, na sequência
+         imediata, onde as propriedades existem. Não é `CustomActionData` e não chega vazio.
+
+      2. **E mesmo assim ela não roda.** `desinstalacao.log` não foi escrito, e o `Return="ignore"`
+         engoliu o erro: a desinstalação terminou com 0. A causa é o **espaço não escapado** —
+         `-File C:\Program Files\…` é lido pelo PowerShell como `-File C:\Program`. Reproduzido
+         isolado no mesmo Windows de teste: um `.ps1` que sai com 7, chamado do mesmo jeito, devolve `7` com
+         aspas e `-196608` (0xFFFD0000, "não consegui carregar o arquivo") sem elas.
+
+      Ou seja: o defeito é real e o modo de falha é o previsto — ação muda, `Return="ignore"`
+      engolindo —, mas a causa é o espaço, não a propriedade. Corrigi-lo pondo aspas em volta do
+      caminho também funcionaria; o nome relativo é melhor porque não depende de acertar duas
+      camadas de citação dentro de um atributo XML.
+    -->
+    <CustomAction Id="RemoverCameraVirtual"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File camera-desinstalar.ps1"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <CustomAction Id="PararFrameServer"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="cmd.exe /c &quot;sc stop FrameServerMonitor &amp; sc stop FrameServer &amp; exit /b 0&quot;"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RemoverCameraVirtual" Before="PararFrameServer"
+              Condition="REMOVE=&quot;ALL&quot;" />
+      <Custom Action="PararFrameServer" Before="RemoveFiles" />
+    </InstallExecuteSequence>
+
+    <!-- O Id termina em .exe para que o Windows Installer extraia o recurso de icone.
+         build.rs escreve RT_ICON e RT_GROUP_ICON 1 a partir de quall.ico e os embute no app. -->
+    <Icon Id="IconeQuall.exe" SourceFile="$(var.Bin)\quall-app.exe" />
+  </Package>
+
+  <!-- ===========================================================================================
+       O PROGRAMA
+       =========================================================================================== -->
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Quall" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="Programa" Directory="INSTALLFOLDER">
+      <Component Id="CompApp" Guid="1D163671-D262-4709-AF4C-CF7CB692B289" Bitness="always64">
+        <File Id="quall_app.exe" Source="$(var.Bin)\quall-app.exe" KeyPath="yes" />
+      </Component>
+
+      <!--
+        A varredura de remoção viaja DENTRO do pacote, e não referenciada de outra pasta do
+        repositório. Um instalador que dependesse de um arquivo fora dele teria uma desinstalação
+        que funciona na máquina de quem compilou e falha na máquina de quem instalou — e o modo de
+        falha seria justamente deixar a câmera fantasma para trás.
+      -->
+      <!--
+        `$(var.Bin)` e nao um caminho relativo nu. O `wix` resolve `Source` a partir do DIRETORIO
+        DE TRABALHO, nao da pasta do `.wxs`; com `Source="camera-desinstalar.ps1"` o primeiro
+        `wix build` desta pasta (2026-08-30, no Windows de teste) morreu com
+
+            error WIX0103: Cannot find the File file 'camera-desinstalar.ps1'
+            The following paths were checked: camera-desinstalar.ps1
+
+        `construir-msi.ps1` passa a copiar a varredura para a mesma area de estagio dos dois
+        binarios, entao os tres arquivos do pacote vem do mesmo lugar e o pacote nao depende de
+        onde alguem estava quando chamou o `wix`.
+      -->
+      <Component Id="CompVarredura" Guid="2D837FD1-997D-4B26-8870-84713359A036" Bitness="always64">
+        <File Id="camera_desinstalar.ps1" Source="$(var.Bin)\camera-desinstalar.ps1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="CompLicencasTerceiros" Guid="B3FEC92E-8BE5-4C6C-941A-660586198C6E" Bitness="always64">
+        <File Id="third_party_notices.txt" Source="$(var.Bin)\THIRD_PARTY_NOTICES.txt" KeyPath="yes" />
+        <File Id="license_mpl.txt" Source="$(var.Bin)\LICENSE" />
+        <File Id="license_scope.md" Source="$(var.Bin)\LICENSE-SCOPE.md" />
+        <File Id="notice_quall.txt" Source="$(var.Bin)\NOTICE.txt" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ===========================================================================================
+       A CÂMERA VIRTUAL — a DLL e o registro COM dela
+       =========================================================================================== -->
+  <Fragment>
+    <ComponentGroup Id="CameraVirtual" Directory="INSTALLFOLDER">
+      <Component Id="CompFonte" Guid="721BE62E-0230-4126-BF51-7AE8D29D4643" Bitness="always64">
+        <File Id="quall_camera_fonte.dll" Source="$(var.Bin)\quall_camera_fonte.dll" KeyPath="yes" />
+
+        <!--
+          O REGISTRO COM É DECLARADO AQUI, E NÃO POR `regsvr32`. É a diferença central entre este
+          instalador e o `instalar.ps1` de bancada.
+
+          `regsvr32` chama `DllRegisterServer`, que escreve as chaves por conta própria. Funciona,
+          e a desinstalação por `regsvr32 /u` também — desde que a DLL ainda exista, esteja
+          carregável, e o Frame Server não a tenha travada. Três condições, e cada uma é um jeito
+          de a desinstalação deixar o registro COM órfão apontando para um arquivo que já sumiu.
+
+          Declarando as chaves na tabela de registro do MSI, quem as desfaz é o Windows Installer:
+          sem executar código nosso, sem carregar a DLL, e com rollback automático se a instalação
+          for interrompida no meio.
+
+          Os valores abaixo são os MESMOS que `registrar()` escreve em
+          `integrations/camera-windows/fonte/src/lib.rs` — inclusive o `ThreadingModel = Both`,
+          que é o que a câmera virtual do próprio Windows usa (conferido no registro do Windows de teste).
+          `DllRegisterServer` continua existindo na DLL e continua funcionando; ele é o caminho da
+          bancada. Este é o caminho do produto.
+        -->
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Classes\CLSID\$(var.ClsidFonte)" ForceDeleteOnUninstall="yes">
+          <RegistryValue Type="string" Value="Quall Virtual Camera Source" />
+          <RegistryKey Key="InprocServer32">
+            <RegistryValue Type="string" Value="[INSTALLFOLDER]quall_camera_fonte.dll" />
+            <RegistryValue Name="ThreadingModel" Type="string" Value="Both" />
+          </RegistryKey>
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ===========================================================================================
+       ATALHOS
+       =========================================================================================== -->
+  <Fragment>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="MenuQuall" Name="Quall" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="Atalhos" Directory="MenuQuall">
+      <Component Id="CompAtalho" Guid="D5495204-F5FE-4D6B-9A05-AE913529A95B" Bitness="always64">
+        <Shortcut Id="AtalhoQuall"
+                  Name="Quall Studio"
+                  Description="Espelhe a tela deste computador para outro aparelho na sua rede."
+                  Target="[INSTALLFOLDER]quall-app.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoverMenuQuall" On="uninstall" />
+        <!--
+          A chave de KeyPath de um componente de atalho tem de ser HKCU (regra do ICE38/ICE57): um
+          atalho por-usuário com KeyPath por-máquina é o erro clássico que faz o MSI reparar-se
+          sozinho toda vez que outro usuário abre o app.
+        -->
+        <RegistryValue Root="HKCU" Key="Software\Queven\Quall" Name="atalho" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ===========================================================================================
+       O DIÁRIO
+       =========================================================================================== -->
+  <Fragment>
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DadosQuall" Name="Quall" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="Dados" Directory="DadosQuall">
+      <Component Id="CompDados" Guid="3AA18505-128D-4A7A-8AD3-89A62E1EC931" Bitness="always64">
+        <CreateFolder>
+          <!--
+            A DLL é carregada por processos de contas diferentes e todas escrevem no mesmo arquivo:
+            `svchost -k Camera` (NT AUTHORITY\LocalService), o Frame Server Monitor (LocalSystem) e
+            o processo do app. O `instalar.ps1` de bancada resolve isso com
+            `icacls … /grant *S-1-1-0:(OI)(CI)M` — **Todos**, que inclui LOGON ANÔNIMO.
+
+            Isso é aceitável numa bancada e não num produto. Aqui a concessão é nominal: LocalService
+            (quem de fato escreve o diário) e Users. LocalSystem já tem acesso por ser LocalSystem.
+
+            **Pelas propriedades, e não pelo nome em inglês.** `User="LOCAL SERVICE"` derrubou a
+            primeira instalação deste pacote com `0x80070534` (ERROR_NONE_MAPPED) num Windows
+            pt-BR, onde a mesma conta se chama "SERVIÇO LOCAL". Ver o comentário do
+            `util:QueryWindowsWellKnownSIDs` no `<Package>`.
+          -->
+          <util:PermissionEx User="[WIX_ACCOUNT_LOCALSERVICE]" GenericRead="yes" GenericWrite="yes" GenericExecute="yes" />
+          <util:PermissionEx User="[WIX_ACCOUNT_USERS]" GenericRead="yes" GenericWrite="yes" GenericExecute="yes" />
+        </CreateFolder>
+        <!--
+          `RemoveFolder` só apaga a pasta se ela estiver VAZIA, e isso é aproveitado de propósito:
+          quando `camera-desinstalar.ps1` termina limpo, ele leva o diário para o %TEMP% e esvazia
+          a pasta, e esta linha a remove. Quando ele NÃO consegue, o marcador
+          `REMOCAO-INCOMPLETA.txt` fica — a pasta não está vazia, esta linha não faz nada, e o
+          aviso sobrevive à desinstalação. A semântica do MSI faz o trabalho sem uma condição.
+        -->
+        <RemoveFolder Id="RemoverDadosQuall" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Queven\Quall" Name="diario" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- ===========================================================================================
+       FIREWALL
+       ===========================================================================================
+
+       `docs/app-windows.md` fecha a entrega do app do Windows com esta ressalva:
+
+         "Não afirmo nada sobre firewall em rede nova. As regras `Quall sinalização (TCP 7877)` e
+          `Quall mDNS (UDP 5353)` já existiam desde o M1 e o app usou a porta 7877 de propósito."
+
+       Ou seja: na bancada as regras foram criadas à mão, uma vez, e nunca mais pensadas. Para um
+       estranho isso é o primeiro portão do produto — sem regra, o Windows mostra o diálogo de
+       firewall na primeira vez que o app escuta, e esse diálogo **pede elevação**. Uma pessoa que
+       clicar "Cancelar" fica com um app que não conecta e nenhuma pista do porquê.
+
+       As regras são por PROGRAMA e não por porta, e é isso que importa: a sinalização é a 7877,
+       mas a mídia sobe por ICE em portas efêmeras que nenhuma regra de porta cobriria.
+       `Scope="localSubnet"` porque o produto é LAN-only por desenho — não há servidor na internet
+       para alcançar, e uma regra aberta para qualquer origem seria mais permissão do que o produto
+       usa.
+
+       Este fragmento pode ser desligado inteiro com `-d SemFirewall=1`, para o caso de a extensão
+       de firewall do WiX não estar disponível na máquina de build.
+  -->
+  <?ifndef SemFirewall ?>
+  <Fragment>
+    <ComponentGroup Id="Firewall" Directory="INSTALLFOLDER">
+      <Component Id="CompFirewall" Guid="5222BB0C-FB17-4466-A2A0-AD275E0DCF78" Bitness="always64">
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Queven\Quall" Name="firewall" Type="integer" Value="1" KeyPath="yes" />
+
+        <fire:FirewallException Id="QuallEntradaTcp"
+                                Name="Quall (sinalização e mídia, TCP)"
+                                Program="[#quall_app.exe]"
+                                Protocol="tcp"
+                                Scope="localSubnet"
+                                Description="Permite que outros aparelhos da sua rede local se conectem ao Quall." />
+
+        <fire:FirewallException Id="QuallEntradaUdp"
+                                Name="Quall (mídia e descoberta, UDP)"
+                                Program="[#quall_app.exe]"
+                                Protocol="udp"
+                                Scope="localSubnet"
+                                Description="Permite a descoberta na rede local (mDNS) e o vídeo do Quall." />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+  <?endif?>
+</Wix>

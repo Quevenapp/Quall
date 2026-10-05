@@ -1,0 +1,4 @@
+/* As frases dos diálogos de permissão em inglês (`docs/traducao.md`, "macOS"). */
+"NSCameraUsageDescription" = "Quall Studio sends the picture from the camera you choose to the other device on your local network.";
+"NSMicrophoneUsageDescription" = "Quall Studio sends microphone audio along with the camera when you turn on the microphone button, and records it too when you record.";
+"NSLocalNetworkUsageDescription" = "Quall Studio finds and talks to your other devices directly on your local network. Nothing is sent to the internet.";

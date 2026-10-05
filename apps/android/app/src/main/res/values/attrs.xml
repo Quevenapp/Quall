@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- O aviso da tela (`ui/PecasDaTela.kt`, `AvisoDaTela`): âmbar, vermelho ou informação (§4). -->
+    <declare-styleable name="AvisoDaTela">
+        <attr name="tipoDoAviso" format="enum">
+            <enum name="ambar" value="0" />
+            <enum name="vermelho" value="1" />
+            <enum name="info" value="2" />
+        </attr>
+    </declare-styleable>
+
+    <!-- A pilha de avisos: quantos ficam à vista antes do "+N" (§6.5: no máximo dois). -->
+    <declare-styleable name="PilhaDeAvisos">
+        <attr name="avisosAVista" format="integer" />
+    </declare-styleable>
+
+    <!-- O letreiro do PIN: as seis casas, ou a linha curta ("Aparelho novo? PIN 482 719"). -->
+    <declare-styleable name="LetreiroDoPin">
+        <attr name="emLinha" format="boolean" />
+    </declare-styleable>
+
+    <!-- As colunas da tela (`ColunasDaTela`): empilhadas em retrato, duas em paisagem (§11.1). -->
+    <declare-styleable name="ColunasDaTela">
+        <!-- A parte da largura que a coluna da direita leva em paisagem (0..1). -->
+        <attr name="fracaoDaDireita" format="float" />
+        <!-- Na tela larga (o tablet), centrar o conteúdo também na altura quando sobra. -->
+        <attr name="centralizarNaAltura" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="ColunasDaTela_Layout">
+        <!-- Em paisagem, a coluna do filho; em retrato todos se empilham na ordem do XML. -->
+        <attr name="coluna" format="enum">
+            <enum name="esquerda" value="0" />
+            <enum name="direita" value="1" />
+        </attr>
+        <!-- O primeiro filho com `noPe` desce até o pé da coluna (o espaço que sobra entra antes dele). -->
+        <attr name="noPe" format="boolean" />
+        <!-- Os filhos com `noVidro` ficam sobre o cartão de vidro quando ele está ligado (§6.5). -->
+        <attr name="noVidro" format="boolean" />
+        <!-- O filho que fica com a altura que sobra na coluna (a prévia da placa e a do DVD, 30/09): no
+             mínimo o `minHeight` dele, no máximo `proporcaoMaxima` × a largura dele (0: sem teto). -->
+        <attr name="estica" format="boolean" />
+        <attr name="proporcaoMaxima" format="float" />
+        <attr name="android:layout_gravity" />
+    </declare-styleable>
+
+    <!-- A caixa com teto (`CaixaComTeto`): rola dentro dela só o que passa do teto (a lista de títulos do DVD). -->
+    <declare-styleable name="CaixaComTeto">
+        <attr name="tetoDaAltura" format="dimension" />
+    </declare-styleable>
+</resources>

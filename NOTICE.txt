@@ -1,0 +1,24 @@
+Quall Studio — aviso de licenciamento próprio
+
+Responsável pela distribuição: Veneri & Quellis Ltda.
+
+O código próprio autorizado dos apps, núcleo, integrações e ferramentas é
+licenciado sob Mozilla Public License 2.0 (MPL-2.0), conforme LICENSE e
+LICENSE-SCOPE.md. Os direitos e avisos de cada titular permanecem preservados;
+este aviso não declara cessão empresarial de todo o checkout.
+
+O plugin OBS é separado e tem licença GPL-3.0-or-later para sua combinação.
+Ele mantém seus próprios LICENSE e LICENSE-SCOPE.md e a opção MPL dos fontes
+do núcleo quando aplicável pela seção 3.3 da MPL.
+
+Componentes, recursos e assets de terceiros conservam suas licenças e
+atribuições. Consulte THIRD_PARTY_NOTICES.txt e as exclusões de LICENSE-SCOPE.md.
+Não são concedidos direitos sobre marcas ou conteúdo de usuários.
+
+Antes da distribuição de qualquer release, é necessário disponibilizar seus
+fontes cobertos correspondentes, incluindo modificações e patches, e informar
+ao destinatário o meio acessível de obtê-los. O destino confirmado é
+https://github.com/Quevenapp/Quall, repositório público da organização Quevenapp.
+A seleção de fontes foi autorizada para publicação; isso não comprova upload,
+release binária, build, teste em aparelho ou correspondência a artefatos antigos.
+Os placeholders deste snapshot são desenhos novos MPL, não a marca antiga.

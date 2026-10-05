@@ -1,0 +1,23 @@
+[package]
+name = "quall-probe"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+quall-core = { workspace = true }
+# Para ler o sidecar do contrato de captura em `emitir-video`.
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# O encoder/decoder de Opus. Atrás de uma feature **ligada por padrão**, seguindo o precedente do
+# `quall-core` com `webrtc`: quem quiser medir o custo de tamanho da libopus constrói com
+# `--no-default-features` e compara. É exatamente assim que a tabela de `docs/audio.md` §11 foi
+# levantada.
+quall-opus = { workspace = true, optional = true }
+
+[features]
+default = ["opus"]
+opus = ["dep:quall-opus"]

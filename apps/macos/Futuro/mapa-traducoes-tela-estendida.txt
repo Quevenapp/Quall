@@ -1,0 +1,24 @@
+60 fps na tela estendida
+A tela inteira do aparelho como espaço de trabalho, na resolução dela — a letra fica pequena.
+Escala da tela estendida
+Este macOS não tem a API de monitor virtual (CGVirtualDisplay).
+Fixada em %@ pelo argumento --tela-estendida desta abertura.
+Letra do tamanho da do Mac. Se a tela do aparelho tem menos de 1060 pixels de altura, o macOS não aceita 2x nela: o monitor é desenhado maior e reduzido para a tela, sem sair 1:1.
+Mais fluido, e o dobro de dados. Aparelho que não decodifica rápido o bastante mostra a imagem quebrando — aí volte para 30.
+Não consegui fixar o modo do monitor virtual (%@, CGError %@).
+O auxiliar %@ não está ao lado do app.
+O auxiliar do monitor virtual não subiu: %@
+O auxiliar do monitor virtual respondeu algo ilegível: %@
+O macOS recusou criar o monitor virtual: %@
+O monitor virtual ficou em %@, e não em %@.
+O monitor virtual ficou online mas não ganhou modo de exibição em %@ ms.
+O monitor virtual foi criado mas não ficou online em %@ ms.
+O monitor virtual não oferece o modo %@. Oferecidos: %@
+Quall — tela estendida
+Tela estendida
+Tela estendida: %@
+Tela estendida: esperando um aparelho
+Um monitor novo para cada aparelho
+Uma tela, a tela estendida ou uma câmera. Quem exibe escolhe este Mac na lista.
+novo monitor · 
+novo monitor · %@ · %@ fps

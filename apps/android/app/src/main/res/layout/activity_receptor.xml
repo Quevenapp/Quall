@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endereços de exemplo sintéticos. -->
+
+<!--
+  A tela de quem **exibe** (`docs/fluxo-de-uso.md`): ver aparelhos, escolher, parear, exibir. No
+  "Estúdio de bolso" (`docs/telas-estudio.md` §6.6 e a §11.3, que prevalece).
+
+  Duas telas num arquivo, alternadas por visibilidade — mesma decisão de `activity_main.xml`: o estado
+  vem inteiro do `ReceptorBus` e a tela é uma função dele.
+
+  O campo de endereço **não** fica escondido atrás de um toque. Ele é o fallback obrigatório do fluxo, e
+  no Galaxy A10s é o único caminho que funciona (`docs/divida-do-nucleo.md`, item 9: o mDNS do núcleo não
+  enxerga nada dentro de um app naquele aparelho). A lista "NA REDE AGORA" tem altura **fixa reservada**
+  (duas linhas e meia, rolando dentro dela): com a procura automática ela cresceria entre o `uiautomator
+  dump` da bancada e o toque, e o toque cairia numa linha em vez de `editEndereco`, `editPin` ou
+  `buttonConectar` (§11.3).
+
+  Os ids lidos pela bancada (`editEndereco`, `editPin`, `buttonConectar`, `buttonPararRecepcao`,
+  `buttonPedirIdr`, `textReceptorStats`) continuam, com o mesmo papel.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/q_fundo">
+
+    <!-- ======================= o formulário ======================= -->
+    <androidx.core.widget.NestedScrollView
+        android:defaultFocusHighlightEnabled="false"
+        android:id="@+id/escolhaScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <com.quall.android.ui.ColunasDaTela
+            android:id="@+id/colunasDoExibir"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            app:centralizarNaAltura="true">
+
+            <!-- Voltar · "Exibir" · engrenagem. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:coluna="esquerda">
+
+                <ImageButton
+                    android:id="@+id/buttonVoltarDoReceptor"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/voltar"
+                    android:src="@drawable/ic_q_voltar" />
+
+                <TextView
+                    style="@style/Quall.TituloDoCabecalho"
+                    android:accessibilityHeading="true"
+                    android:text="@string/rx_cabecalho" />
+
+                <ImageButton
+                    android:id="@+id/buttonAjustesExibir"
+                    style="@style/Quall.BotaoRedondo"
+                    android:contentDescription="@string/ajustes"
+                    android:src="@drawable/ic_q_engrenagem" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textTituloExibir"
+                style="@style/Quall.TituloDeTela"
+                android:layout_marginTop="8dp"
+                android:text="@string/rx_titulo"
+                app:coluna="esquerda" />
+
+            <TextView
+                android:id="@+id/textSubtituloExibir"
+                style="@style/Quall.Corpo2"
+                android:layout_marginTop="4dp"
+                android:text="@string/rx_subtitulo"
+                app:coluna="esquerda" />
+
+            <!-- Só no Android: a lista por mDNS, com a procura que começa sozinha ao abrir. -->
+            <LinearLayout
+                android:id="@+id/blocoDaRede"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/RotuloDeSecao"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:accessibilityHeading="true"
+                        android:text="@string/rx_na_rede_agora" />
+
+                    <LinearLayout
+                        android:id="@+id/linhaProcurando"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <com.quall.android.ui.PontoQuePulsa
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/rx_procurando"
+                            android:textColor="@color/q_texto2"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Procurar de novo (a primeira procura é sozinha, ao abrir). 48 de toque, 40 de
+                         desenho: as margens negativas deixam a linha com a altura do texto. -->
+                    <ImageButton
+                        android:id="@+id/buttonProcurar"
+                        style="@style/Quall.BotaoRedondo"
+                        android:layout_marginTop="-4dp"
+                        android:layout_marginBottom="-4dp"
+                        android:contentDescription="@string/rx_procurar_de_novo"
+                        android:src="@drawable/ic_q_atualizar" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/caixaDaLista"
+                    android:layout_width="match_parent"
+                    android:layout_height="144dp"
+                    android:layout_marginTop="6dp">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:defaultFocusHighlightEnabled="false"
+                        android:id="@+id/recyclerReceptorDevices"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scrollbars="vertical" />
+
+                    <TextView
+                        android:id="@+id/textListaVazia"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="@string/lista_vazia_nota"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- O endereço, e "Usar o último". -->
+            <LinearLayout
+                android:id="@+id/blocoDoEndereco"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="esquerda">
+
+                <TextView
+                    style="@style/RotuloDeSecao"
+                    android:labelFor="@id/editEndereco"
+                    android:text="@string/ou_digite_endereco" />
+
+                <EditText
+                    android:id="@+id/editEndereco"
+                    style="@style/Quall.Campo.Endereco"
+                    android:layout_marginTop="8dp"
+                    android:autofillHints="off"
+                    android:hint="192.168.55.10:7877"
+                    android:imeOptions="actionNext|flagNoExtractUi|flagNoFullscreen" />
+
+                <TextView
+                    android:id="@+id/chipUsarOUltimo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/capsula_acento"
+                    android:ellipsize="end"
+                    android:gravity="center_vertical"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/q_acento_claro"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- O PIN em casas: `editPin` é o `EditText` de sempre, e as casas são o desenho dele. -->
+            <LinearLayout
+                android:id="@+id/blocoDoPin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                app:coluna="direita">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/RotuloDeSecao"
+                        android:layout_width="wrap_content"
+                        android:labelFor="@id/editPin"
+                        android:text="@string/rx_pin" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="@string/rx_pin_vazio_se_pareados"
+                        android:textColor="@color/q_texto3"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.quall.android.ui.CampoDoPin
+                    android:id="@+id/editPin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:autofillHints="off"
+                    android:hint="@string/pin_dica"
+                    android:importantForAutofill="no"
+                    android:imeOptions="flagNoExtractUi|flagNoFullscreen"
+                    android:inputType="number"
+                    android:maxLength="6" />
+            </LinearLayout>
+
+            <!-- Logo abaixo do PIN: o teclado numérico não tem tecla de confirmar. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonConectar"
+                style="@style/Widget.Quall.Botao.Principal"
+                android:layout_marginTop="14dp"
+                android:text="@string/rx_conectar"
+                app:coluna="direita" />
+
+            <!-- A mensagem de estado ou de erro (PIN errado, a recusa, a queda), como Aviso. -->
+            <com.quall.android.ui.PilhaDeAvisos
+                android:id="@+id/avisosDoExibir"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:avisosAVista="1"
+                app:coluna="direita">
+
+                <com.quall.android.ui.AvisoDaTela
+                    android:id="@+id/textReceptorStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+            </com.quall.android.ui.PilhaDeAvisos>
+        </com.quall.android.ui.ColunasDaTela>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ============================ o vídeo ============================
+
+         Conectar abre esta tela já em "conectando", como sempre (a `Surface` precisa existir antes de a
+         sessão subir): a imagem limpa, o painel de números no alto (só com o diagnóstico ou a bancada, e
+         o ⓘ o abre e fecha), a linha de estado sempre à mostra ("Conectando em…") e a barra fina no pé,
+         com o Parar numa casa fixa colada à direita — igual do "conectando" ao vídeo (§11.3). -->
+    <FrameLayout
+        android:id="@+id/videoContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FF000000"
+        android:visibility="gone">
+
+        <!-- `SurfaceView` e não `TextureView`: o quadro decodificado vai do MediaCodec ao compositor sem
+             passar pela GPU do app nem por memória Java. Num tablet de tela grande que é justamente o
+             papel deste aparelho na bancada, é a diferença entre exibir e transcodificar à toa. -->
+        <SurfaceView
+            android:id="@+id/surfaceVideo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+
+        <!-- Os números de hoje (só eles: "conectando…" e os erros foram para a linha de estado). -->
+        <TextView
+            android:id="@+id/textReceptorStats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_margin="12dp"
+            android:background="@drawable/painel_de_numeros"
+            android:fontFamily="monospace"
+            android:padding="10dp"
+            android:textColor="#FFDDDDE2"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <!-- A barra de tarefas do tablet fica **por cima** do conteúdo, e engoliu o toque em "Pedir IDR"
+             na primeira medição em aparelho. O recuo vem do inset de sistema, em `ReceptorActivity`, e
+             não de uma margem chutada (a barra tem altura diferente entre aparelhos e some quando o
+             usuário a esconde): o pé fica acima do inset + 16 dp (§11.3). -->
+        <LinearLayout
+            android:id="@+id/receptorControles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- A linha de estado ("Conectando em…" e a frase do serviço), sempre à mostra. -->
+            <TextView
+                android:id="@+id/textReceptorEstado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/barra_do_video"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="8dp"
+                android:textColor="@color/q_texto"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/barraDoVideo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/barra_do_video"
+                android:gravity="center_vertical"
+                android:minHeight="56dp"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    android:id="@+id/textParDoVideo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:textColor="@color/q_texto"
+                    android:textSize="15sp" />
+
+                <!-- O pedido de IDR é o número que `docs/contrato-track.md` manda o M2 produzir: receptor
+                     pede, quanto tempo até a imagem voltar. Na barra só com o diagnóstico ou a bancada. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonPedirIdr"
+                    style="@style/Widget.Quall.Botao.Barra"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/pedir_idr"
+                    android:visibility="gone" />
+
+                <!-- Os ajustes da câmera do outro lado (R9b): a engrenagem do R9, só quando o filmador
+                     publica a câmera dele. Ver `CameraRemotaNaTela`. -->
+                <ImageButton
+                    android:id="@+id/buttonAjustesDaCameraRemota"
+                    style="@style/Quall.BotaoRedondo"
+                    android:layout_marginStart="4dp"
+                    android:contentDescription="@string/in_ajustes_da_camera"
+                    android:src="@drawable/ic_q_engrenagem"
+                    android:visibility="gone" />
+
+                <!-- Tela cheia à mão, para qualquer fonte. A tela estendida entra sozinha: ver
+                     `ReceptorActivity.feitoParaEstePainel`. Sai-se com o gesto de voltar ou um toque. -->
+                <ImageButton
+                    android:id="@+id/buttonTelaCheia"
+                    style="@style/Quall.BotaoRedondo"
+                    android:layout_marginStart="4dp"
+                    android:contentDescription="@string/tela_cheia"
+                    android:src="@drawable/ic_q_tela_cheia" />
+
+                <!-- ⓘ: abre e fecha o painel de números; o ponto âmbar quando a linha da imagem acusa. -->
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp">
+
+                    <ImageButton
+                        android:id="@+id/buttonInfoVideo"
+                        style="@style/Quall.BotaoRedondo"
+                        android:contentDescription="@string/rx_mostrar_numeros"
+                        android:src="@drawable/ic_q_info" />
+
+                    <View
+                        android:id="@+id/pontoDeAcusacao"
+                        android:layout_width="11dp"
+                        android:layout_height="11dp"
+                        android:layout_gravity="top|end"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginEnd="5dp"
+                        android:background="@drawable/ponto_ambar"
+                        android:importantForAccessibility="no"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <!-- "Parar", o perigo, colado à direita. -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonPararRecepcao"
+                    style="@style/Widget.Quall.Botao.Perigo.Pequeno"
+                    android:layout_marginStart="4dp"
+                    android:text="@string/rx_parar" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- A dica da tela cheia (`TelaDeRecepcao.dicaDaTelaCheia` do iOS): 2,5 s, e um toque sai. -->
+        <TextView
+            android:id="@+id/textDicaTelaCheia"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/barra_do_video"
+            android:padding="14dp"
+            android:text="@string/rx_dica_tela_cheia"
+            android:textColor="#FFFFFFFF"
+            android:textSize="15sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</FrameLayout>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Só o que o Xcode não sabe gerar sozinho. O resto vem de
+	     GENERATE_INFOPLIST_FILE: YES, que também é o que evita a falha de assinatura
+	     com "target does not have an Info.plist file". -->
+	<!-- Sem CFBundleDisplayName a instalação falha com
+	     "This app or a bundle it contains does not define the CFBundleDisplayName key".
+	     A appex precisa dele porque é o nome que aparece no seletor de transmissão do
+	     sistema — o app hospedeiro sozinho não basta. -->
+	<key>CFBundleDisplayName</key>
+	<string>Quall Tela</string>
+	<!-- A permissão de Rede Local do iOS 14+ é do **app**, e uma Broadcast Upload Extension
+	     não tem como apresentar diálogo nenhum. Medido no iPhone 7 nesta rodada: com a
+	     permissão ainda não concedida, `quall_host` volta com "o ICE não achou caminho entre
+	     os dois aparelhos"; com ela concedida, o mesmo binário fecha a sessão e o vídeo
+	     atravessa. A chave fica aqui também porque, se um dia for a appex a primeira a tocar
+	     a rede, é este `Info.plist` que o iOS consulta para escrever o texto do alerta —
+	     e um alerta sem texto é um alerta que não aparece. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Quall precisa da rede local para enviar a tela deste iPhone ao aparelho que vai exibi-la. Nada sai da sua rede.</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.broadcast-services-upload</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ManipuladorDeAmostras</string>
+		<key>RPBroadcastProcessMode</key>
+		<string>RPBroadcastProcessModeSampleBuffer</string>
+	</dict>
+</dict>
+</plist>

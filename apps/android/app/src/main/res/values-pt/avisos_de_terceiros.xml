@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lic_avisos_completos">Todos os avisos de terceiros</string>
+    <string name="lic_sem_avisos">Não foi possível ler os avisos de terceiros incluídos no app: %1$s</string>
+</resources>

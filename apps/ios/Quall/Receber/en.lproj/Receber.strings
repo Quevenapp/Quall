@@ -1,0 +1,55 @@
+/* Quall iOS — textos em inglês do papel "Exibir" (pasta Receber/).
+   A chave é o texto em português, exatamente como está no código em tr("…").
+   Ver Comum/Idioma.swift e docs/traducao.md (seção iOS). */
+
+/* Formulário de conexão (TelaDeRecepcao) */
+"Exibir" = "Receive";
+"Assistir outro aparelho" = "Watch another device";
+"Digite o endereço e o PIN que aparecem na tela de quem está espelhando." = "Enter the address and PIN shown on the screen of the device that is mirroring.";
+"Abrir os Ajustes do %@" = "Open %@ Settings";
+
+/* Durante a exibição (TelaDeRecepcao) */
+"Tela cheia" = "Full screen";
+"Parar" = "Stop";
+"Esconder os números" = "Hide the numbers";
+"Mostrar os números" = "Show the numbers";
+"Toque na tela para sair da tela cheia." = "Tap the screen to exit full screen.";
+"segurar quadro sem referência (imagem para em vez de sujar)" = "hold frames without a reference (picture pauses instead of smearing)";
+"*** %ld quadro(s) exibidos com a referência quebrada — pior rajada %ld seguidos ***" = "*** %ld frame(s) shown with a broken reference — worst burst %ld in a row ***";
+"*** o decodificador deste aparelho recusou montar a sessão (OSStatus %ld) ***" = "*** this device's decoder refused to set up the session (OSStatus %ld) ***";
+"*** nenhum conjunto de parâmetros chegou: o emissor não mandou IDR ***" = "*** no parameter set arrived: the sender didn't send an IDR ***";
+"*** chega quadro e não sai imagem ***" = "*** frames arrive but no picture comes out ***";
+
+/* Nome padrão da track (SessaoDeRecepcao) */
+"câmera" = "camera";
+"tela" = "screen";
+
+/* Avisos da conexão (Recepcao, SessaoDeRecepcao) */
+"verificando o acesso à rede local…" = "checking local network access…";
+"retomando pareamento…" = "resuming pairing…";
+"conectando e pareando…" = "connecting and pairing…";
+"esperando a track do emissor…" = "waiting for the sender's track…";
+"cancelado" = "canceled";
+"recepção encerrada" = "receiving ended";
+"%@ conectou mas não abriu nenhuma track de mídia" = "%@ connected but didn't open any media track";
+"quall_track_on_frame recusou: %@" = "quall_track_on_frame refused: %@";
+"som, sem imagem — o emissor não abriu track de vídeo" = "audio, no picture — the sender didn't open a video track";
+"o emissor em %@ encerrou a transmissão" = "the sender at %@ ended the stream";
+"a conexão de mídia com %@ caiu" = "the media connection to %@ dropped";
+"a conexão de mídia com %@ caiu — o pareamento tinha dado certo, o que falhou foi o transporte. Confira se os dois estão na mesma Wi-Fi e toque em Conectar de novo." = "the media connection to %@ dropped — pairing worked, the transport failed. Check that both are on the same Wi-Fi and tap Connect again.";
+"%ld s sem nenhum quadro" = "%ld s without any frame";
+
+/* Falhas ao conectar (SessaoDeRecepcao) */
+"O emissor não reconhece mais este aparelho. Peça o PIN de seis dígitos que a tela dele mostra e digite aqui." = "The sender no longer recognizes this device. Ask for the six-digit PIN shown on its screen and enter it here.";
+"Os dois aparelhos não acharam caminho um até o outro. Confira se estão na mesma rede Wi-Fi e se ela não isola os aparelhos entre si (rede de hóspedes). Confira também se \"%@\" está ligado em %@." = "The two devices couldn't find a path to each other. Check that they're on the same Wi-Fi network and that it doesn't isolate devices from each other (guest network). Also check that \"%@\" is on in %@.";
+"Ajustes → Privacidade e Segurança → Rede Local" = "Settings → Privacy & Security → Local Network";
+"PIN errado. O emissor mantém o mesmo PIN — confira os seis dígitos." = "Wrong PIN. The sender keeps the same PIN — check the six digits.";
+"Ninguém atendeu neste endereço. Confira se o outro aparelho já está esperando e se o endereço e a porta estão certos." = "No one answered at this address. Check that the other device is already waiting and that the address and port are correct.";
+"O outro aparelho fala outra versão do Quall. Atualize os dois." = "The other device runs a different version of Quall. Update both.";
+"Não deu para conectar: %@" = "Couldn't connect: %@";
+
+/* A câmera de quem filma, R9b (ControleRemotoDaCamera) */
+"Esperando a câmera do outro aparelho…" = "Waiting for the other device's camera…";
+"áudio: codec negociado indisponível" = "audio: negotiated codec unavailable";
+"áudio: o decodificador recusou o formato" = "audio: decoder rejected the format";
+"áudio: pacote Opus inválido — desligado" = "audio: invalid Opus packet — disabled";

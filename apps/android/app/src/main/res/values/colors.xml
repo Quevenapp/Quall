@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  As cores do "Estúdio de bolso" (`docs/telas-estudio.md` §2): os mesmos nomes nas quatro plataformas
+  (aqui `q_*`; no Kotlin, `Cores.*` em `ui/PecasDaTela.kt`). Escuro sempre: o app não segue mais o tema
+  claro do sistema.
+-->
+<resources>
+    <!-- O ícone do app tem as cores dele, nos próprios vetores (`drawable/ic_launcher_*.xml`, gerados por
+         `tools/icones/gerar.py`): o azul-marinho escuro, o branco e o vermelho da luz. -->
+
+    <color name="q_fundo">#FF0B0B0F</color>
+    <!-- O preto atrás da prévia da câmera. -->
+    <color name="q_preto">#FF000000</color>
+    <color name="q_superficie">#FF16161D</color>
+    <color name="q_superficie_alta">#FF20202A</color>
+    <!-- Os grupos da folha de Ajustes, um tom acima da superfície. -->
+    <color name="q_grupo">#FF1C1C24</color>
+    <!-- O fundo da folha de baixo. -->
+    <color name="q_folha">#FF121218</color>
+    <!-- Branco a 8 %: a borda de 1 dp dos cartões. -->
+    <color name="q_contorno">#14FFFFFF</color>
+    <!-- Branco a 10 %: a borda dos campos e das casas do PIN. -->
+    <color name="q_contorno_campo">#1AFFFFFF</color>
+    <!-- Branco a 6 %: o fio entre as linhas de um grupo. -->
+    <color name="q_fio">#0FFFFFFF</color>
+
+    <color name="q_texto">#FFF5F5F7</color>
+    <color name="q_texto2">#FFA1A1AE</color>
+    <color name="q_texto3">#FF8B8B99</color>
+
+    <color name="q_acento">#FF6A5AF9</color>
+    <color name="q_acento_claro">#FFA99FFF</color>
+    <!-- O acento a 16 %: o fundo do ícone dos cartões e do chip "Usar o último". -->
+    <color name="q_acento_fundo">#296A5AF9</color>
+    <!-- O acento a 14 %: o ladrilho escolhido. -->
+    <color name="q_acento_escolhido">#246A5AF9</color>
+    <color name="q_acento_apagado">#666A5AF9</color>
+
+    <color name="q_no_ar">#FFFF453A</color>
+    <color name="q_no_ar_cheio">#FFD93025</color>
+    <color name="q_aguardando">#FFFFB340</color>
+    <color name="q_aguardando_texto">#FFFFC870</color>
+    <color name="q_aguardando_fundo">#1FFFB340</color>
+    <color name="q_conectado">#FF32D74B</color>
+    <color name="q_conectado_texto">#FF6BE07F</color>
+    <color name="q_conectado_fundo">#2432D74B</color>
+    <color name="q_perigo_texto">#FFFF8A80</color>
+    <!-- O vermelho a 18 %: o fundo do botão de perigo. -->
+    <color name="q_perigo_fundo">#2EFF453A</color>
+    <!-- O vermelho a 16 %: o fundo do aviso vermelho. -->
+    <color name="q_perigo_aviso">#29FF453A</color>
+
+</resources>

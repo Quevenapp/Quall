@@ -1,0 +1,23 @@
+name: PortaoQuall
+options:
+  bundleIdPrefix: br.com.queven.quall
+  deploymentTarget:
+    iOS: "15.0"
+configFiles:
+  Debug: ../../../Signing.local.xcconfig
+  Release: ../../../Signing.local.xcconfig
+
+targets:
+  PortaoQuall:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [Fontes]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.portao
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        MARKETING_VERSION: "0.0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"

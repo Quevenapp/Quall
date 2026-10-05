@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O cartão de vidro escuro sobre a prévia da câmera (§6.5, §11.1): preto a 85 %, cantos de 22. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#D9000000" />
+    <corners android:radius="22dp" />
+</shape>

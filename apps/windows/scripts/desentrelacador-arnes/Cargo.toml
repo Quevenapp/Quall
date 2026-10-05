@@ -1,0 +1,14 @@
+# Arnês de igualdade do desentrelaçador (22/09): roda no Mac, fora do workspace do app (o
+# `[workspace]` vazio o isola). Ver `compara.sh`.
+[package]
+name = "desentrelacador-arnes"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+
+[[bin]]
+name = "desentrelacador-arnes"
+path = "src/main.rs"
+
+[workspace]

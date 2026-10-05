@@ -1,0 +1,84 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Assinatura local do iOS — nunca versionar
+Signing.local.xcconfig
+*.mobileprovision
+*.p12
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Android
+local.properties
+.gradle/
+/apps/android/build/
+/apps/android/**/build/
+
+# CMake / OBS / câmera virtual
+build/
+cmake-build-*/
+# saída do portão de compilação (tools/portao.sh): ele compila o plugin fora do `build/`
+# do construir.sh, para os dois não brigarem por cache
+plugins/obs/build-portao/
+plugins/obs/.libobs/
+
+# Worktrees e configuração local de agentes
+.claude/
+.codex/
+.agents/
+
+# macOS
+.DS_Store
+
+# Android — build e configuração local de SDK
+apps/android/local.properties
+apps/android/.gradle/
+
+# Xcode — projeto gerado por xcodegen, nunca versionado
+*.xcodeproj/
+apps/ios/**/DD*/
+
+# corridas do arnês de vidro a vidro (dado bruto local, não versionado)
+tools/vidro-a-vidro/corridas/
+tools/vidro-a-vidro/.build/
+
+# saída de corrida do prova-android-para-ios.py / prova-windows-para-ios.py (dado bruto local)
+apps/ios/saida-android-para-ios/
+apps/ios/saida-windows-para-ios/
+
+# Distribuição — artefatos de empacotamento (frente de distribuição)
+apps/macos/Empacotar/dist/
+apps/ios/**/dist/
+apps/android/dist/
+apps/windows/scripts/instalador/saida/
+
+# Assinatura local do Android — nunca versionar.
+# O .gitignore cobria só a assinatura do iOS (*.p12, *.mobileprovision); um keystore de release
+# largado em apps/android/ seria commitado hoje. Ele é a identidade do produto na Play Store:
+# quem tem o arquivo e a senha publica atualizações em nome do dono, e o Google não troca a
+# chave de um app já publicado.
+*.jks
+*.keystore
+keystore.properties
+
+# Evidências locais, credenciais e saídas não fazem parte do fonte público.
+/capturas/
+*.log
+*.pfx
+*.pem
+*.key
+.env
+.env.*
+/aws/
+/.aws/
+/quall-snapshot-auditoria*/
+
+# Saídas locais de ferramentas nativas.
+.cxx/
+*.dSYM/
+.kotlin/
+/apps/ios/Receptor/saida/

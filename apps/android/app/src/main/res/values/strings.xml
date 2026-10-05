@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endereços de exemplo sintéticos. -->
+
+<!--
+  **Inglês é o padrão (`values/`) e o português mora em `values-pt/`** (`docs/traducao.md`, Android).
+  É a única arrumação em que o idioma do sistema decide certo sozinho: qualquer `pt-*` (pt-BR, pt-PT…)
+  cai em `values-pt/`, e qualquer outro idioma (de, es, ja…) cai aqui. Com o português em `values/`, um
+  aparelho em alemão veria português.
+
+  O texto-fonte continua sendo o português: uma chave nova nasce em `values-pt/` e ganha a tradução
+  aqui. `ParidadeDasTraducoesTest` reprova chave faltando de um lado ou placeholder diferente.
+  As chaves `translatable="false"` (marca, exemplos de endereço) moram só aqui.
+-->
+<resources>
+    <string name="app_name" translatable="false">Quall Studio</string>
+    <string name="idioma_codigo">en</string>
+    <string name="idioma_descricao">Language: English</string>
+    <string name="idioma_acao">Switch to Portuguese</string>
+    <string name="idioma_pt" translatable="false">PT</string>
+    <string name="idioma_en" translatable="false">EN</string>
+    <string name="notification_channel_capture">Quall capture</string>
+
+    <!-- Product flow — docs/fluxo-de-uso.md -->
+    <string name="o_que_transmitir">What to send</string>
+    <string name="resolucao">Resolution</string>
+    <string name="resolucao_custo">%1$s needs about %2$s Mbps from this link.</string>
+    <string name="resolucao_custo_alto">%1$s needs about %2$s Mbps. That’s a lot on shared Wi-Fi; on the cable, plenty of room.</string>
+    <string name="fonte_tela">The screen</string>
+    <string name="espelhar">Mirror</string>
+    <string name="cancelar">Cancel</string>
+    <string name="parar">Stop Mirroring</string>
+    <string name="esperando_um_aparelho">Waiting for a device</string>
+    <string name="espelhando">Mirroring</string>
+    <string name="previa_da_camera">What the camera is sending now</string>
+    <string name="aparelhos_esperando">Devices waiting on the network</string>
+    <string name="aparelhos_esperando_nota">Raw mDNS list from the core, to check that discovery works on this network. Tapping an item opens the receive screen with the address filled in.</string>
+    <string name="procurar_aparelhos">Search for devices (mDNS via the core)</string>
+    <string name="verificacao_sem_rede">Offline check (sidecar contract)</string>
+    <string name="exibir">Receive from another device</string>
+    <string name="exibir_nota">This device can also receive: tap “Receive from another device” to see what another Quall is sending.</string>
+
+    <!-- Receiver -->
+    <string name="exibir_titulo">Receive from another device</string>
+    <string name="lista_vazia_nota">No one is announcing. Use the address shown on the other device.</string>
+    <string name="ou_digite_endereco">Or type the address</string>
+    <string name="endereco_dica" translatable="false">192.168.56.50:7877</string>
+    <string name="pin_do_outro_aparelho">PIN of the other device</string>
+    <string name="pin_dica" translatable="false">123456</string>
+    <string name="conectar_e_exibir">Connect and show</string>
+    <string name="pedir_idr">Request IDR</string>
+    <string name="parar_de_exibir">Stop showing</string>
+    <string name="tela_cheia">Full screen</string>
+    <string name="tela_cheia_como_sair">Full screen. To exit, use Back — swipe the edge bar if it is hidden.</string>
+    <string name="previa_suspensa">Sending in progress. The preview comes back if you reconnect.</string>
+
+    <string name="microfone_desligado">Microphone: off</string>
+    <string name="microfone_ligado">Microphone: on</string>
+    <string name="microfone_desligar">Turn off the microphone</string>
+
+    <!-- Shared by several screens, and the screen labels in the manifest. -->
+    <string name="ajustes">Settings</string>
+    <string name="voltar">Back</string>
+</resources>

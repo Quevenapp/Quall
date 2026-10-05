@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- Dois entitlements, e nenhum dos dois precisou de pedido à Apple.
+
+     `system-extension.install` já vem no `Mac Team Provisioning Profile` gerado pela assinatura
+     automática.
+
+     `device.camera` é o que faltava, e a falta dele custou uma manhã de diagnóstico errado. Sob
+     hardened runtime (`ENABLE_HARDENED_RUNTIME: YES`, project.yml) o TCC exige este entitlement
+     para `kTCCServiceCamera` **mesmo num app que não é sandboxed** — é o checkbox
+     "Hardened Runtime > Resource Access > Camera" do Xcode. Sem ele, medido em 2026-08-24, o
+     `tccd` registra em nível Error:
+
+       Prompting policy for hardened runtime; service: kTCCServiceCamera requires entitlement
+       com.apple.security.device.camera but it is missing for requesting={br.com.queven.quall.camera}
+       Policy disallows prompt (...); access to kTCCServiceCamera denied
+
+     e recusa **antes de existir diálogo**: `requestAccess` devolve `denied` em milissegundos,
+     nenhuma linha entra no banco do TCC, o app nunca aparece em Ajustes do Sistema > Privacidade e
+     Segurança > Câmera, e o estado volta a `notDetermined` na corrida seguinte. É indistinguível
+     de uma negativa humana, exceto por não gravar nada — e foi assim que eu li errado.
+
+     Não é gated por perfil, ao contrário do App Group que foi retirado daqui: o OBS instalado
+     nesta máquina é hardened runtime, não é sandboxed, e carrega este mesmo entitlement.
+
+     A extensão NÃO precisa dele: ela **fornece** quadro, não consome câmera. -->
+<dict>
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+	<key>com.apple.security.device.camera</key>
+	<true/>
+</dict>
+</plist>

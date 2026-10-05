@@ -1,0 +1,97 @@
+name: Quall
+options:
+  bundleIdPrefix: br.com.queven.quall
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "15.0"
+configFiles:
+  Debug: ../../../Signing.local.xcconfig
+  Release: ../../../Signing.local.xcconfig
+
+
+targets:
+  Quall:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - App
+      - Comum
+      - Receber
+      - Teleprompter
+      - path: ../../../THIRD_PARTY_NOTICES.txt
+        buildPhase: resources
+      - path: ../../../LICENSE
+        buildPhase: resources
+      - path: ../../../LICENSE-SCOPE.md
+        buildPhase: resources
+      - path: ../../../NOTICE.txt
+        buildPhase: resources
+    dependencies:
+      - target: Difusao
+        embed: true
+        codeSign: true
+      - sdk: VideoToolbox.framework
+      - sdk: AVFoundation.framework
+      - sdk: CoreMedia.framework
+      - sdk: ReplayKit.framework
+      - sdk: Photos.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall
+        PRODUCT_NAME: Quall
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: App/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Quall Studio
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: >-
+          UIInterfaceOrientationPortrait
+          UIInterfaceOrientationLandscapeLeft
+          UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: >-
+          UIInterfaceOrientationPortrait
+          UIInterfaceOrientationPortraitUpsideDown
+          UIInterfaceOrientationLandscapeLeft
+          UIInterfaceOrientationLandscapeRight
+        CODE_SIGN_ENTITLEMENTS: App/Quall.entitlements
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+        SWIFT_OBJC_BRIDGING_HEADER: Comum/Ponte.h
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../../crates/quall-ffi/include
+        OTHER_LDFLAGS: $(SRCROOT)/../../../target/aarch64-apple-ios/release/libquall.a -lc++
+
+  Difusao:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - Extensao
+      - Comum
+      - path: ../../../THIRD_PARTY_NOTICES.txt
+        buildPhase: resources
+      - path: ../../../LICENSE
+        buildPhase: resources
+      - path: ../../../LICENSE-SCOPE.md
+        buildPhase: resources
+      - path: ../../../NOTICE.txt
+        buildPhase: resources
+    dependencies:
+      - sdk: ReplayKit.framework
+      - sdk: VideoToolbox.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.broadcast
+        PRODUCT_NAME: Difusao
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Extensao/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extensao/Difusao.entitlements
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+
+        SWIFT_OBJC_BRIDGING_HEADER: Comum/Ponte.h
+        HEADER_SEARCH_PATHS: $(SRCROOT)/../../../crates/quall-ffi/include
+        OTHER_LDFLAGS: $(SRCROOT)/../../../target/aarch64-apple-ios/release/libquall.a -lc++

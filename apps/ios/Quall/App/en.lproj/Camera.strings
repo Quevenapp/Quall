@@ -1,0 +1,172 @@
+/* Quall iOS — textos em inglês da câmera (pasta App/): a tela da câmera, o microfone, a gravação
+   neste aparelho, a captura, a transmissão da câmera e os ajustes da câmera (R9).
+   A chave é o texto em português, exatamente como está no código em tr("…") ou trSistema("…").
+   Ver Comum/Idioma.swift e docs/traducao.md (seção iOS). */
+
+/* Tela da câmera (TelaDaCamera) */
+"Deixe o Quall aberto nesta tela enquanto estiver no ar." = "Keep Quall open on this screen while you're live.";
+"Sem a câmera" = "No camera";
+"Sem acesso à câmera" = "No camera access";
+"Não deu" = "Couldn't start";
+"Enviando para" = "Sending to";
+"Pedindo acesso à câmera…" = "Asking for camera access…";
+"Sem câmera" = "No camera";
+"Câmera parada" = "Camera paused";
+"Abrindo" = "Opening";
+"Esta tela é das câmeras. A tela do iPhone vai pela transmissão do sistema." = "This screen is for the cameras. The iPhone screen goes through the system broadcast.";
+
+/* Os três controles: microfone, Gravar, Parar (TelaDaCamera, BotaoDoMicrofone) */
+"Mic desligado" = "Mic off";
+"Ligando…" = "Turning on…";
+"Mic ligado" = "Mic on";
+"Sem acesso" = "No access";
+"Não abriu" = "Didn't open";
+"Microfone desligado" = "Microphone off";
+"Microfone (depois da câmera)" = "Microphone (after the camera)";
+"Ligando o microfone…" = "Turning on the microphone…";
+"Microfone ligado" = "Microphone on";
+"Sem acesso ao microfone" = "No microphone access";
+"O microfone não abriu" = "The microphone didn't open";
+"Desligar o microfone" = "Turn off the microphone";
+"Ligar o microfone" = "Turn on the microphone";
+"Gravar neste aparelho" = "Record on this device";
+"Começando…" = "Starting…";
+"Salvando…" = "Saving…";
+" · SEM SOM" = " · NO AUDIO";
+", sem som: ligue o microfone" = ", no audio: turn on the microphone";
+", %@ livres" = ", %@ free";
+"Parar e salvar a gravação" = "Stop and save the recording";
+"Parar e salvar" = "Stop and save";
+
+/* Gravação neste aparelho (GravadorLocal, TomadaDeGravacao) */
+"Gravando SEM SOM — ligue o microfone" = "Recording WITHOUT AUDIO — turn on the microphone";
+"Não gravou: %@" = "Didn't record: %@";
+"a câmera não está aberta" = "the camera isn't open";
+"câmera interrompida: %@" = "camera interrupted: %@";
+"a câmera não está entregando imagem" = "the camera isn't delivering video";
+"sem espaço: sobram %ld MB (gravar pede 500 MB livres)" = "out of space: %ld MB left (recording needs 500 MB free)";
+"sem permissão para salvar no rolo da câmera" = "no permission to save to the camera roll";
+"sem permissão para salvar no rolo da câmera: %@" = "no permission to save to the camera roll: %@";
+"sem permissão para salvar no rolo da câmera: toque em Gravar uma vez neste aparelho para o iOS perguntar" = "no permission to save to the camera roll: tap Record once on this device so iOS asks";
+"sem permissão para salvar no rolo da câmera: bloqueado por Tempo de Uso ou por um perfil" = "no permission to save to the camera roll: blocked by Screen Time or a profile";
+"Ajustes → Quall → Fotos" = "Settings → Quall → Photos";
+"não foi possível criar a pasta das gravações" = "couldn't create the recordings folder";
+"Gravando em %@: o aparelho está quente." = "Recording at %@: the device is hot.";
+"A gravação não começou: %@" = "The recording didn't start: %@";
+"A gravação parou com erro (%@); o que foi gravado vai ao rolo da câmera pelo caminho dos pendentes." = "The recording stopped with an error (%@); what was recorded will go to the camera roll as a pending file.";
+"Gravação salva no rolo da câmera (%@)." = "Recording saved to the camera roll (%@).";
+"A gravação (%@) não foi ao rolo da câmera: %@. Ela fica guardada no app e vai na próxima abertura." = "The recording (%1$@) didn't reach the camera roll: %2$@. It stays in the app and goes the next time the app opens.";
+"Gravação parada: o aparelho esquentou. O arquivo foi salvo." = "Recording stopped: the device got hot. The file was saved.";
+"o arquivo falhou: %@" = "the file failed: %@";
+"o arquivo não abriu: %@" = "the file didn't open: %@";
+"o arquivo não aceitou as trilhas de vídeo e som" = "the file didn't accept the video and audio tracks";
+"o arquivo não começou: %@" = "the file didn't start: %@";
+"o arquivo não fechou: %@" = "the file didn't close: %@";
+
+/* A captura e a câmera (DonoDaCaptura) */
+"O Quall não tem acesso à câmera deste iPhone. Abra %@ e ligue, depois escolha a câmera e toque em Espelhar de novo." = "Quall doesn't have access to this iPhone's camera. Open %@ and turn it on, then choose the camera and tap Mirror again.";
+"O acesso à câmera está bloqueado neste iPhone por Tempo de Uso ou por um perfil de gerenciamento. Quem administra o aparelho precisa liberar." = "Camera access is blocked on this iPhone by Screen Time or a management profile. Whoever manages the device needs to allow it.";
+"A câmera escolhida não está mais disponível. Volte e escolha outra." = "The chosen camera is no longer available. Go back and choose another one.";
+"Não foi possível abrir a câmera deste iPhone." = "Couldn't open this iPhone's camera.";
+"A saída de vídeo da câmera não pôde ser criada." = "The camera's video output couldn't be created.";
+"A câmera parou por um erro do sistema. Toque em Parar e comece de novo." = "The camera stopped because of a system error. Tap Stop and start again.";
+"O Quall saiu do primeiro plano, e o iOS desliga a câmera de quem não está na tela. Isso é comportamento padrão do iPhone, não é falha do Quall: volte para o app e a imagem retorna sozinha. Enquanto isso, o outro aparelho fica sem receber." = "Quall left the foreground, and iOS turns off the camera for apps that aren't on screen. This is standard iPhone behavior, not a Quall failure: go back to the app and the picture returns on its own. Meanwhile, the other device receives nothing.";
+"Outro app tomou a câmera. Feche-o e a imagem volta sozinha." = "Another app took the camera. Close it and the picture comes back on its own.";
+"Com dois apps dividindo a tela, o iOS não entrega a câmera. Volte para tela cheia e a imagem retorna." = "With two apps sharing the screen, iOS doesn't provide the camera. Go back to full screen and the picture returns.";
+"O iPhone esquentou e o sistema desligou a câmera. Ela volta quando esfriar." = "The iPhone got hot and the system turned off the camera. It comes back when it cools down.";
+"Outro app (ou uma ligação) tomou o áudio, e o iOS parou a câmera junto. O microfone foi desligado; a imagem volta sozinha, e o microfone liga de novo no botão." = "Another app (or a call) took the audio, and iOS stopped the camera with it. The microphone was turned off; the picture comes back on its own, and the microphone turns on again with the button.";
+"A câmera foi interrompida pelo sistema. Ela volta sozinha quando der." = "The camera was interrupted by the system. It comes back on its own when it can.";
+
+/* O microfone (DonoDaCaptura) */
+"O Quall não tem acesso ao microfone. Abra %@ e ligue; a câmera continua sem som enquanto isso." = "Quall doesn't have access to the microphone. Open %@ and turn it on; the camera keeps going without audio meanwhile.";
+"Ajustes → Quall → Microfone" = "Settings → Quall → Microphone";
+"O microfone está bloqueado neste aparelho por Tempo de Uso ou por um perfil de gerenciamento. Quem administra o aparelho precisa liberar; a câmera segue sem som." = "The microphone is blocked on this device by Screen Time or a management profile. Whoever manages the device needs to allow it; the camera keeps going without audio.";
+"A câmera já fechou." = "The camera has already closed.";
+"Este aparelho não tem microfone disponível." = "This device has no microphone available.";
+"O iOS não liberou o áudio agora (%ld). Tente de novo; se outro app estiver gravando, feche-o." = "iOS didn't release the audio just now (%ld). Try again; if another app is recording, close it.";
+"Não foi possível abrir o microfone." = "Couldn't open the microphone.";
+"A captura não aceitou o microfone." = "The capture didn't accept the microphone.";
+"O microfone não abriu junto da câmera. Tente de novo." = "The microphone didn't open along with the camera. Try again.";
+"O microfone foi desligado: %@ (uma ligação, a Siri, um alarme ou outro app). Toque no botão para ligar de novo." = "The microphone was turned off: %@ (a call, Siri, an alarm, or another app). Tap the button to turn it on again.";
+"a captura foi interrompida pelo áudio" = "the capture was interrupted by audio";
+"o iOS interrompeu o microfone" = "iOS interrupted the microphone";
+"o microfone parou por um erro do sistema" = "the microphone stopped because of a system error";
+"o iOS interrompeu o áudio" = "iOS interrupted the audio";
+
+/* A transmissão da câmera (EmissorDeCamera) */
+"comece de novo." = "start again.";
+"saia desta tela e abra de novo; o texto continua funcionando até lá." = "leave this screen and open it again; the text keeps working until then.";
+"toque em Parar e escolha a câmera de novo; gravar neste aparelho continua funcionando até lá." = "tap Stop and choose the camera again; recording on this device keeps working until then.";
+"A porta de rede da câmera ainda está presa (uma transmissão anterior terminando, ou outra no ar). Tentando de novo sozinho — o PIN continua o mesmo." = "The camera's network port is still busy (a previous broadcast ending, or another one live). Trying again on its own — the PIN stays the same.";
+"Há um espelhamento de tela em curso neste iPhone. Pare a transmissão (o indicador vermelho no alto da tela) e escolha a câmera de novo — o Quall envia uma origem por vez." = "Screen mirroring is running on this iPhone. Stop the broadcast (the red indicator at the top of the screen) and choose the camera again — Quall sends one source at a time.";
+"Foram %ld tentativas sem conseguir abrir a conexão. Confira se os dois aparelhos estão na mesma rede Wi‑Fi e se ela não isola os aparelhos entre si, e %@" = "%ld attempts without managing to open the connection. Check that both devices are on the same Wi‑Fi network and that it doesn't isolate devices from each other, and %@";
+"Ninguém entrou. Escolha a câmera e toque em Espelhar de novo quando o outro aparelho estiver pronto." = "No one joined. Choose the camera and tap Mirror again when the other device is ready.";
+
+/* Ajustes da câmera, R9 (PainelDosAjustesDaCamera) */
+"Exposição" = "Exposure";
+"ISO e obturador" = "ISO & shutter";
+"Balanço" = "White balance";
+"Foco" = "Focus";
+"Abrindo a câmera…" = "Opening the camera…";
+"A câmera está usando %@" = "The camera is using %@";
+"Restaurar automático" = "Reset to auto";
+"Auto" = "Auto";
+"Manual" = "Manual";
+"Travar exposição" = "Lock exposure";
+"Anti-cintilação" = "Anti-flicker";
+"Desligada" = "Off";
+"Passar para Manual" = "Switch to Manual";
+"Obturador" = "Shutter";
+"Incandescente" = "Incandescent";
+"Fluorescente" = "Fluorescent";
+"Luz do dia" = "Daylight";
+"Nublado" = "Cloudy";
+"Travar balanço" = "Lock white balance";
+"Travado" = "Locked";
+"Perto ↔ Longe" = "Near ↔ Far";
+
+/* Ajustes da câmera, R9: quem limita, a leitura, a pílula do toque (RegrasDosControles) */
+"sem cintilação em luz de 60 Hz" = "no flicker under 60 Hz light";
+"sem cintilação em luz de 50 Hz" = "no flicker under 50 Hz light";
+"o obturador" = "the shutter";
+"o Kelvin" = "Kelvin";
+"os presets de balanço" = "the white balance presets";
+"o foco manual" = "manual focus";
+"a anti-cintilação" = "anti-flicker";
+"a compensação de exposição" = "exposure compensation";
+"o toque para focar" = "tap to focus";
+"a trava de exposição" = "exposure lock";
+"a trava de balanço" = "white balance lock";
+"a trava de foco" = "focus lock";
+"o brilho" = "brightness";
+"o ganho" = "gain";
+"O fabricante deste aparelho não libera %@ para outros apps." = "This device's manufacturer doesn't make %@ available to other apps.";
+"O iOS ajusta a cintilação sozinho." = "iOS handles flicker on its own.";
+"Esta câmera tem foco fixo." = "This camera has fixed focus.";
+"Travado de novo depois de medir a cena." = "Locked again after metering the scene.";
+"Destrave a exposição para compensar." = "Unlock exposure to compensate.";
+"Passe a exposição para Manual para escolher ISO e obturador." = "Switch exposure to Manual to choose ISO and shutter.";
+"Toque na imagem para focar e medir naquele ponto." = "Tap the picture to focus and meter at that point.";
+"A câmera usou %@ em vez de %@." = "The camera used %@ instead of %@.";
+"Exposição e foco travados" = "Exposure and focus locked";
+"Exposição travada" = "Exposure locked";
+"Foco travado" = "Focus locked";
+
+/* Controle remoto da câmera, R9b (RegrasDoControleRemoto): quem limita, por código, e as recusas */
+"Brilho" = "Brightness";
+"Ganho" = "Gain";
+"Ganho e obturador" = "Gain & shutter";
+"ganho digital" = "digital gain";
+"O macOS não oferece %@ para câmeras." = "macOS doesn't offer %@ for cameras.";
+"Esta câmera não oferece %@." = "This camera doesn't offer %@.";
+"Esta câmera não publica a calibração de cor que o Kelvin precisa." = "This camera doesn't publish the color calibration Kelvin needs.";
+"Outro app está controlando esta câmera. Feche-o para ajustar." = "Another app is controlling this camera. Close it to adjust.";
+"Este aparelho não oferece %@." = "This device doesn't offer %@.";
+"O aparelho não permite controle remoto da câmera" = "This device doesn't allow remote camera control";
+"Este aparelho não aceitou %@." = "This device didn't accept %@.";
+"Este aparelho não aceitou o ajuste." = "This device didn't accept the setting.";
+"O aparelho não respondeu." = "The device didn't respond.";
+"O aparelho não conseguiu aplicar o ajuste." = "The device couldn't apply the setting.";
+"Controlado por %@" = "Controlled by %@";
+"Frontal" = "Front";
+"Traseira" = "Back";

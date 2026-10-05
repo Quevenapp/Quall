@@ -1,0 +1,53 @@
+name: SondaR5
+options:
+  bundleIdPrefix: br.com.queven.quall.sondar5
+settings:
+  base:
+    CODE_SIGN_STYLE: Manual
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  SondaGravador:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources: [Gravador]
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: VideoToolbox.framework
+      - sdk: CoreMedia.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.sondar5
+        PRODUCT_NAME: SondaR5
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Gravador/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "Sonda R5"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+
+  SondaClaquete:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources: [Claquete]
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: QuartzCore.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.queven.quall.sondar5.claquete
+        PRODUCT_NAME: Claquete
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Claquete/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "Claquete R5"
+        INFOPLIST_KEY_UIStatusBarHidden: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: >-
+          UIInterfaceOrientationPortrait
+          UIInterfaceOrientationPortraitUpsideDown
+          UIInterfaceOrientationLandscapeLeft
+          UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1,2"

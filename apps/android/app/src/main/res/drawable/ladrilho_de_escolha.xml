@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O ladrilho de origem (§4, §6.2): escolhido, o acento a 14 % com a borda de 2 no acento. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#24FFFFFF">
+    <item>
+        <selector>
+            <item android:state_checked="true" android:state_enabled="false">
+                <shape android:shape="rectangle">
+                    <solid android:color="#146A5AF9" />
+                    <stroke android:width="2dp" android:color="#806A5AF9" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+            <item android:state_checked="true">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/q_acento_escolhido" />
+                    <stroke android:width="2dp" android:color="@color/q_acento" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/q_superficie" />
+                    <stroke android:width="1dp" android:color="@color/q_contorno" />
+                    <corners android:radius="18dp" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

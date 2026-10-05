@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Uma linha da folha da engrenagem das telas de captura: o título, o valor e a seta (quando abre algo). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Quall.Folha.Linha"
+    android:background="@drawable/linha_da_folha"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/linhaTitulo"
+        style="@style/Quall.Folha.Titulo" />
+
+    <TextView
+        android:id="@+id/linhaValor"
+        style="@style/Quall.Folha.Valor"
+        android:maxWidth="200dp" />
+
+    <ImageView
+        android:id="@+id/linhaSeta"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="6dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/ic_q_seta_direita"
+        app:tint="@color/q_texto3" />
+</LinearLayout>

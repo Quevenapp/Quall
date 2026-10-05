@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O aviso âmbar (§4): #FFB340 a 12 %, cantos de 14. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/q_aguardando_fundo" />
+    <corners android:radius="14dp" />
+</shape>

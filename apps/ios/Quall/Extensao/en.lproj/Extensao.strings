@@ -1,0 +1,12 @@
+/* Quall iOS — textos em inglês da appex Difusao (Extensao/ManipuladorDeTela.swift).
+   Vão ao App Group (EstadoDoEmissor.conselho) e ao alerta do sistema (finishBroadcastWithError).
+   Os de Comum/ estão em Comum/en.lproj/Comum.strings. */
+
+"Comece pelo app Quall, tocando em “Espelhar esta tela”." = "Start from the Quall app by tapping “Mirror this screen”.";
+"O codificador de vídeo deste iPhone não iniciou. Tente de novo." = "This iPhone's video encoder didn't start. Try again.";
+"Ninguém entrou na transmissão. Escolha a tela e toque em “%@” de novo quando o outro aparelho estiver pronto." = "No one joined the broadcast. Choose the screen and tap “%@” again when the other device is ready.";
+/* O botão do app citado na frase acima (o mesmo texto de App.strings) */
+"Espelhar" = "Mirror";
+"Foram %ld tentativas sem conseguir abrir a conexão. Confira se os dois aparelhos estão na mesma rede Wi‑Fi e se ela não isola os aparelhos entre si." = "Tried %ld times without opening the connection. Check that both devices are on the same Wi‑Fi network and that it doesn't isolate devices from each other.";
+"O iPhone ficou sem memória para a transmissão." = "The iPhone ran out of memory for the broadcast.";
+"Transmissão encerrada." = "Broadcast ended.";

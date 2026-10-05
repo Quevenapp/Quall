@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A faixa do alto e a barra do prompter: a superfície a 94 %, cantos de 12 (§6.8, só a cor). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#F016161D" />
+    <corners android:radius="12dp" />
+</shape>
