@@ -411,6 +411,66 @@ object RegrasDosControles {
     }
 
     /**
+     * **O piso da faixa de fps do automático** (§3.1, "pouca luz"): o menor `lower` das faixas que a
+     * câmera anuncia com `upper == fps`, preferindo os que não descem da metade do fps (nem de
+     * [PISO_MINIMO_FPS]). Sem faixa
+     * variável, o próprio [fps] (a faixa fixa de antes).
+     *
+     * **Por que existe** (medido em 06/10 no tablet, sala escura): sem pedido, o CameraX deixa o modelo
+     * de gravação do HAL escolher, e ele escolhe `[30,30]`. O AE fica preso a 33 ms com o ISO no teto
+     * (3250), enquanto a câmera nativa, na mesma cena, pedia `[15,30]` e expunha 100 ms. A imagem do
+     * Quall recebia um terço da luz. A troca é a do app nativo: no escuro, menos quadros e imagem clara.
+     * Quem quer o fps cheio passa a exposição a Manual, e a tela avisa ([VigiaDaPoucaLuz]).
+     *
+     * As faixas são pares `(lower, upper)`, e não `android.util.Range`, para o teste rodar na JVM.
+     */
+    fun pisoDoAutomatico(faixas: List<Pair<Int, Int>>, fps: Int): Int {
+        val variaveis = faixas.filter { it.second == fps && it.first in 1 until fps }.map { it.first }
+        val preferido = maxOf(PISO_MINIMO_FPS, fps / 2)
+        return variaveis.filter { it >= preferido }.minOrNull() ?: variaveis.maxOrNull() ?: fps
+    }
+
+    /**
+     * O piso preferido é a **metade do fps**, e nunca abaixo disto: a perda de fluidez fica em 1 stop de
+     * luz a mais (no iPad, com o piso em 10, o AE da Apple foi a 15 fps com ISO baixo numa sala só meio
+     * escura). Uma faixa que desce mais só entra se for a única (o A07 só anuncia `[5,30]`).
+     */
+    const val PISO_MINIMO_FPS = 10
+
+    /**
+     * **A pouca luz baixou o fps** (§3.1): com a exposição em Auto, o quadro saiu mais longo que 1/fps
+     * (mais 15 %, a folga do arredondamento do HAL). Acende depois de 1 s seguido e apaga depois de 2 s
+     * seguidos de volta, para não piscar na transição. Devolve o fps de agora enquanto acesa, ou `null`.
+     */
+    class VigiaDaPoucaLuz(private val acenderMs: Long = 1_000L, private val apagarMs: Long = 2_000L) {
+        private var desdeMs: Long? = null
+        private var acesa = false
+
+        fun observar(agoraMs: Long, auto: Boolean, duracaoDoQuadroNs: Long?, fps: Int): Int? {
+            val teto = 1_000_000_000.0 / fps.coerceAtLeast(1)
+            val lento = auto && duracaoDoQuadroNs != null && duracaoDoQuadroNs > teto * 1.15
+            if (lento != acesa) {
+                val d = desdeMs ?: agoraMs.also { desdeMs = it }
+                if (agoraMs - d >= (if (lento) acenderMs else apagarMs)) {
+                    acesa = lento
+                    desdeMs = null
+                }
+            } else {
+                desdeMs = null
+            }
+            if (!acesa || duracaoDoQuadroNs == null) return null
+            return Math.round(1_000_000_000.0 / duracaoDoQuadroNs).toInt().coerceIn(1, fps)
+        }
+    }
+
+    /**
+     * "Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual na engrenagem." Sem
+     * exposição manual (o tablet, LIMITED), o conselho é a luz do ambiente: o Manual estaria apagado.
+     */
+    fun textoDaPoucaLuz(t: Textos, fpsAgora: Int, fps: Int, temManual: Boolean): String =
+        t.s(if (temManual) R.string.cam_pouca_luz else R.string.cam_pouca_luz_sem_manual, fpsAgora, fps)
+
+    /**
      * **A cadência dos envios** (§2.2): no máximo um a cada [intervaloMs]; o último valor vence, porque
      * quem envia lê o registro na hora de enviar. Devolve quanto esperar antes do próximo envio.
      */

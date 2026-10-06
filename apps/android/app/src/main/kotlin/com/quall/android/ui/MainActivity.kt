@@ -537,7 +537,12 @@ class MainActivity : AppCompatActivity() {
     @android.annotation.SuppressLint("ClickableViewAccessibility")
     private fun montarAjustesDaCamera() {
         marcasDoToque = MarcasDoToque(this).apply {
-            fonteDaPilula = { MarcasDoToque.pilulaDaCamera(context, daTelaR5 = false) }
+            // A da pouca luz espera o cartão do PIN sair: ela cairia sobre ele, e o painel já a diz.
+            fonteDaPilula = {
+                MarcasDoToque.pilulaDaCamera(context, daTelaR5 = false,
+                    comPoucaLuz = !binding.pinGroup.isShown && !binding.blocoParConhecido.isShown)
+            }
+            ficarAbaixoDaLinhaDoAlto()
         }
         painelDaCamera = PainelDaCamera(this, daTelaR5 = false) { abrirPainelDaCamera(false) }.apply { visibility = View.GONE }
         val cheio = android.widget.FrameLayout.LayoutParams(

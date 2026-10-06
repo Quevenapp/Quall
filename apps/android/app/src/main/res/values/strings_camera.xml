@@ -17,6 +17,8 @@
     <string name="cam_foco_fixo">This camera has fixed focus.</string>
     <string name="cam_sem_calibracao">This camera doesn’t publish the color calibration Kelvin needs.</string>
     <string name="cam_travado_de_novo">Locked again after metering the scene.</string>
+    <string name="cam_pouca_luz">Low light: %1$d fps to brighten the picture. For %2$d fps, use manual exposure in the gear menu.</string>
+    <string name="cam_pouca_luz_sem_manual">Low light: %1$d fps to brighten the picture. More light in the room brings back %2$d fps.</string>
     <!-- The long-press pill on the preview (§4.4). -->
     <string name="cam_pilula_exposicao_e_foco">Exposure and focus locked</string>
     <string name="cam_pilula_exposicao">Exposure locked</string>

@@ -633,6 +633,14 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
     let remoto = LadoRemoto::de(&c);
     remoto.camera(&caps, fps, compartilhada, &reg);
     let mut envios = Envios { tocados: BTreeSet::new(), ultimo: BTreeMap::new(), hr: BTreeMap::new() };
+    // **A câmera em automático de verdade** (§2.2, 06/10): o driver que outro app deixou em manual
+    // recebe o Auto que a tela mostra, e esse passa a ser o "como abriu" da devolução.
+    let normalizacao = if compartilhada { Vec::new() } else { regras::normalizacao_da_abertura(&reg, &caps, fps, &originais) };
+    if !normalizacao.is_empty() {
+        let l = envios.executar(&mut i, &normalizacao, &originais);
+        registro::linha(format!("ajustes: a câmera não estava no automático que o registro pede: {}", l.join(", ")));
+    }
+    let originais = regras::originais_depois_da_normalizacao(&originais, &normalizacao);
     if compartilhada {
         registro::linha(format!("ajustes: modo compartilhado: os controles ficam apagados (\"{}\")", regras::FRASE_OUTRO_APP));
         if banc.medir_compartilhada {

@@ -7,6 +7,30 @@ import CoreVideo
 extension Testes {
     static func rodarControlesDaCamera() {
         typealias R = RegrasDosControles
+        print("RegrasDosControles — pouca luz: o piso do automático e o aviso (§3.1)")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 30) == 15, "faixa 2–30 a 30 fps: o piso é a metade, 15")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 15) == 10, "a 15 fps a metade seria 7,5: o piso fica em 10")
+        conferir(R.pisoDoAutomatico(faixas: [(15, 30)], fps: 30) == 15, "faixa 15–30: o piso é 15")
+        conferir(R.pisoDoAutomatico(faixas: [(30, 30)], fps: 30) == 30, "faixa fixa: o fps de antes")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30), (2, 60)], fps: 60) == 30, "a 60, a metade: 30")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 60) == 60, "nenhuma faixa alcança 60: fixa")
+        var luz = R.VigiaDaPoucaLuz()
+        conferir(luz.observar(auto: true, obturadorNs: 100_000_000, fps: 30, agora: 0) == nil, "não acende no primeiro quadro lento")
+        conferir(luz.observar(auto: true, obturadorNs: 100_000_000, fps: 30, agora: 1) == 10, "acende depois de 1 s: 10 fps")
+        conferir(luz.observar(auto: true, obturadorNs: 33_000_000, fps: 30, agora: 2) == 30, "um quadro normal não apaga")
+        conferir(luz.observar(auto: true, obturadorNs: 33_000_000, fps: 30, agora: 4) == nil, "2 s normais apagam")
+        var manual = R.VigiaDaPoucaLuz()
+        _ = manual.observar(auto: false, obturadorNs: 100_000_000, fps: 30, agora: 0)
+        conferir(manual.observar(auto: false, obturadorNs: 100_000_000, fps: 30, agora: 5) == nil, "com exposição manual, nunca")
+        var folga = R.VigiaDaPoucaLuz()
+        _ = folga.observar(auto: true, obturadorNs: 36_000_000, fps: 30, agora: 0)
+        conferir(folga.observar(auto: true, obturadorNs: 36_000_000, fps: 30, agora: 5) == nil, "36 ms a 30 fps é folga, não aviso")
+        conferir(R.textoDaPoucaLuz(fpsAgora: 15, fps: 30, temManual: true)
+                 == "Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual na engrenagem.",
+                 "o texto com manual")
+        conferir(R.textoDaPoucaLuz(fpsAgora: 15, fps: 30, temManual: false)
+                 == "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.",
+                 "o texto sem manual")
         print("RegrasDosControles — obturador: nunca acima de 1/fps (§3.1)")
         // A traseira de um iPhone típico: de 1/45000 s a ~1 s no formato ativo.
         let min = Int64(22_000), max = Int64(1_000_000_000)

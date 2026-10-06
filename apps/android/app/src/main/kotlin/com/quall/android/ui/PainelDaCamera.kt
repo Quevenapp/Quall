@@ -618,6 +618,9 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         setTypeface(typeface, Typeface.BOLD)
         setPadding(context.dp(12), context.dp(5), context.dp(12), context.dp(5))
         background = fundoArredondado(Cores.comAlfa(0xFF000000.toInt(), 0.85f), context.dp(14).toFloat())
+        // A da pouca luz é uma frase inteira: quebra em duas linhas em vez de cruzar a prévia.
+        maxWidth = context.dp(440)
+        gravity = Gravity.CENTER
         visibility = GONE
     }
 
@@ -628,14 +631,14 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         /**
          * A pílula da câmera do dono da tela [daTelaR5]: **"Controlado por <aparelho>"** enquanto um pedido
          * remoto acabou de ser aplicado (R9b, contrato §6: `controlado_por`, por 4 s), e senão a do toque
-         * longo (§4.4). Sem dono aberto, nenhuma.
+         * longo (§4.4), e senão a da pouca luz (§3.1), se [comPoucaLuz]. Sem dono aberto, nenhuma.
          */
-        fun pilulaDaCamera(contexto: Context, daTelaR5: Boolean): String? {
+        fun pilulaDaCamera(contexto: Context, daTelaR5: Boolean, comPoucaLuz: Boolean = true): String? {
             val c = MirrorService.controlesDaCamera(daTelaR5) ?: return null
             com.quall.android.capture.FilmadorDaCamera.controladoPor()?.let {
                 return contexto.getString(R.string.cam_controlado_por, it)
             }
-            return c.pilula
+            return c.pilula ?: c.poucaLuz().takeIf { comPoucaLuz }
         }
     }
 
@@ -663,6 +666,23 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         addView(pilula, LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
             Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = context.dp(12) })
+    }
+
+    /**
+     * Na tela da câmera, a vista cobre a tela inteira: a pílula desce para baixo da barra de status e da
+     * linha do alto (status, câmera e engrenagem). Sem isto, a da pouca luz, de duas linhas, caía entre o
+     * relógio e o Wi-Fi e depois sobre o nome da câmera (tablet, 06/10). Na R5 a vista é a moldura da
+     * prévia, e a pílula fica onde sempre esteve.
+     */
+    fun ficarAbaixoDaLinhaDoAlto() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+            val topo = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                androidx.core.view.WindowInsetsCompat.Type.displayCutout()).top
+            (pilula.layoutParams as LayoutParams).topMargin = context.dp(64) + topo
+            pilula.requestLayout()
+            insets
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(this)
     }
 
     /** O quadrado em ([x], [y]) desta vista, por 1,5 s. */

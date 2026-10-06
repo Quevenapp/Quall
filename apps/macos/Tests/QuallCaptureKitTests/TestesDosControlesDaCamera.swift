@@ -334,4 +334,30 @@ final class TestesDosControlesDaCamera: XCTestCase {
         print(String(format: "LUMA_MEDIA custo 1920x1080 passo 8: %.1f µs por quadro (média de %d; soma %.0f)", porQuadro, n, s))
         XCTAssertLessThan(porQuadro, 2_000, "a luma média de um quadro 1080p passou de 2 ms")
     }
+
+    // MARK: - a pouca luz (§3.1)
+
+    func testOPisoDoAutomaticoEAMetadeDoFps() {
+        XCTAssertEqual(PoucaLuz.piso(faixas: [(1, 30)], fps: 30), 15)
+        XCTAssertEqual(PoucaLuz.piso(faixas: [(1, 30)], fps: 15), 10, "a metade de 15 seria 7,5: fica em 10")
+        XCTAssertEqual(PoucaLuz.piso(faixas: [(25, 30)], fps: 30), 25, "a faixa não desce de 25")
+        XCTAssertEqual(PoucaLuz.piso(faixas: [(30, 30)], fps: 30), 30, "faixa fixa: o fps de antes")
+        XCTAssertEqual(PoucaLuz.piso(faixas: [(1, 30)], fps: 60), 60, "nenhuma faixa alcança 60")
+    }
+
+    func testAPoucaLuzAcendeEApagaPeloFpsMedido() {
+        var v = PoucaLuz.Vigia()
+        XCTAssertNil(v.observar(fpsMedido: 15, fps: 30, agora: 0))
+        XCTAssertEqual(v.observar(fpsMedido: 15, fps: 30, agora: 1), 15, "acende depois de 1 s")
+        XCTAssertEqual(v.observar(fpsMedido: 30, fps: 30, agora: 1.5), 30, "um meio segundo normal não apaga")
+        XCTAssertNil(v.observar(fpsMedido: 30, fps: 30, agora: 3.5), "2 s normais apagam")
+        var w = PoucaLuz.Vigia()
+        _ = w.observar(fpsMedido: 28, fps: 30, agora: 0)
+        XCTAssertNil(w.observar(fpsMedido: 28, fps: 30, agora: 5), "28 de 30 é oscilação, não aviso")
+    }
+
+    func testOTextoDaPoucaLuz() {
+        XCTAssertEqual(PoucaLuz.texto(fpsAgora: 15, fps: 30),
+                       "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.")
+    }
 }

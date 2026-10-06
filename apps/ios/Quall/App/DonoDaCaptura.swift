@@ -950,7 +950,16 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         guard (try? aparelho.lockForConfiguration()) != nil else { return }
         aparelho.activeVideoMinFrameDuration =
             CMTime(value: 1, timescale: CMTimeScale(max(1, Int(efetivo))))
+        // **O piso, para o automático clarear a imagem em pouca luz** (§3.1, decisão de 06/10): o
+        // quadro pode durar até 1/piso, e a exposição manual não é afetada (o obturador dela é cortado
+        // em 1/fps). O padrão do sistema fica no diário: é o "antes" que não foi medido no iOS.
+        let padrao = CMTimeGetSeconds(aparelho.activeVideoMaxFrameDuration)
+        let piso = RegrasDosControles.pisoDoAutomatico(
+            faixas: faixas.map { (minimo: $0.minFrameRate, maximo: $0.maxFrameRate) }, fps: efetivo)
+        aparelho.activeVideoMaxFrameDuration = CMTime(value: 1000, timescale: CMTimeScale(max(1, (piso * 1000).rounded())))
         aparelho.unlockForConfiguration()
+        Diagnostico.nota("APP CAMERA piso do automático: \(String(format: "%.1f", piso)) fps"
+            + " (padrão do sistema era \(padrao.isFinite && padrao > 0 ? String(format: "%.1f", 1 / padrao) : "?") fps)")
     }
 
     // --- interrupções ---------------------------------------------------------------------------

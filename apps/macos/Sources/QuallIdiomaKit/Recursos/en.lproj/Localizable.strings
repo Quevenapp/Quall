@@ -488,6 +488,7 @@
 "Restaurar automático" = "Reset to auto";
 "Toque na imagem para focar e medir naquele ponto." = "Tap the picture to focus and meter at that point.";
 "Travado de novo depois de medir a cena." = "Locked again after metering the scene.";
+"Pouca luz: %@ fps para clarear a imagem. Mais luz no ambiente devolve os %@ fps." = "Low light: %@ fps to brighten the picture. More light in the room brings back %@ fps.";
 "Exposição e foco travados" = "Exposure and focus locked";
 "Exposição travada" = "Exposure locked";
 "Foco travado" = "Focus locked";

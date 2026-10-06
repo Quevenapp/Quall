@@ -338,8 +338,12 @@ class CameraXSource private constructor(
          * as chaves desta tabela (a do `docs/controles-de-camera.md` §4.5, em
          * `RegrasDosControles.plano`).
          */
-        private fun <T> pedirQuadros(builder: androidx.camera.core.ExtendableBuilder<T>, fps: Int) {
-            val alvo = android.util.Range(fps, fps)
+        private fun <T> pedirQuadros(
+            builder: androidx.camera.core.ExtendableBuilder<T>,
+            fps: Int,
+            faixas: List<android.util.Range<Int>>,
+        ) {
+            val alvo = faixaDoAutomatico(faixas, fps)
             when (builder) {
                 is Preview.Builder -> builder.setTargetFrameRate(alvo)
                 is VideoCapture.Builder<*> -> builder.setTargetFrameRate(alvo)
@@ -348,13 +352,23 @@ class CameraXSource private constructor(
         }
 
         /**
+         * **A faixa pedida: até [fps], descendo até onde a câmera deixa o automático alongar a
+         * exposição** (`RegrasDosControles.pisoDoAutomatico`). Pedida **sempre**, inclusive a 30: sem
+         * pedido, o modelo de gravação do HAL fixa `[30,30]`, e o AE fica preso a 33 ms numa sala
+         * escura (medido no tablet em 06/10). A exposição manual não é afetada: com `AE_MODE OFF` vale
+         * o `SENSOR_FRAME_DURATION` do plano, que é 1/fps.
+         */
+        fun faixaDoAutomatico(faixas: List<android.util.Range<Int>>, fps: Int): android.util.Range<Int> =
+            android.util.Range(RegrasDosControles.pisoDoAutomatico(faixas.map { it.lower to it.upper }, fps), fps)
+
+        /**
          * As faixas de fps que esta câmera anuncia. **Relato, não guarda** — ver [pedirQuadros].
          *
          * Continua sendo lida e registrada porque é o que permite ler o log e entender por que a
          * taxa negociada foi a que foi; mas ela é **por câmera**, e o teto que decide é **por
          * tamanho**, então decidir por ela seria decidir pela tabela errada.
          */
-        private fun faixasDeQuadros(context: Context, cameraId: String): List<android.util.Range<Int>> {
+        fun faixasDeQuadros(context: Context, cameraId: String): List<android.util.Range<Int>> {
             val cm = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return emptyList()
             val chars = runCatching { cm.getCameraCharacteristics(cameraId) }.getOrNull() ?: return emptyList()
             return chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
@@ -526,7 +540,7 @@ class CameraXSource private constructor(
             Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} (${escolhida.pedido}) a $fps fps; " +
                 "faixas anunciadas: $faixas")
             val previewBuilder = Preview.Builder().setResolutionSelector(seletorPara(escolhida.pedido))
-            if (fps != 30) pedirQuadros(previewBuilder, fps)
+            pedirQuadros(previewBuilder, fps, faixas)
             val preview = previewBuilder.build()
 
             val main = Handler(Looper.getMainLooper())
@@ -799,9 +813,9 @@ class CameraXSource private constructor(
         // **A taxa é pedida aqui e no `Preview`, e nos dois pelo mesmo motivo.** O bind é
         // conjunto; um use case pedindo 60 e o outro calado é o tipo de descasamento que já fez o
         // CameraX subir um `StreamSharing` sozinho neste app (ver o comentário de
-        // [GEOMETRIA_ESTRITA]). `fpsEscolhido == 30` não pede nada: é o padrão do CameraX, e não
-        // escrever é mais seguro que escrever o mesmo valor.
-        if (fpsEscolhido != 30) pedirQuadros(vcBuilder, fpsEscolhido)
+        // [GEOMETRIA_ESTRITA]). A 30 também se pede: o "padrão do CameraX" era o `[30,30]` do HAL, que
+        // escurece a imagem em pouca luz ([faixaDoAutomatico]).
+        pedirQuadros(vcBuilder, fpsEscolhido, faixasDeFps)
         // **A taxa negociada é relatada, e não presumida.** O CameraX clampa o pedido pelo teto
         // do tamanho escolhido e pela interseção com os outros use cases, sem avisar; sem esta
         // linha, "pedi 60" e "estão saindo 60" seriam a mesma frase no log — e no S24 elas não
