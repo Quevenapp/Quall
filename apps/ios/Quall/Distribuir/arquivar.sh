@@ -9,7 +9,7 @@ SAIDA="$PROJ/dist"
 
 ALCANCE=""
 VERSAO="1.0.0"
-BUILD="2"
+BUILD="3"
 SEM_ASSINAR=0
 
 while [ $# -gt 0 ]; do
