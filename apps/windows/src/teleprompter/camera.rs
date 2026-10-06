@@ -2,12 +2,14 @@
 //! do dono e o microfone, para **um** receptor por vez, independente da sessão do prompter (a 7979).
 //!
 //! - Hospeda na **7877** (a regra de firewall "Quall sinalização (TCP 7877)" da bancada; ocupada, uma
-//!   porta livre), com o **mesmo PIN** pela vida da tela, e as tracks `Camera` e `Microphone` — a de
+//!   porta livre), com PIN renovado após `WrongPin`, `Pairing` ou `NeedsPin`, e as tracks
+//!   `Camera` e `Microphone` — a de
 //!   microfone **sempre** na oferta, calada com o botão desligado (§4.2: não há renegociação).
 //! - Pareou: a rede **se pendura** no dono (`DonoDaCaptura::pendurar_rede`), o ramal do microfone
 //!   vira a `CadeiaDeAudio` da sessão, e o laço é o de sempre (`sessao_de_emissao::Laco`).
 //! - Caiu: a rede **se solta** (a câmera, a prévia e a gravação não piscam), a cadeia desliga os
-//!   encoders dela (`desligar_tudo`, a revisão do plano, B3), e a espera volta com o mesmo PIN.
+//!   encoders dela (`desligar_tudo`, a revisão do plano, B3), e a espera volta com o mesmo PIN
+//!   após uma sessão concluída ou queda normal.
 //! - A câmera que acabou não hospeda de novo: a tela diz, e reabre a câmera se a pessoa pedir.
 //! - Um teto de falhas seguidas (40, como no iOS): a espera sem ninguém não conta; a sessão que cai
 //!   em menos de 30 s conta.
