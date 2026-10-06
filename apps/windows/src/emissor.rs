@@ -114,6 +114,7 @@ pub struct Estado {
     pub conselho: String,
     pub oferece_desparear: bool,
     pub anunciando_por_mdns: bool,
+    pub alias_da_descoberta: String,
     pub resumo: String,
     /// Corrida de bancada pediu para o processo sair.
     pub sair: bool,
@@ -256,6 +257,7 @@ impl Emissor {
                 conselho: String::new(),
                 oferece_desparear: false,
                 anunciando_por_mdns: false,
+                alias_da_descoberta: String::new(),
                 resumo: String::new(),
                 sair: false,
                 receptores: Vec::new(),
@@ -804,6 +806,7 @@ impl Emissor {
         {
             let mut e = self.estado();
             e.anunciando_por_mdns = anunciante.is_some();
+            e.alias_da_descoberta = anunciante.as_ref().map(|a| a.discovery_label().to_owned()).unwrap_or_default();
             e.mudou();
         }
         registro::linha(format!(
@@ -913,6 +916,7 @@ impl Emissor {
         {
             let mut e = self.estado();
             e.anunciando_por_mdns = false;
+            e.alias_da_descoberta.clear();
             e.mudou();
         }
 
@@ -1341,6 +1345,7 @@ impl Emissor {
         e.par.clear();
         e.endereco = None;
         e.anunciando_por_mdns = false;
+        e.alias_da_descoberta.clear();
         e.resumo.clear();
         e.ha_pares_conhecidos = identidade::ha_pares_conhecidos();
         self.aplicar_lista(&mut e, geracao, nova);
@@ -1948,6 +1953,7 @@ impl Emissor {
             || e.par != p.par
             || e.resumo != p.resumo
             || e.anunciando_por_mdns != p.anunciando
+            || e.alias_da_descoberta != p.alias_da_descoberta
             || e.rotulo_gravar != rotulo
             || e.linha_da_gravacao != linha
             || e.gravando != gravando
@@ -1960,6 +1966,7 @@ impl Emissor {
             e.par = p.par.clone();
             e.resumo = if transmitindo { p.resumo.clone() } else { p.aviso.clone() };
             e.anunciando_por_mdns = p.anunciando;
+            e.alias_da_descoberta = p.alias_da_descoberta.clone();
             e.rotulo_gravar = rotulo;
             e.linha_da_gravacao = linha;
             e.gravando = gravando;

@@ -1,0 +1,117 @@
+{
+  "base_commit": "3172b188",
+  "source_code_license": "MPL-2.0",
+  "brand_assets_notice": "tools/icones/DIREITOS-DA-MARCA.txt",
+  "source_comparison": {
+    "tracked_files": 4544,
+    "core_vendor_lock_files": 3219,
+    "android_files": 419,
+    "core_vendor_lock_inputs_identical_to_base": true,
+    "additional_patched_dependency_sources": false
+  },
+  "historical_armv7_core": {
+    "library_sha256": "bcc622e457723661263ae46dbe850692f8b527654a729191037c9cebe2e93c82",
+    "build_log_sha256": "a4bb546395cdfb1d5ed90648fc266881fd140a43637bbcdffceca49860ad1f05",
+    "source_differences": {
+      "files": 9,
+      "production_prefix_ignoring_comment_lines_identical": true,
+      "comparison_is_heuristic_not_parser_or_bit_reproduction": true
+    }
+  },
+  "external_native_inputs": {
+    "NDK": "27.2.12479018",
+    "libcxx": "official NDK runtime, no custom patches",
+    "FFmpeg": "9.0.1",
+    "ffmpeg_tar_sha256": "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635",
+    "ffmpeg_source_modifications": false
+  },
+  "release_aab": {
+    "unsigned_sha256": "7bf2e99245971f41608fec57319260d832ab93a657acd526e1fa3105a35b4eca",
+    "signed_sha256": "cca50f7f71bd04f79508cc623654a9fe9d974309302abb991db297fa0a99fbf0",
+    "signature_only_metadata_changes": true,
+    "payload_files_identical": 1040,
+    "certificate_sha256": "c47ee7f4b22d720b45534678ccc0405f26ee48688cf5a1de3f25e1c239b61617"
+  },
+  "native_payload": [
+    {
+      "abi": "arm64-v8a",
+      "file": "libavcodec.so",
+      "sha256": "c5c7b7e6b370cbc886699239546b0a4872ec4b107618c9f8e4c0e9dbef8d00e0"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libavformat.so",
+      "sha256": "0a8150bca8732bd82fb5981ecd7ae541be0a90fae01477cd4359468d6cc4f0a9"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libavutil.so",
+      "sha256": "d79b96d17be0c80f2449ed32116263fbc8785d5f8fd37204150d66ed15ba69a0"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libc++_shared.so",
+      "sha256": "4397241b4bd20a8e579bfb41d21107857e12985f6a01ca0c2a5f83380d1270b4"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libimage_processing_util_jni.so",
+      "sha256": "3e0071afcdc7e321f839e196d266014182f18d0988e4455acc9857a085b2184e"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libquall.so",
+      "sha256": "ed81d57754c7b19f6e2587b0f9718a73ba1d5f0831731c7949aaf3fc73707d06"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libqualldv.so",
+      "sha256": "f994fe341ad9841563e58d12da9728f941b739ed868a05fdb4733e32cb302154"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libqualljni.so",
+      "sha256": "f688e9ca263b1afe134f37d04e4d15ae7fc2b56cb7925c60263adfc6908fb2f7"
+    },
+    {
+      "abi": "arm64-v8a",
+      "file": "libsurface_util_jni.so",
+      "sha256": "ee3f0d56f81cc0a301db32dc4fd51274c3216733b4c40172768e38bc5049a265"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libc++_shared.so",
+      "sha256": "91b49f121b3120538faff020fcf535ade1d945e65ccd793fc0b815b5799bbdf0"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libimage_processing_util_jni.so",
+      "sha256": "e48e356bbe1902ae9a66178a4a0141c993b82ee9f70dde52ad83e4af3eca984f"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libquall.so",
+      "sha256": "bcc622e457723661263ae46dbe850692f8b527654a729191037c9cebe2e93c82"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libqualljni.so",
+      "sha256": "4e97516a07096b9c9e752c2e00ef76573cd50436d908db2ffc8b037b0e938029"
+    },
+    {
+      "abi": "armeabi-v7a",
+      "file": "libsurface_util_jni.so",
+      "sha256": "f110d6a305fef5be5664d58cfb054366b002bc516066b4ec880c38a68428756f"
+    }
+  ],
+  "canonical_post_build_apple_changes": {
+    "files": [
+      "vendor/datachannel-sys/build.rs",
+      "vendor/datachannel-sys/libdatachannel/src/impl/tls.cpp"
+    ],
+    "scope": "Apple-specific target/ifdef branches and equivalent non-Apple refactor",
+    "android_branch_behavior_difference_identified": false,
+    "byte_identical_source_claimed": false,
+    "post_build_input_files_compared": 3637
+  }
+}

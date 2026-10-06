@@ -3,7 +3,7 @@
 
 [package]
 name = "quall-capture-probe"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MPL-2.0"
@@ -137,7 +137,8 @@ required-features = ["tela-estendida-futura"]
 default = ["core"]
 core = ["dep:quall-core"]
 net = ["core", "quall-core/webrtc", "dep:quall-opus"]
-# **A build de distribuição Microsoft Store**: não admite a feature futura de tela estendida.
+# **A build de distribuição Microsoft Store**: sem câmera virtual embutida/ativável e sem
+# a feature futura de tela estendida. Mirror, câmeras físicas, prompter e gravação permanecem.
 # O release sem a feature futura já exclui os módulos e payloads de driver; `loja` endurece
 # o contrato para a embalagem, inclusive quando alguém acrescentar features manualmente.
 loja = []

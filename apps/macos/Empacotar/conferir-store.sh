@@ -13,6 +13,13 @@ ok() { echo "OK: $1"; }
 falha() { echo "FALHA: $1"; FALHAS=$((FALHAS+1)); }
 INFO="$APP/Contents/Info.plist"
 BIN="$APP/Contents/MacOS/quall-app"
+if plutil -lint "$APP/Contents/Resources/PrivacyInfo.xcprivacy" >/dev/null 2>&1; then ok 'manifesto de privacidade válido'; else falha 'manifesto ausente/inválido'; fi
+for SDK_RECURSO in PrivacyInfo.xcprivacy Info.plist; do
+    if cmp -s "$RAIZ/vendor/datachannel-sys/OpenSSL_Privacy.bundle/$SDK_RECURSO" \
+        "$APP/Contents/Resources/OpenSSL_Privacy.bundle/$SDK_RECURSO"; then
+        ok "recurso OpenSSL próprio conferido: $SDK_RECURSO"
+    else falha "recurso OpenSSL próprio ausente/divergente: $SDK_RECURSO"; fi
+done
 if plutil -lint "$INFO" >/dev/null 2>&1; then ok 'Info.plist válido'; else falha 'Info.plist inválido'; fi
 for CHAVE in CFBundleIdentifier CFBundleVersion CFBundleShortVersionString LSMinimumSystemVersion; do
     [ -n "$(/usr/libexec/PlistBuddy -c "Print :$CHAVE" "$INFO" 2>/dev/null)" ] || falha "metadado ausente: $CHAVE"

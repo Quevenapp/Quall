@@ -1,4 +1,5 @@
 import Foundation
+import CQuall
 import QuallNetKit
 
 /// Quem este Mac é na rede, e de quem ele já se lembra.
@@ -83,10 +84,10 @@ enum Identidade {
     /// Só tocado dentro de `fila`.
     private static var idEmMemoria: String?
 
-    /// O nome com que este Mac aparece na rede. É o nome que a pessoa já reconhece — o mesmo que
-    /// o Finder e o AirDrop mostram —, não um apelido inventado por nós: o valor da tela de
-    /// espera está em a pessoa conseguir apontar para o próprio aparelho na lista do outro.
+    /// Nome estável de apresentação, enviado somente após autenticação. A descoberta
+    /// pública usa o alias efêmero do anunciante, independente deste nome.
     static var nomeDoAparelho: String {
+        if let nome = Argumentos.lidos().nomeDeBancada, !nome.isEmpty { return nome }
         let doSistema = Host.current().localizedName ?? ""
         if !doSistema.isEmpty { return doSistema }
         let hostname = ProcessInfo.processInfo.hostName
@@ -110,11 +111,10 @@ enum Identidade {
     /// composição.
     static func haParesConhecidos() -> Bool {
         let texto = paresConhecidos()
-        guard !texto.isEmpty else { return false }
-        // O formato é do núcleo e opaco para a casca. O que dá para afirmar sem interpretá-lo é
-        // que uma tabela vazia não tem par nenhum — qualquer coisa além disso é "tem algo".
-        let limpo = texto.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !(limpo.isEmpty || limpo == "{}" || limpo == "[]" || limpo == "null")
+        // O núcleo valida formato e security_version. Registros legados continuam
+        // no arquivo, mas pedem o PIN de novo uma vez; não autorizam a manchete.
+        guard !texto.utf8.contains(0) else { return false }
+        return texto.withCString { quall_known_peers_has_secure($0) > 0 }
     }
 
     /// Grava fundindo com o que já está em disco. Ver o comentário de tipo.

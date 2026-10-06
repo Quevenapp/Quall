@@ -40,7 +40,7 @@ target_link_libraries(qualljni quall log)
 
 # Android 15+ exige páginas de 16 KB em arm64. Não morde o A10s (armv7) — morde o A07 e o tablet,
 # os aparelhos que parecem os seguros. Ver `docs/divida-do-nucleo.md`, item 6.
-target_link_options(qualljni PRIVATE "-Wl,-z,max-page-size=16384")
+target_link_options(qualljni PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
 
 # --- Câmera DV por USB (só arm64) ---------------------------------------------------------------
 #
@@ -66,7 +66,7 @@ if(ANDROID_ABI STREQUAL "arm64-v8a" AND EXISTS "${DV_DIR}/lib/arm64-v8a/libavfor
     target_include_directories(qualldv PRIVATE "${DV_DIR}/include")
     target_compile_options(qualldv PRIVATE -O2)
     target_link_libraries(qualldv avformat avcodec avutil log)
-    target_link_options(qualldv PRIVATE "-Wl,-z,max-page-size=16384")
+    target_link_options(qualldv PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
 else()
     message(STATUS "câmera DV fora deste build (ABI ${ANDROID_ABI}; FFmpeg em ${DV_DIR}: "
         "rode apps/android/tools/compila-ffmpeg-dv.sh)")

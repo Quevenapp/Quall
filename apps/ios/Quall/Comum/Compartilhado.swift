@@ -201,8 +201,10 @@ public enum Compartilhado {
     }
 
     public static var haParesConhecidos: Bool {
-        guard let alvo = arquivo("pares.json") else { return false }
-        return FileManager.default.fileExists(atPath: alvo.path)
+        // A presença do arquivo não prova um vínculo seguro v3. O núcleo interpreta
+        // o formato; entradas legadas são preservadas e exigem o PIN uma vez.
+        guard let texto = lerPares(), !texto.utf8.contains(0) else { return false }
+        return texto.withCString { quall_known_peers_has_secure($0) > 0 }
     }
 
     /// A saída do beco sem saída da dívida 22.

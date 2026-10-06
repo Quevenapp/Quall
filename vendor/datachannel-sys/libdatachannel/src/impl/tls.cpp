@@ -159,11 +159,19 @@ void init() {
 	std::lock_guard lock(mutex);
 	if (!std::exchange(done, true)) {
 		uint64_t ssl_opts = OPENSSL_INIT_LOAD_SSL_STRINGS | OPENSSL_INIT_LOAD_CRYPTO_STRINGS;
+#ifdef __APPLE__
+		// Quall uses in-memory DTLS identities, never a global openssl.cnf file.
+		ssl_opts |= OPENSSL_INIT_NO_LOAD_CONFIG;
+#endif
 #ifdef OPENSSL_INIT_NO_ATEXIT
 		ssl_opts |= OPENSSL_INIT_NO_ATEXIT;
 #endif
 		OPENSSL_init_ssl(ssl_opts, nullptr);
+#ifdef __APPLE__
+		OPENSSL_init_crypto(ssl_opts, nullptr);
+#else
 		OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, nullptr);
+#endif
 	}
 }
 

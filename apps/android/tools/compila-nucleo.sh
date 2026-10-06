@@ -50,19 +50,19 @@ SYSROOT_LIB="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$(basename "$(dirname "$
 # Todo símbolo que o shim JNI chama. A lista é curta de propósito: se ela crescer, é porque a
 # fachada cresceu, e vale reler se ainda cabe em `apps/android`.
 SIMBOLOS=(
-  quall_last_error quall_last_status
-  quall_advertiser_start quall_advertiser_stop
+  quall_last_error quall_last_status quall_known_peers_has_secure
+  quall_advertiser_start quall_advertiser_stop quall_advertiser_label
   quall_browser_start quall_browser_collect quall_browser_devices_json quall_browser_stop
   quall_canceller_new quall_canceller_free quall_session_cancel
-  quall_host_cancelable quall_connect_cancelable
+  quall_host_cancelable quall_connect_cancelable quall_connect_with_screen
   quall_session_signaling_port quall_session_peer_json
   quall_session_pairing_is_new
   quall_session_known_peers_json quall_session_track_count quall_session_track
   quall_session_next_track quall_session_next_event
-  quall_session_close
+  quall_session_close quall_session_path_json
   quall_track_send_frame quall_track_take_idr_request quall_track_stats_json
   quall_track_on_frame quall_track_request_idr quall_track_kind
-  quall_track_label quall_track_free
+  quall_track_label quall_track_free quall_track_frames_dropped quall_track_set_reorder_depth
   quall_protocol_version quall_service_type quall_generate_pin quall_install_panic_hook
   # Áudio. `quall_audio_decoder_*` e `quall_track_audio_codec` entraram nesta rodada; os outros
   # já existiam no header e nunca tinham sido chamados de lugar nenhum no Android.
@@ -74,7 +74,7 @@ SIMBOLOS=(
   # emissor, e `quall_rate_*` é a política — que mora no núcleo para poder ser testada.
   quall_session_report_link quall_session_take_link_report
   quall_rate_new quall_rate_sample quall_rate_current_bps quall_rate_at_floor
-  quall_rate_counters quall_rate_free
+  quall_rate_counters quall_rate_free quall_teto_ajustar_para
   # O teleprompter (F6a, `docs/contrato-teleprompter.md`): o papel no aperto de mão, as mensagens
   # da sessão e a réplica do estado. O shim JNI os chama desde a F6b (as telas do prompter e do
   # controle); a lista garante que a `.so` os exporta.
@@ -120,7 +120,7 @@ SIMBOLOS=(
 # - `max-page-size=16384`: o Android 15+ exige alinhamento de página de 16 KB em arm64. Não morde
 #   o A10s, que é armv7 — morde o A07 e o tablet (`docs/divida-do-nucleo.md`, item 6). O ideal é
 #   isso sair de `tools/android-env.sh`, que é de outra frente; até lá, sai daqui.
-export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-soname,libquall.so -C link-arg=-Wl,-z,max-page-size=16384"
+export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-soname,libquall.so -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384"
 
 echo "==> apagando $JNILIBS"
 rm -rf "$JNILIBS"

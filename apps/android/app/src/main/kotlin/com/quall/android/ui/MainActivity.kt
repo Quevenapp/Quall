@@ -63,7 +63,7 @@ import kotlin.concurrent.thread
  *
  * Do lado do emissor — que é o que este marco entrega — o fluxo é: escolher a origem (tela ou uma
  * câmera) → tocar em "Espelhar" → consentimento do sistema (só para a tela) ou permissão de
- * câmera (só na primeira vez) → tela de espera. Ela é a peça central: PIN, nome na rede, IP para
+ * câmera (só na primeira vez) → tela de espera. Ela é a peça central: PIN, alias na rede, IP para
  * digitar, o que fazer do outro lado, e um Cancelar que funciona de verdade. Sem ela o usuário
  * concede gravação de tela (ou permite a câmera), vê o indicador do sistema, e não sabe se está
  * esperando ou travado.
@@ -1636,7 +1636,9 @@ class MainActivity : AppCompatActivity() {
 
         // O bloco da espera.
         binding.textMirrorInstructions.visibility = if (espera) View.VISIBLE else View.GONE
-        binding.textMirrorInstructions.text = instrucaoDaEspera(if (anunciaNaRede) eu.displayName else null)
+        binding.textMirrorInstructions.text = instrucaoDaEspera(
+            e.aliasNaRede.takeIf { anunciaNaRede && it.isNotBlank() }
+        )
         binding.blocoParConhecido.visibility = if (espera && pares) View.VISIBLE else View.GONE
         val vEspera = if (espera) View.VISIBLE else View.GONE
         binding.pinGroup.visibility = vEspera
@@ -1721,7 +1723,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * A instrução da espera (§6.4): com anúncio na rede, "No outro aparelho, abra o Quall em **Exibir** e
-     * escolha **{nome}** na lista, ou digite o endereço abaixo."; sem, "… e digite o endereço abaixo.".
+     * escolha **{alias}** na lista, ou digite o endereço abaixo."; sem, "… e digite o endereço abaixo.".
      */
     private fun instrucaoDaEspera(nome: String?): CharSequence {
         val exibir = getString(R.string.in_exibir)

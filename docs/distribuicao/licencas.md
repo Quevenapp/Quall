@@ -13,6 +13,13 @@ direitos. Não foi aplicado Exhibit B ao código próprio. Terceiros conservam s
 O [inventário JSON](licencas/inventario.json) e o [CSV](licencas/inventario.csv) registram
 versões, locks, licenças e hashes. Incluem runtime potencial, construção e testes. Os grafos
 anteriores estão identificados como históricos; não houve nova resolução para esta seleção.
+Na preparação da revisão de segurança v3, o [delta do lock atual](licencas/crypto-v3-lock.json)
+registra os crates adicionados e removidos em relação à base pública. Os textos legais de cada
+crate adicionado foram conferidos contra o archive oficial e seu checksum no lock, preservados
+em `licencas/textos/crypto-v3/` e acrescentados aos avisos completos. A ferramenta
+`tools/distribuicao/atualizar-licencas-crypto-v3.py` reproduz essa conferência. O inventário anterior
+continua sendo referência da base, com seus próprios hashes; a revisão v3 exige novas builds e
+verificação das dependências efetivamente incorporadas por plataforma.
 Estar no lock não comprova incorporação no binário. Os
 [avisos completos](../../THIRD_PARTY_NOTICES.txt) preservam os corpos legais, copyrights e
 emails públicos legítimos upstream, sem relatórios privados de bancada.
@@ -21,7 +28,7 @@ emails públicos legítimos upstream, sem relatórios privados de bancada.
 |---|---|
 | datachannel 0.16.1, webrtc-sdp 0.3.14/0.3.15 | MPL-2.0; crates oficiais conferidos pelos checksums dos locks em `licencas/fontes/`. |
 | datachannel-sys, libdatachannel e libjuice | MPL-2.0; árvore selecionada em `vendor/datachannel-sys/`, com patches/avisos e exclusões em `PUBLIC-SOURCE.md`. |
-| OpenSSL 3.6.3 | Apache-2.0 e avisos internos; fonte obtido pelo crate `openssl-src` fixado no lock. Não é OpenSSL 1.x. |
+| OpenSSL 4.0.3, revisão preparada | Apache-2.0 e avisos internos; `openssl-src` 400.0.2+4.0.3 e seu checksum estão fixados nos locks. Avisos do wrapper, biblioteca e gerador de build estão no delta v3. A base 3.6.3 é histórica; a nova revisão ainda exige build e teste em cada plataforma. |
 | libsrtp, usrsctp, plog, picohash | BSD, MIT e declaração de domínio público por arquivo; fontes/avisos na árvore vendor. |
 | Opus 1.5.2 | BSD-3-Clause e avisos internos/patentes; fonte em `crates/quall-opus/vendor/opus/`. |
 | Crates Rust e dependências Android | Versões nos locks/inventários; MIT, Apache, BSD, ISC, Unicode e MPL por componente. `OR` é alternativa; `AND` exige ambas. |
@@ -39,8 +46,11 @@ correspondente da combinação, incluindo núcleo e instruções; só `plugins/o
 
 Os novos placeholders geométricos são originais MPL, conforme
 [tools/icones/README.md](../../tools/icones/README.md). Os 46 `ic_q_*` atuais não usam paths
-Material. Marca antiga, antigos vetores Material, animais originais, mídias, capturas e fixtures
-com proveniência indefinida foram omitidos, sem reinterpretar seus direitos. Fontes/símbolos de
+Material. Os recursos de marca aprovados para Android, Apple e Windows têm os termos de
+reprodução técnica indicados em [LICENSE-SCOPE.md](../../LICENSE-SCOPE.md). Geradores e
+modificações de código cobertos continuam sob MPL-2.0. Antigos vetores Material, animais
+originais, mídias, capturas e fixtures com proveniência indefinida permanecem omitidos, sem
+reinterpretar seus direitos. Fontes/símbolos de
 sistema continuam regidos pelos termos da plataforma. Driver sudoVda não integra esta seleção.
 
 O [manifesto](licencas/fontes/manifesto.json) identifica fontes realmente presentes.

@@ -31,7 +31,7 @@ import com.quall.android.teleprompter.Replicas
  * **A folha de Ajustes** (`docs/telas-estudio.md` §6.3), a mesma nas três engrenagens (Início, Espelhar,
  * Exibir): "Ajustes" e "Pronto"; QUALIDADE DO ESPELHAMENTO (os dois cardápios e a nota de custo, que
  * saíram de Espelhar), PAREAMENTO ("Aparelhos pareados" com a contagem e "Esquecer aparelhos pareados",
- * com confirmação) e SOBRE (este aparelho, o nome na lista, a versão, o núcleo e "Licenças de terceiros").
+ * com confirmação) e SOBRE (este aparelho, o nome após conectar, a versão, o núcleo e "Licenças de terceiros").
  *
  * Criada **uma vez só** no `onCreate` de quem a abre (§11.3): a vista vive com a tela, e o
  * `BottomSheetDialog` só a mostra. Os cardápios de qualidade continuam como eram em Espelhar — um

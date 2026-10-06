@@ -37,6 +37,7 @@ final class EsperaDaCamera: ObservableObject {
     @Published private(set) var resumo = ""
     @Published private(set) var mensagem = ""
     @Published private(set) var anunciandoPorMDNS = false
+    @Published private(set) var nomeNaDescoberta: String?
 
     let dono: DonoDaCamera
     private let fonte: FonteDeCaptura
@@ -194,12 +195,13 @@ final class EsperaDaCamera: ObservableObject {
             defer { travaDoAnuncio.withLock { self?.anunciosPendentes -= 1 } }
             anunciante.parar()
             guard let porta else {
-                DispatchQueue.main.async { self?.anunciandoPorMDNS = false }
+                DispatchQueue.main.async { self?.anunciandoPorMDNS = false; self?.nomeNaDescoberta = nil }
                 return
             }
             let ok = anunciante.comecar(deviceId: id, nome: nome, porta: porta, emiteTela: false, emiteCamera: true)
             Registro.compartilhado.linha("APP CAMERA mdns: anunciou=\(ok) porta=\(porta)")
-            DispatchQueue.main.async { self?.anunciandoPorMDNS = ok }
+            let alias = ok ? anunciante.nomePublico : nil
+            DispatchQueue.main.async { self?.anunciandoPorMDNS = ok; self?.nomeNaDescoberta = alias }
         }
     }
 

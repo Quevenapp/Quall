@@ -60,6 +60,7 @@ pub struct PainelDoVideo {
     /// O último aviso ("quem recebia saiu; esperando de novo").
     pub aviso: String,
     pub anunciando: bool,
+    pub alias_da_descoberta: String,
     pub sessoes: u32,
     /// O pareamento falhou por um par esquecido (a dívida 22): a tela oferece "Esquecer pareamentos".
     pub oferece_desparear: bool,
@@ -108,6 +109,7 @@ impl SessaoDeVideo {
                 resumo: String::new(),
                 aviso: String::new(),
                 anunciando: false,
+                alias_da_descoberta: String::new(),
                 sessoes: 0,
                 oferece_desparear: false,
                 versao: 1,
@@ -221,6 +223,7 @@ impl SessaoDeVideo {
                 p.endereco = endereco.clone();
                 p.porta = porta_real;
                 p.anunciando = anunciante.is_some();
+                p.alias_da_descoberta = anunciante.as_ref().map(|a| a.discovery_label().to_owned()).unwrap_or_default();
                 p.par.clear();
                 p.resumo.clear();
             });

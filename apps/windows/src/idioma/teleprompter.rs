@@ -65,6 +65,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("Não consegui ler o arquivo: {}", "Couldn't read the file: {}"),
     ("Sem roteiro.", "No script."),
     // sessao.rs
+    ("Não foi possível gerar um PIN seguro. Feche e abra a tela para tentar de novo.", "Couldn't generate a secure PIN. Close and reopen this screen to try again."),
     ("Nenhuma porta de {} a {} abriu neste computador ({}).", "No port from {} to {} opened on this computer ({})."),
     ("Não entendi o endereço {}: {}", "Couldn't read the address {}: {}"),
     ("O PIN tem de ter seis dígitos ({}).", "The PIN must have six digits ({})."),
@@ -187,7 +188,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("sem rede", "no network"),
     ("A espera parou. {}", "Waiting stopped. {}"),
     ("   ·   a porta {} estava ocupada: use a {}", "   ·   port {} was busy: use {}"),
-    ("Anunciando na rede. No outro aparelho: Quall → Teleprompter → Controlar.", "Announcing on the network. On the other device: Quall → Teleprompter → Remote."),
+    ("Na lista: {}. No outro aparelho: Teleprompter → Controlar.", "In the list: {}. On the other device: Teleprompter → Remote."),
     ("Sem anúncio na rede: digite o endereço no controle.", "Not announced on the network: enter the address on the remote."),
     ("CONTROLE SUMIDO — o texto continua como estava. Esperando o controle voltar.", "REMOTE GONE — the text stays as it was. Waiting for the remote to come back."),
     ("Controlado por {}", "Controlled by {}"),

@@ -133,7 +133,7 @@ struct TelaDoPrompter: View {
                         .textSelection(.enabled)
                         .foregroundColor(tp.endereco == nil ? Estilo.aguardandoTexto : Estilo.texto)
                     Text(tp.anunciandoPorMDNS
-                         ? T("Aparecendo na lista dos outros aparelhos como %@.", tp.nome)
+                         ? T("Aparecendo na lista dos outros aparelhos como %@.", tp.nomeNaDescoberta ?? "Quall")
                          : T("Sem anúncio na rede — digite o endereço no controle."))
                         .font(.caption)
                         .foregroundColor(Estilo.texto2)

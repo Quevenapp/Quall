@@ -339,6 +339,17 @@ Java_com_quall_android_core_QuallNative_protocolVersion(JNIEnv *env, jclass cls)
     return (jint)quall_protocol_version();
 }
 
+JNIEXPORT jint JNICALL
+Java_com_quall_android_core_QuallNative_knownPeersHasSecureBytes(JNIEnv *env, jclass cls,
+                                                               jbyteArray known_peers_json) {
+    (void)cls;
+    char *known = copiar_bytes(env, known_peers_json);
+    if (known == NULL) return -1;
+    jint result = (jint)quall_known_peers_has_secure(known);
+    free(known);
+    return result;
+}
+
 JNIEXPORT jbyteArray JNICALL
 Java_com_quall_android_core_QuallNative_serviceTypeBytes(JNIEnv *env, jclass cls) {
     (void)cls;
@@ -408,6 +419,19 @@ Java_com_quall_android_core_QuallNative_advertiserStop(JNIEnv *env, jclass cls, 
     (void)env;
     (void)cls;
     quall_advertiser_stop((QuallAdvertiser *)(uintptr_t)handle);
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_com_quall_android_core_QuallNative_advertiserLabelBytes(JNIEnv *env, jclass cls,
+                                                           jlong handle) {
+    (void)cls;
+    const QuallAdvertiser *a = (const QuallAdvertiser *)(uintptr_t)handle;
+    if (a == NULL) return para_bytes(env, "");
+    jbyteArray saida;
+#define CHAMAR(buf, cap) quall_advertiser_label(a, (buf), (cap))
+    POR_BUF_CAP(env, saida, "", CHAMAR);
+#undef CHAMAR
+    return saida;
 }
 
 /* ============================================================================================

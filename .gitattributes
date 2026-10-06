@@ -1,0 +1,5 @@
+# Legal texts copied byte for byte from checksum-verified upstream crate archives.
+# Preserve their line endings and upstream whitespace in all checkouts.
+docs/distribuicao/licencas/textos/crypto-v3/** -text -whitespace
+# Unified diffs have literal context prefixes, including blank and tabbed lines.
+*.patch -text -whitespace

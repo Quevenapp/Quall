@@ -91,24 +91,15 @@ pub struct Registro {
     /// a frente não existisse. Ver `Argumentos::sem_cameras_virtuais`.
     ligado: bool,
     abertas: Mutex<HashMap<String, Arc<Baia>>>,
-    /// Nomes de câmera que **faltam criar**, deixados aqui pela thread da sessão para a thread da
-    /// janela pegar.
-    ///
-    /// Existe porque `IMFVirtualCamera` é um ponteiro COM e não é `Send`: quem cria o nó tem de
-    /// ser a thread que vai guardá-lo, e essa é a da janela. O `Baia` (cano e placa) **já** nasce
-    /// na hora do pareamento, então a sessão publica desde o primeiro quadro; o que espera até o
-    /// próximo pulso de 100 ms é só o nó aparecer na lista do Windows.
-    ///
-    /// Sem esta fila, a câmera de um aparelho recém-pareado só existia na **próxima abertura do
-    /// app** — o que Pessoa Exemplo pegou em campo, com estas palavras: *"pareado s24 no dell não apareceu
-    /// como camera virtual"*.
+    /// Nomes que a sessão pediu. No pulso, a janela inicia workers MTA que possuem os
+    /// objetos COM; o handle Rust guardado pela janela não transporta IMFVirtualCamera.
     pendentes: Mutex<Vec<String>>,
 }
 
 impl Registro {
     pub fn novo(ligado: bool) -> Arc<Self> {
         Arc::new(Registro {
-            ligado,
+            ligado: ligado && !cfg!(feature = "loja"),
             abertas: Mutex::new(HashMap::new()),
             pendentes: Mutex::new(Vec::new()),
         })
@@ -118,9 +109,8 @@ impl Registro {
     ///
     /// Erro numa não impede as outras: uma câmera que não sobe é uma linha no registro, não o app
     /// sem receptor.
-    /// Devolve os objetos de câmera para **quem chamou segurar** — e quem chama é a thread
-    /// principal. Largá-los aqui dentro seria pedir para um ponteiro COM atravessar thread; ver a
-    /// nota em `baia.rs`. Enquanto o `Vec` devolvido viver, as câmeras existem.
+    /// Devolve handles Rust para manter os workers vivos. Criação e consentimento ocorrem
+    /// no worker, sem bloquear a janela; falha posterior é registrada pelo próprio worker.
     #[must_use = "as câmeras somem quando este Vec é largado — segure-o pela vida do app"]
     pub fn abrir_conhecidas(&self) -> Vec<crate::baia::CameraVirtual> {
         if !self.ligado {
@@ -131,7 +121,7 @@ impl Registro {
         if conhecidos.is_empty() {
             registro::linha(
                 "cameras virtuais: nenhum aparelho conhecido ainda — a câmera de um aparelho \
-                 aparece na PRÓXIMA abertura do app, depois da primeira conexão dele",
+                 será criada após a primeira conexão dele",
             );
             return Vec::new();
         }
@@ -147,7 +137,7 @@ impl Registro {
                 }
             }
         }
-        registro::linha(format!("cameras virtuais: {} de pé", cameras.len()));
+        registro::linha(format!("cameras virtuais: {} criação(ões) solicitada(s)", cameras.len()));
         cameras
     }
 
@@ -179,11 +169,13 @@ impl Registro {
         baia
     }
 
-    /// **Roda na thread da janela**, a cada pulso: cria os nós que a thread da sessão pediu.
+    /// Roda no pulso da janela: inicia a criação assíncrona pedida pela sessão.
     ///
     /// O `Vec` que ela recebe é o mesmo que segura as câmeras vivas — a vida delas é
     /// `MFVirtualCameraLifetime_Session`, então largar o objeto é remover o nó.
     pub fn atender_pendentes(&self, cameras: &mut Vec<crate::baia::CameraVirtual>) {
+        // Uma falha de criação não pode impedir uma nova tentativa após outro pareamento.
+        cameras.retain(|camera| !camera.falhou());
         let nomes: Vec<String> = {
             let mut p = self.pendentes.lock().unwrap();
             if p.is_empty() {
@@ -197,7 +189,7 @@ impl Registro {
             }
             match crate::baia::CameraVirtual::criar(&nome) {
                 Ok(c) => {
-                    registro::linha(format!("camera virtual (nome omitido): nó criado, já na lista"));
+                    registro::linha(format!("camera virtual (nome omitido): criação solicitada ao worker"));
                     cameras.push(c);
                 }
                 Err(erro) => {
@@ -241,5 +233,22 @@ impl Registro {
                 .lock()
                 .map(|a| a.values().any(|b| b.alguem_lendo()))
                 .unwrap_or(false)
+    }
+}
+
+#[cfg(all(test, feature = "loja"))]
+mod testes_da_edicao_store {
+    use super::*;
+
+    #[test]
+    fn pedido_de_camera_na_loja_nao_cria_no_nem_ipc() {
+        let r = Registro::novo(true);
+        assert!(!r.ligado);
+        assert!(r.abrir_conhecidas().is_empty());
+        assert!(r.obter_ou_criar("fixture-id", "quall-fixture-store-sem-camera").is_none());
+        assert_eq!(r.quantas(), 0);
+        assert!(!r.alguma_em_uso());
+        assert!(crate::baia::CameraVirtual::criar("quall-fixture-store-sem-camera").is_err());
+        assert!(Baia::abrir("quall-fixture-store-sem-camera").is_err());
     }
 }

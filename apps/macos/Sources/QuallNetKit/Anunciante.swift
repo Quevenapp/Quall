@@ -17,10 +17,10 @@ import Foundation
 ///
 /// Nenhum perfil de provisionamento do projeto tem `com.apple.developer.networking.multicast`,
 /// e por isso o iPhone não pode usar **este** caminho — o do núcleo, que abre socket multicast
-/// cru. **Ele passou a anunciar por outro:** `AnuncianteBonjour`, com `NetService`, pelo
+/// cru. **Ele anuncia por outro:** `AnuncianteBonjour`, com DNSServiceRegister/RegisterRecord, pelo
 /// `mDNSResponder` do sistema, sem entitlement (medido em 01/09/2026). No macOS não há o teto e
 /// este caminho serve: este Mac aparece na lista. A tela de espera daqui mostra as duas coisas mesmo assim —
-/// o nome, para quem vê a lista, e o endereço, para quem está numa rede que bloqueia multicast,
+/// o alias efêmero, para quem vê a lista, e o endereço, para quem está numa rede que bloqueia multicast,
 /// que é o fallback obrigatório do `PROMPT.md` e já se pagou nesta bancada.
 public final class Anunciante {
     private let trava = NSLock()
@@ -83,6 +83,21 @@ public final class Anunciante {
         handle = novo
         trava.unlock()
         return true
+    }
+
+    /// Alias efêmero exato que a descoberta v3 apresenta na lista.
+    /// A trava mantém o handle vivo durante a leitura; o nome pessoal permanece
+    /// reservado para o payload autenticado da sessão.
+    public var nomePublico: String? {
+        trava.lock()
+        defer { trava.unlock() }
+        guard let handle else { return nil }
+        var bytes = [CChar](repeating: 0, count: 64)
+        let tamanho = bytes.withUnsafeMutableBufferPointer {
+            quall_advertiser_label(handle, $0.baseAddress, UInt($0.count))
+        }
+        guard tamanho > 0, tamanho <= bytes.count else { return nil }
+        return String(cString: bytes)
     }
 
     /// **Bloqueia** por até ~1 s esperando o adeus do mDNS sair (dívida 3: a versão antiga só

@@ -86,7 +86,7 @@ final class Emissor: ObservableObject {
             switch self {
             case .redeLocalNegada:
                 return tr("O Quall precisa de acesso à rede local para achar o outro "
-                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall → Rede Local"))
+                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall Studio → Rede Local"))
             case .pinNaoSorteado:
                 return tr("Não foi possível sortear o PIN da sessão.")
             case .paresEsquecidos:
@@ -151,6 +151,7 @@ final class Emissor: ObservableObject {
     /// ele não é o do núcleo: aquele abre socket multicast cru, que no iOS depende de um
     /// entitlement que ainda está com a Apple.
     private let anunciante = AnuncianteBonjour()
+    var nomeNaDescoberta: String? { anunciante.nomePublico }
 
     /// Por quanto tempo um pedido que ninguém consumiu ainda **é** a espera em curso.
     ///

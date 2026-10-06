@@ -83,6 +83,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
 
     /// O anúncio por mDNS enquanto a câmera espera. Ver `AnuncianteBonjour`.
     private let anunciante = AnuncianteBonjour()
+    var nomeNaDescoberta: String? { anunciante.nomePublico }
 
     /// Prazo de cada tentativa de `quall_host`, re-armado em laço. O mesmo da appex, e pela mesma
     /// dívida (10) — mas aqui ele **não** é o ponto de cancelamento: ver `armarCancelador`.
@@ -410,7 +411,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
             guard self.fase == .pedindoPermissao else { return }
             if resposta == .negada {
                 self.conselho = tr("O Quall precisa de acesso à rede local para achar o outro "
-                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall → Rede Local"))
+                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall Studio → Rede Local"))
                 self.conselhoEhDaPortaPresa = false
             }
             self.montarEHospedar()

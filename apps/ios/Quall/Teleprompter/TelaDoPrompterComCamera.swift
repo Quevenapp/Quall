@@ -549,7 +549,7 @@ struct TelaDoPrompterComCamera: View {
 
     static var textoDeNegada: String {
         tr("O Quall não tem acesso à câmera deste aparelho. Abra %@ e ligue; "
-           + "o texto continua funcionando enquanto isso.", trSistema("Ajustes → Quall → Câmera"))
+           + "o texto continua funcionando enquanto isso.", trSistema("Ajustes → Quall Studio → Câmera"))
     }
 
     private func abrirAjustes() {

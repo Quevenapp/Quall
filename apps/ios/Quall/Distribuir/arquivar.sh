@@ -8,8 +8,8 @@ RAIZ="$(cd "$PROJ/../../.." && pwd)"
 SAIDA="$PROJ/dist"
 
 ALCANCE=""
-VERSAO="0.1.0"
-BUILD="1"
+VERSAO="1.0.0"
+BUILD="2"
 SEM_ASSINAR=0
 
 while [ $# -gt 0 ]; do
@@ -41,9 +41,9 @@ FIM
 fi
 
 A="$RAIZ/target/aarch64-apple-ios/release/libquall.a"
+bash "$RAIZ/tools/distribuicao/conferir-marca-apple.sh" ios
     echo "==> compilando o núcleo para aarch64-apple-ios"
-    ( cd "$RAIZ" && IPHONEOS_DEPLOYMENT_TARGET=15.0 CARGO_PROFILE_RELEASE_LTO=false \
-        cargo build --locked --offline -j "${QUALL_JOBS:-2}" --release --target aarch64-apple-ios -p quall-ffi )
+    bash "$RAIZ/tools/distribuicao/construir-nucleo-apple.sh" aarch64-apple-ios
 [ -f "$A" ] || { echo "ERRO: $A não saiu do build"; exit 1; }
 
 echo "==> xcodegen generate"
@@ -109,6 +109,20 @@ fi
 
 [ "$FALHOU" = "0" ] || { echo; echo "PARADO: um portão falhou. Não exporte."; exit 1; }
 
+for PAR in "App:$APP" "Extensao:$APP/PlugIns/Difusao.appex"; do
+    ORIGEM="${PAR%%:*}"
+    PACOTE="${PAR#*:}"
+    plutil -lint "$PACOTE/PrivacyInfo.xcprivacy"
+    cmp "$PROJ/$ORIGEM/PrivacyInfo.xcprivacy" "$PACOTE/PrivacyInfo.xcprivacy"
+    for SDK_RECURSO in PrivacyInfo.xcprivacy Info.plist; do
+        cmp "$RAIZ/vendor/datachannel-sys/OpenSSL_Privacy.bundle/$SDK_RECURSO" \
+            "$PACOTE/OpenSSL_Privacy.bundle/$SDK_RECURSO"
+    done
+    for LICENCA in THIRD_PARTY_NOTICES.txt LICENSE LICENSE-SCOPE.md NOTICE.txt; do
+        cmp "$RAIZ/$LICENCA" "$PACOTE/$LICENCA"
+    done
+done
+
 echo
 if [ "$SEM_ASSINAR" = "1" ]; then
     cat <<FIM
@@ -159,22 +173,15 @@ echo "==> $IPA  ($(du -h "$IPA" | cut -f1))"
 if [ "$ALCANCE" = "loja" ]; then
     cat <<FIM
 
-==> Subir para o App Store Connect — o passo que exige a conta do dono
+==> IPA exportado para a conta configurada. Nenhum envio foi realizado.
 
-Não é feito por este roteiro, e não deve ser feito por ninguém que não seja o dono da conta:
-subir um build o associa à conta configurada e pode disponibilizá-lo no TestFlight.
+Abra este IPA no Transporter com a conta autorizada do App Store Connect, confira a validação e
+envie o build. Também é possível usar o Organizer do Xcode para o arquivo acima. Uma nova chave
+.p8 não é necessária quando a sessão da conta já permite esse fluxo.
 
-  1. chave de API (uma vez): https://appstoreconnect.apple.com/access/integrations/api
-     Baixe o .p8 (só é oferecido uma vez) e anote Key ID e Issuer ID.
-
-  2. subir:
-
-     xcrun altool --upload-app -f "$IPA" -t ios \\
-         --apiKey <KEYID> --apiIssuer <ISSUER-UUID>
-
-  3. no App Store Connect, distribuir para o TestFlight.
-
-PARADO AQUI. Nada foi enviado.
+O upload e o processamento do build não aprovam nem publicam o app. Associe a versão processada
+à ficha 1.0.0, confira privacidade, criptografia, capturas e informações de revisão. O envio para
+App Review e o lançamento manual são etapas distintas, conforme a autorização de publicação.
 FIM
 else
     cat <<FIM
@@ -182,7 +189,10 @@ else
 ==> Instalar num aparelho CADASTRADO:
 
   ios-deploy --id <UDID> --bundle <o .app de dentro do .ipa> --no-wifi   # iOS 15/16
-  xcrun devicectl device install app --device <UDID> "$IPA"              # iOS 17+
+  xcrun devicectl device install app --device <UDID> <Payload/Quall.app>  # iOS 17+
+
+Descompacte o IPA em uma pasta local primeiro; devicectl instala o .app dentro de Payload,
+e não o arquivo .ipa.
 
 Se der 0xe8008015 ou 0xe8008012, o aparelho **não está cadastrado** — e nenhuma das duas mensagens
 diz isso. Cadastrar consome um slot do time e é ação na conta do dono:

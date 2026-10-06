@@ -56,7 +56,6 @@ use std::time::{Duration, Instant};
 
 use windows::core::{w, Result, PCWSTR};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
-use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR, DWMWA_USE_IMMERSIVE_DARK_MODE, DWMWINDOWATTRIBUTE};
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER};
@@ -95,7 +94,6 @@ pub(crate) const CLASSE: PCWSTR = w!("QuallAppWindow");
 
 // Ícones próprios criados uma vez, válidos pela vida da classe/processo. O cache LR_SHARED
 // ignora o tamanho da segunda imagem; armazenar os dois separadamente evita esse problema.
-static ICONES_DA_CLASSE: OnceLock<(isize, isize)> = OnceLock::new();
 
 /// `BST_UNCHECKED` e `BST_CHECKED` do `winuser.h`. Escritos à mão pelo mesmo motivo que
 /// `fontes.rs` escreve `MONITORINFOF_PRIMARY`: o crate `windows` 0.62 expõe as mensagens
@@ -317,29 +315,14 @@ unsafe fn criar_a_janela(x: i32, y: i32, estendido: WINDOW_EX_STYLE) -> Result<H
     unsafe {
         let hinstance = GetModuleHandleW(None)?;
         let classe = CLASSE;
-        let &(grande, pequeno) = ICONES_DA_CLASSE.get_or_init(|| {
-        let dpi = GetDpiForSystem().max(96);
-        let icone = |l, a| {
-            // Recurso 1: o mesmo quall.ico do Explorer e da bandeja, em dois tamanhos.
-            // Os ícones acompanham a classe e são liberados pelo Windows ao terminar o processo.
-            match LoadImageW(Some(hinstance.into()), PCWSTR(1usize as *const u16), IMAGE_ICON, l, a, LR_DEFAULTCOLOR) {
-                Ok(h) if !h.is_invalid() => h.0 as isize,
-                resultado => {
-                    registro::linha(format!("janela: !! o ícone principal não carregou ({l}x{a}): {resultado:?}"));
-                    LoadIconW(None, IDI_APPLICATION).unwrap_or_default().0 as isize
-                }
-            }
-        };
-        (icone(GetSystemMetricsForDpi(SM_CXICON, dpi), GetSystemMetricsForDpi(SM_CYICON, dpi)),
-         icone(GetSystemMetricsForDpi(SM_CXSMICON, dpi), GetSystemMetricsForDpi(SM_CYSMICON, dpi)))
-        });
+        let (grande, pequeno) = crate::decoracao::icones(hinstance.into(), GetDpiForSystem().max(96))?;
         let wc = WNDCLASSEXW {
             cbSize: std::mem::size_of::<WNDCLASSEXW>() as u32,
             lpfnWndProc: Some(wndproc),
             hInstance: hinstance.into(),
             lpszClassName: classe,
-            hIcon: HICON(grande as *mut core::ffi::c_void),
-            hIconSm: HICON(pequeno as *mut core::ffi::c_void),
+            hIcon: grande,
+            hIconSm: pequeno,
             hCursor: LoadCursorW(None, IDC_ARROW).unwrap_or_default(),
             hbrBackground: HBRUSH(std::ptr::null_mut()),
             ..Default::default()
@@ -378,22 +361,9 @@ fn ajustar_o_tamanho(hwnd: HWND, dpi: u32, sugerido: Option<RECT>) {
     }
 }
 
-/// **A barra de título escura**: o atributo 20 do DWM (o 19 nos Windows 10 anteriores ao build
-/// 18985), e no Windows 11 a cor da legenda igual à da barra lateral e o texto claro. O Dell é
-/// Windows 11 25H2; o recuo do Windows 10 fica aqui sem prova (§11.5).
+/// A mesma moldura e os ícones do produto em todas as janelas independentes.
 pub(crate) fn escurecer_a_barra_de_titulo(hwnd: HWND) {
-    let sim: i32 = 1;
-    let tamanho = std::mem::size_of::<i32>() as u32;
-    unsafe {
-        let p = &sim as *const i32 as *const core::ffi::c_void;
-        if DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, p, tamanho).is_err() {
-            let _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE(19), p, tamanho);
-        }
-        let legenda = estilo::BARRA.colorref();
-        let _ = DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &legenda as *const u32 as *const core::ffi::c_void, 4);
-        let tinta = estilo::TEXTO.colorref();
-        let _ = DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &tinta as *const u32 as *const core::ffi::c_void, 4);
-    }
+    crate::decoracao::aplicar(hwnd);
 }
 
 fn escala(dpi: u32, v: f32) -> i32 {
@@ -760,10 +730,15 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
             }
             unsafe { DefWindowProcW(hwnd, msg, wp, lp) }
         }
+        WM_THEMECHANGED | WM_SETTINGCHANGE => {
+            crate::decoracao::aplicar(hwnd);
+            unsafe { DefWindowProcW(hwnd, msg, wp, lp) }
+        }
         WM_DPICHANGED => {
             let novo = ((wp.0 >> 16) & 0xFFFF) as u32;
             let sugerido = unsafe { *(lp.0 as *const RECT) };
             janela.mudar_dpi(hwnd, novo, sugerido);
+            crate::decoracao::aplicar(hwnd);
             LRESULT(0)
         }
         // **Um monitor entrou ou saiu.** Sem isto a lista era montada uma vez, na abertura.
@@ -1457,7 +1432,7 @@ impl Janela {
             pin: e.pin.clone(),
             endereco: endereco.clone(),
             ha_pares: e.ha_pares_conhecidos,
-            nome: e.nome_do_aparelho.clone(),
+            nome: e.alias_da_descoberta.clone(),
             anunciando: e.anunciando_por_mdns,
             origem: origem.clone(),
             com_som: (!camera).then_some(e.com_som),

@@ -1,0 +1,37 @@
+{
+  "version": "1.0.0",
+  "base_public_source_commit": "3172b188",
+  "provenance": "Geometria e arquivos da marca aprovados para a distribuicao oficial Quall Studio; arquivos preservados sem alteracao visual.",
+  "assets": [
+    {
+      "input": "tools/icones/overlays/quall-studio-1.0.0/android/ic_launcher_foreground.xml",
+      "destination": "apps/android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+      "sha256": "773866c282fde560011f8b26e82bbeb23993331bcab376e575cf8754c5482b04",
+      "rights": "tools/icones/DIREITOS-DA-MARCA.txt"
+    },
+    {
+      "input": "tools/icones/overlays/quall-studio-1.0.0/android/ic_launcher_background.xml",
+      "destination": "apps/android/app/src/main/res/drawable/ic_launcher_background.xml",
+      "sha256": "6a40463dc9f7a4b50b8af3d2db3ce79c5578f6aa8edfb7ca0d5684397ee37b39",
+      "rights": "tools/icones/DIREITOS-DA-MARCA.txt"
+    },
+    {
+      "input": "tools/icones/overlays/quall-studio-1.0.0/android/ic_launcher_monochrome.xml",
+      "destination": "apps/android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+      "sha256": "05f2588c0c5856d5ae212a513c63e9b6f6fdb667495f5630bb697a562c26fa66",
+      "rights": "tools/icones/DIREITOS-DA-MARCA.txt"
+    },
+    {
+      "input": "tools/icones/overlays/quall-studio-1.0.0/play-512.png",
+      "destination": "tools/icones/loja/play-512.png",
+      "sha256": "d0b3359334173e1011a090f22880ebd39d177e8b27a68a76c625b9f2e2dac310",
+      "rights": "tools/icones/DIREITOS-DA-MARCA.txt"
+    }
+  ],
+  "geometry_source": "tools/icones/marca.py",
+  "geometry_source_sha256": "a97686f9cf8ed8a3f398488d8f9b09308a757d03d51c96bb60823d929ed8fbd9",
+  "original_approved_geometry_sha256": "072e560aa62ae14a8b95feb1434f76a49a820015ae941a311575f9fdcb5b3825",
+  "geometry_code_license": "MPL-2.0",
+  "brand_rights": "tools/icones/DIREITOS-DA-MARCA.txt",
+  "control_assets": "46 ic_q_* geometrical placeholders from public base; no Material paths restored"
+}

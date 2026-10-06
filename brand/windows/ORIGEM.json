@@ -1,0 +1,38 @@
+{
+  "scope": "Windows 1.0.0 preparation; not release or ownership evidence",
+  "public_base_commit": "3172b188c29a010cd161c56bbeeb2cbcefbb220a",
+  "assets": [
+    {
+      "path": "brand/windows/quall.ico",
+      "sha256": "3babcc81f4b8fec4816406e02c192103856f7e6cc61c86b12d37fbd825156096",
+      "bytes": 42680,
+      "origin": "Original product branding supplied from the authorized product checkout",
+      "license": "Technical reproduction/build/test/relink permitted for this version, preserving brand rights and notice; no official endorsement or additional third-party rights",
+      "use": "Windows executable icon, byte-identical to apps/windows/quall.ico"
+    },
+    {
+      "path": "brand/windows/Square44x44Logo.png",
+      "sha256": "3c31192a9072d9f523b35f4ce69c3fa056b5fc9fb241b86dc6d16889f03ad4dc",
+      "bytes": 2635,
+      "origin": "Original product branding supplied from the authorized product checkout",
+      "license": "Technical reproduction/build/test/relink permitted for this version, preserving brand rights and notice; no official endorsement or additional third-party rights",
+      "use": "MSIX package visual asset"
+    },
+    {
+      "path": "brand/windows/Square150x150Logo.png",
+      "sha256": "81fab050ea0e733327027b5f659db9ad430d20f9277069de53dbc84c56b1fdf2",
+      "bytes": 8758,
+      "origin": "Original product branding supplied from the authorized product checkout",
+      "license": "Technical reproduction/build/test/relink permitted for this version, preserving brand rights and notice; no official endorsement or additional third-party rights",
+      "use": "MSIX package visual asset"
+    },
+    {
+      "path": "brand/windows/StoreLogo.png",
+      "sha256": "05d2f2199cb4e7a17f7947688aece6d51026e02f3cd200352a62a1e2d3d321e2",
+      "bytes": 2797,
+      "origin": "Original product branding supplied from the authorized product checkout",
+      "license": "Technical reproduction/build/test/relink permitted for this version, preserving brand rights and notice; no official endorsement or additional third-party rights",
+      "use": "MSIX package visual asset"
+    }
+  ]
+}

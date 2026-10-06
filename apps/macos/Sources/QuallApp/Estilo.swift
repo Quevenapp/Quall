@@ -178,7 +178,7 @@ struct JanelaEscura: NSViewRepresentable {
 
 // MARK: - a marca
 
-/// Placeholder geométrico original do snapshot público; mantém o nome e o espaço do cabeçalho.
+/// Marca aprovada do produto; geometria pertence ao overlay privado de marca.
 struct MarcaDoQuall: View {
     var tamanho: CGFloat = 24
     var comNome = true
@@ -187,10 +187,12 @@ struct MarcaDoQuall: View {
         HStack(spacing: tamanho * 0.34) {
             Canvas { ctx, size in
                 let u = size.width / 32
-                let moldura = Path(CGRect(x: 6 * u, y: 6 * u, width: 20 * u, height: 20 * u))
-                ctx.stroke(moldura, with: .color(Estilo.texto), lineWidth: 4 * u)
-                let indicador = Path(CGRect(x: 14 * u, y: 14 * u, width: 4 * u, height: 4 * u))
-                ctx.fill(indicador, with: .color(Estilo.noAr))
+                let anel = Path(ellipseIn: CGRect(x: (15 - 10.5) * u, y: (15 - 10.5) * u,
+                                                  width: 21 * u, height: 21 * u))
+                ctx.stroke(anel, with: .color(Estilo.texto), lineWidth: 3.6 * u)
+                let luz = Path(ellipseIn: CGRect(x: (25.2 - 4.6) * u, y: (25.2 - 4.6) * u,
+                                                 width: 9.2 * u, height: 9.2 * u))
+                ctx.fill(luz, with: .color(Estilo.noAr))
             }
             .frame(width: tamanho, height: tamanho)
             if comNome {

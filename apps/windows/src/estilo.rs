@@ -501,15 +501,14 @@ pub fn caixa_alta(s: &str) -> String {
 // As peças (§4)
 // =============================================================================================
 
-/// Placeholder geométrico original do snapshot público, com indicador central.
+/// **A marca**: o "Q" é uma lente (anel) com a luz de estúdio acesa (a bolinha vermelha no lugar
+/// do rabo). Anel de raio 10,5/32 do lado com traço 3,6/32, cor `texto`; bolinha `noAr` de raio
+/// 4,6/32 com centro em (25,2; 25,2)/32. O centro do anel é o do protótipo, (15; 15)/32.
 pub fn marca(x: f32, y: f32, lado: f32) -> Vec<Item> {
     let u = lado / 32.0;
     vec![
-        caixa(Ret::new(x + 4.0 * u, y + 4.0 * u, 24.0 * u, 4.0 * u), 0.0, TEXTO),
-        caixa(Ret::new(x + 4.0 * u, y + 24.0 * u, 24.0 * u, 4.0 * u), 0.0, TEXTO),
-        caixa(Ret::new(x + 4.0 * u, y + 8.0 * u, 4.0 * u, 16.0 * u), 0.0, TEXTO),
-        caixa(Ret::new(x + 24.0 * u, y + 8.0 * u, 4.0 * u, 16.0 * u), 0.0, TEXTO),
-        caixa(Ret::new(x + 14.0 * u, y + 14.0 * u, 4.0 * u, 4.0 * u), 0.0, NO_AR),
+        Item::Anel { cx: x + 15.0 * u, cy: y + 15.0 * u, raio: 10.5 * u, espessura: 3.6 * u, cor: TEXTO },
+        Item::Circulo { cx: x + 25.2 * u, cy: y + 25.2 * u, raio: 4.6 * u, cor: NO_AR },
     ]
 }
 

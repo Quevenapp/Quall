@@ -75,6 +75,7 @@ final class Emissor: ObservableObject, @unchecked Sendable {
     @Published private(set) var conselho = ""
     @Published private(set) var ofereceDesparear = false
     @Published private(set) var anunciandoPorMDNS = false
+    @Published private(set) var nomeNaDescoberta: String?
     @Published private(set) var resumoDaTransmissao = ""
 
     /// **Transmitir o som do sistema junto da tela? Desligado por padrão.**
@@ -811,14 +812,15 @@ final class Emissor: ObservableObject, @unchecked Sendable {
             defer { trava.withLock { anunciosPendentes -= 1 } }
             anunciante.parar()
             guard let porta else {
-                naMain { self.anunciandoPorMDNS = false }
+                naMain { self.anunciandoPorMDNS = false; self.nomeNaDescoberta = nil }
                 Registro.compartilhado.linha("mdns: parado")
                 return
             }
             let anunciou = anunciante.comecar(deviceId: deviceId, nome: nomeDoAparelho, porta: porta,
                                               emiteTela: emiteTela, emiteCamera: !emiteTela)
             Registro.compartilhado.linha("mdns: anunciou=\(anunciou) porta=\(porta)")
-            naMain { self.anunciandoPorMDNS = anunciou }
+            let alias = anunciou ? anunciante.nomePublico : nil
+            naMain { self.anunciandoPorMDNS = anunciou; self.nomeNaDescoberta = alias }
         }
     }
 

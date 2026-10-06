@@ -1,0 +1,681 @@
+{
+  "base": "3172b188c29a010cd161c56bbeeb2cbcefbb220a",
+  "cargo_lock_sha256": "6e5d0ff7844bd77d71a1af9a217aee6f20d4a250113aa5747d29a8c403f2eab4",
+  "metodo": "Current locked Cargo metadata; registry notice bytes checked against crate checksums.",
+  "limite": "Lock delta; final platform builds and incorporated dependency graphs require separate verification.",
+  "componentes": [
+    {
+      "componente": "aead",
+      "versao": "0.5.2",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "d122413f284cf2d62fb1b7db97e02edb8cda96d769b16e443a4f6195e35662b0",
+      "fonte": "https://crates.io/crates/aead/0.5.2",
+      "repositorio_upstream": "https://github.com/RustCrypto/traits",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/aead-0.5.2/LICENSE-APACHE",
+          "sha256": "b1cf9a3333ca78152b859012cd4a804156e5243e9ca20ad1df7327ba5ea7405c"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/aead-0.5.2/LICENSE-MIT",
+          "sha256": "949ab7b3e7140fee216f06fe3a2bd67d68dd511f8ea73c1e01c98cb348e9c8ae"
+        }
+      ]
+    },
+    {
+      "componente": "argon2",
+      "versao": "0.5.3",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "3c3610892ee6e0cbce8ae2700349fcf8f98adb0dbfbee85aec3c9179d29cc072",
+      "fonte": "https://crates.io/crates/argon2/0.5.3",
+      "repositorio_upstream": "https://github.com/RustCrypto/password-hashes/tree/master/argon2",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/argon2-0.5.3/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/argon2-0.5.3/LICENSE-MIT",
+          "sha256": "33f702959c0ea91c08b21b65cf1f08b6c122ec9e6db0b5db784a7b367d942330"
+        }
+      ]
+    },
+    {
+      "componente": "base16ct",
+      "versao": "0.2.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf",
+      "fonte": "https://crates.io/crates/base16ct/0.2.0",
+      "repositorio_upstream": "https://github.com/RustCrypto/formats/tree/master/base16ct",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/base16ct-0.2.0/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/base16ct-0.2.0/LICENSE-MIT",
+          "sha256": "0aa8963e105e8b6e02f634484145d4e5b0f42d0a6dd05c16f8148f033383adef"
+        }
+      ]
+    },
+    {
+      "componente": "base64ct",
+      "versao": "1.8.3",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06",
+      "fonte": "https://crates.io/crates/base64ct/1.8.3",
+      "repositorio_upstream": "https://github.com/RustCrypto/formats",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/base64ct-1.8.3/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/base64ct-1.8.3/LICENSE-MIT",
+          "sha256": "2d1c57bff28344b9e698f51063bc8509799cc4c99a4e0cf2aa3f7e7c3e1f9a9d"
+        }
+      ]
+    },
+    {
+      "componente": "blake2",
+      "versao": "0.10.6",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "46502ad458c9a52b69d4d4d32775c788b7a1b85e8bc9d482d92250fc0e3f8efe",
+      "fonte": "https://crates.io/crates/blake2/0.10.6",
+      "repositorio_upstream": "https://github.com/RustCrypto/hashes",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/blake2-0.10.6/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/blake2-0.10.6/LICENSE-MIT",
+          "sha256": "9c768944eb4a0422ca2efc25ea9fb2fb9e7fbd3fdb04e86b87366339cb7466db"
+        }
+      ]
+    },
+    {
+      "componente": "chacha20",
+      "versao": "0.9.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "c3613f74bd2eac03dad61bd53dbe620703d4371614fe0bc3b9f04dd36fe4e818",
+      "fonte": "https://crates.io/crates/chacha20/0.9.1",
+      "repositorio_upstream": "https://github.com/RustCrypto/stream-ciphers",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/chacha20-0.9.1/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/chacha20-0.9.1/LICENSE-MIT",
+          "sha256": "b6f6f01b03ee7e93c0ae96d62ed39527e98a120fb951afc9de456a741ef3f204"
+        }
+      ]
+    },
+    {
+      "componente": "chacha20poly1305",
+      "versao": "0.10.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35",
+      "fonte": "https://crates.io/crates/chacha20poly1305/0.10.1",
+      "repositorio_upstream": "https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/chacha20poly1305-0.10.1/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/chacha20poly1305-0.10.1/LICENSE-MIT",
+          "sha256": "3c0dfa33fd2e6976038555b52095699452653b1fcabe113074f14e0848a6b11e"
+        }
+      ]
+    },
+    {
+      "componente": "cipher",
+      "versao": "0.4.4",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad",
+      "fonte": "https://crates.io/crates/cipher/0.4.4",
+      "repositorio_upstream": "https://github.com/RustCrypto/traits",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/cipher-0.4.4/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/cipher-0.4.4/LICENSE-MIT",
+          "sha256": "5c7bd92d1f096f12203dc1b601e3cb17484fa1b023e30b6b8edcc80e416237ec"
+        }
+      ]
+    },
+    {
+      "componente": "const-oid",
+      "versao": "0.9.6",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8",
+      "fonte": "https://crates.io/crates/const-oid/0.9.6",
+      "repositorio_upstream": "https://github.com/RustCrypto/formats/tree/master/const-oid",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/const-oid-0.9.6/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/const-oid-0.9.6/LICENSE-MIT",
+          "sha256": "bada9e7ed8dc00d63502053c455d7c8d7575dfb7e8277a2a832531844d900682"
+        }
+      ]
+    },
+    {
+      "componente": "crypto-bigint",
+      "versao": "0.5.5",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76",
+      "fonte": "https://crates.io/crates/crypto-bigint/0.5.5",
+      "repositorio_upstream": "https://github.com/RustCrypto/crypto-bigint",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/crypto-bigint-0.5.5/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/crypto-bigint-0.5.5/LICENSE-MIT",
+          "sha256": "90c503b61dee04e1449c323ec34c229dfb68d7adcb96c7e140ee55f70fce2d8e"
+        }
+      ]
+    },
+    {
+      "componente": "curve25519-dalek",
+      "versao": "4.1.3",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "BSD-3-Clause",
+      "checksum_crate": "97fb8b7c4503de7d6ae7b42ab72a5a59857b4c937ec27a3d4539dba95b5ab2be",
+      "fonte": "https://crates.io/crates/curve25519-dalek/4.1.3",
+      "repositorio_upstream": "https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/curve25519-dalek-4.1.3/LICENSE",
+          "sha256": "cca0bd3c4fcdba74145ef9d49c62337e2c9fbf9368288f11d0547f1b0273219f"
+        }
+      ]
+    },
+    {
+      "componente": "der",
+      "versao": "0.7.10",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb",
+      "fonte": "https://crates.io/crates/der/0.7.10",
+      "repositorio_upstream": "https://github.com/RustCrypto/formats/tree/master/der",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/der-0.7.10/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/der-0.7.10/LICENSE-MIT",
+          "sha256": "ad64fcb9589f162720f3cc5010ad76ca6ad3764e11861f9192c489df176bb71d"
+        }
+      ]
+    },
+    {
+      "componente": "derive-where",
+      "versao": "1.7.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "2e2b94854e8576378ccda7c8de8a66ed8b4e8acbd2c50ec3418ea6c8aaf4b567",
+      "fonte": "https://crates.io/crates/derive-where/1.7.0",
+      "repositorio_upstream": "https://github.com/ModProg/derive-where",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/derive-where-1.7.0/LICENSE-APACHE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/derive-where-1.7.0/LICENSE-MIT",
+          "sha256": "937230c05b5673fe216dda49dfc7c96591c63d0ea4c029e3e1b84aef3a45cbfd"
+        }
+      ]
+    },
+    {
+      "componente": "elliptic-curve",
+      "versao": "0.13.8",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47",
+      "fonte": "https://crates.io/crates/elliptic-curve/0.13.8",
+      "repositorio_upstream": "https://github.com/RustCrypto/traits/tree/master/elliptic-curve",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/elliptic-curve-0.13.8/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/elliptic-curve-0.13.8/LICENSE-MIT",
+          "sha256": "d27687b51f2874822c1530976b7e837eac4f308d94bf3dd42047011b7d437b47"
+        }
+      ]
+    },
+    {
+      "componente": "ff",
+      "versao": "0.13.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT/Apache-2.0",
+      "checksum_crate": "c0b50bfb653653f9ca9095b427bed08ab8d75a137839d9ad64eb11810d5b6393",
+      "fonte": "https://crates.io/crates/ff/0.13.1",
+      "repositorio_upstream": "https://github.com/zkcrypto/ff",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/ff-0.13.1/LICENSE-APACHE",
+          "sha256": "3708458dee7f359ac6c9c5558023ed481be87e5372c43ebd7f2ca7ad23c12026"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/ff-0.13.1/LICENSE-MIT",
+          "sha256": "8d0c1d1d4b2bebf5b9211f0e883d5a482b7808f3ed31320da14ddee95811f4ef"
+        }
+      ]
+    },
+    {
+      "componente": "fiat-crypto",
+      "versao": "0.2.9",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0 OR BSD-1-Clause",
+      "checksum_crate": "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d",
+      "fonte": "https://crates.io/crates/fiat-crypto/0.2.9",
+      "repositorio_upstream": "https://github.com/mit-plv/fiat-crypto",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/fiat-crypto-0.2.9/LICENSE-APACHE",
+          "sha256": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/fiat-crypto-0.2.9/LICENSE-BSD-1",
+          "sha256": "0c1240e29b4a2c528bcc3ccc38a98b1dba5e3e6b465da910208935f082e2ced6"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/fiat-crypto-0.2.9/LICENSE-MIT",
+          "sha256": "0034712d5e97a4f5b900a160a5c19d582b740d8e0638b4e44fd07e7b492dcd13"
+        }
+      ]
+    },
+    {
+      "componente": "getrandom",
+      "versao": "0.2.17",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0",
+      "fonte": "https://crates.io/crates/getrandom/0.2.17",
+      "repositorio_upstream": "https://github.com/rust-random/getrandom",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/getrandom-0.2.17/LICENSE-APACHE",
+          "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/getrandom-0.2.17/LICENSE-MIT",
+          "sha256": "42fa16951ce7f24b5a467a40e5b449a1d41e662f97ca779864f053f39e097737"
+        }
+      ]
+    },
+    {
+      "componente": "group",
+      "versao": "0.13.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT/Apache-2.0",
+      "checksum_crate": "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63",
+      "fonte": "https://crates.io/crates/group/0.13.0",
+      "repositorio_upstream": "https://github.com/zkcrypto/group",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/group-0.13.0/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/group-0.13.0/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ]
+    },
+    {
+      "componente": "inout",
+      "versao": "0.1.4",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01",
+      "fonte": "https://crates.io/crates/inout/0.1.4",
+      "repositorio_upstream": "https://github.com/RustCrypto/utils",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/inout-0.1.4/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/inout-0.1.4/LICENSE-MIT",
+          "sha256": "304b898acad7f02e03d6d8832d682a3b43ee729ab5d3a069af5a36979083b6b4"
+        }
+      ]
+    },
+    {
+      "componente": "opaque-debug",
+      "versao": "0.3.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381",
+      "fonte": "https://crates.io/crates/opaque-debug/0.3.1",
+      "repositorio_upstream": "https://github.com/RustCrypto/utils",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/opaque-debug-0.3.1/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/opaque-debug-0.3.1/LICENSE-MIT",
+          "sha256": "f59f5a78193597e04fd932ee9af86254d14d08be5c9d0e003ab888feccce2161"
+        }
+      ]
+    },
+    {
+      "componente": "opaque-ke",
+      "versao": "4.0.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "ded22991b43cd15561b62b2e1cf9ace1344a8534eebec96202d5c96a77a6616a",
+      "fonte": "https://crates.io/crates/opaque-ke/4.0.1",
+      "repositorio_upstream": "https://github.com/facebook/opaque-ke",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/opaque-ke-4.0.1/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/opaque-ke-4.0.1/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ]
+    },
+    {
+      "componente": "openssl-src",
+      "versao": "400.0.2+4.0.3",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT/Apache-2.0",
+      "checksum_crate": "d2093956673b8dbda85c87fa4fb78e70698ce6c5978a2837d1613f661d3bef76",
+      "fonte": "https://crates.io/crates/openssl-src/400.0.2+4.0.3",
+      "repositorio_upstream": "https://github.com/alexcrichton/openssl-src-rs",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/LICENSE-APACHE",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/LICENSE-MIT",
+          "sha256": "378f5840b258e2779c39418f3f2d7b2ba96f1c7917dd6be0713f88305dbda397"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/LICENSE.txt",
+          "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/external/perl/Text-Template-1.56/LICENSE",
+          "sha256": "9837f05336ef3cbacb6a96e1672a0426d81ad01191f214b8d48e22ca62338181"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_nyi.c.notice.txt",
+          "sha256": "2343f8e6da3d4a40f2353f4147c6250a22cda4f1eca3680369608032d8dc43b6",
+          "fonte_upstream": "openssl/crypto/LPdir_nyi.c",
+          "fonte_sha256": "a68a4ab20f6b266b5edc0a09e36f765522f4fd4f3ab68dc60c7808c222af7032",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_unix.c.notice.txt",
+          "sha256": "3a07ac58302fdeef8e59d42f9388a10e1ab9c292813d766c6f0b5a91e349a043",
+          "fonte_upstream": "openssl/crypto/LPdir_unix.c",
+          "fonte_sha256": "5b08afaef95f9fae98635c98d767c3180fb237aa70da612df8fe76dae127d895",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_vms.c.notice.txt",
+          "sha256": "6298d25f8cad094353092b4414b7e128b3a9220cdf9b4784cb35e814de6edc5b",
+          "fonte_upstream": "openssl/crypto/LPdir_vms.c",
+          "fonte_sha256": "21c25827c9b731cb4a970e20d3ea9ed4013deebb6c5c32e9ac82e3e28226f1af",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_win.c.notice.txt",
+          "sha256": "d72fedfcdec82a766221cf90279295d4d37e583526b0669a4d4ad4c9ce0d08f4",
+          "fonte_upstream": "openssl/crypto/LPdir_win.c",
+          "fonte_sha256": "4712a1360f386df0dad3decdf072b2bd5e47e3ae80b1f1175fd425a03d131b71",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_win32.c.notice.txt",
+          "sha256": "6298d25f8cad094353092b4414b7e128b3a9220cdf9b4784cb35e814de6edc5b",
+          "fonte_upstream": "openssl/crypto/LPdir_win32.c",
+          "fonte_sha256": "3d9d19f54a657af38ae78a740705f032514964599a1f18f63dfc65dcaa88c73d",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/LPdir_wince.c.notice.txt",
+          "sha256": "6298d25f8cad094353092b4414b7e128b3a9220cdf9b4784cb35e814de6edc5b",
+          "fonte_upstream": "openssl/crypto/LPdir_wince.c",
+          "fonte_sha256": "1427020358a1738f63ba4b5832e06f7b60361afe104fa6d67b143ac4f9a1909c",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/chacha/chacha_riscv.c.notice.txt",
+          "sha256": "901ed2a99f9e79a64580334b617c8efa3283a87a66700bdb8a2fef3d3a2dafd8",
+          "fonte_upstream": "openssl/crypto/chacha/chacha_riscv.c",
+          "fonte_sha256": "3b6161eb90823d2a496a998e65652f21773d5796a19a0e17c3e76c03ad305b5f",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/seed/seed.c.notice.txt",
+          "sha256": "5c37996bb8cb657a50f716da24153524173fd49bda34641efd351f01158e0a42",
+          "fonte_upstream": "openssl/crypto/seed/seed.c",
+          "fonte_sha256": "8c9570c84df2db7e996113359fe61643cbded637822b85f7be06a8914b525568",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/seed/seed_local.h.notice.txt",
+          "sha256": "9d7ceb58aec54c8d110bea15a49594998562f76471ee06a85d643f3baf0dad73",
+          "fonte_upstream": "openssl/crypto/seed/seed_local.h",
+          "fonte_sha256": "4c45f8bc37f317f9369d9898a591a8a709aabe9ded2223016b59cff72c71ae1c",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/x509/v3_pci.c.notice.txt",
+          "sha256": "06f278f5d9834a36f7d9674e51381d0c31c3533e0d4c6f97b8f3cc64ca1973cf",
+          "fonte_upstream": "openssl/crypto/x509/v3_pci.c",
+          "fonte_sha256": "f59ff289f662b3afc74ef1540291b112b51a5619564dbd794c6bb3af4c321e68",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/openssl-src-400.0.2+4.0.3/openssl/crypto/x509/v3_pcia.c.notice.txt",
+          "sha256": "a8af116cafd8f21e984f0296c4f31408b5c5ea1dd01aeb4d7decdee93d11d6bf",
+          "fonte_upstream": "openssl/crypto/x509/v3_pcia.c",
+          "fonte_sha256": "46d265cde1a0f29a47dd5d775677971bb50dd7da808a13c6a2f03cbd36f05e3d",
+          "extracao": "Contiguous leading C comments, exact bytes; available source, not binary incorporation."
+        }
+      ]
+    },
+    {
+      "componente": "password-hash",
+      "versao": "0.5.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166",
+      "fonte": "https://crates.io/crates/password-hash/0.5.0",
+      "repositorio_upstream": "https://github.com/RustCrypto/traits/tree/master/password-hash",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/password-hash-0.5.0/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/password-hash-0.5.0/LICENSE-MIT",
+          "sha256": "233b95ccbf90dc67e32f3e8995c489f6312d9191ebd141a931c3b684f1e3be6d"
+        }
+      ]
+    },
+    {
+      "componente": "poly1305",
+      "versao": "0.8.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "8159bd90725d2df49889a078b54f4f79e87f1f8a8444194cdca81d38f5393abf",
+      "fonte": "https://crates.io/crates/poly1305/0.8.0",
+      "repositorio_upstream": "https://github.com/RustCrypto/universal-hashes",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/poly1305-0.8.0/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/poly1305-0.8.0/LICENSE-MIT",
+          "sha256": "6d99fffea918d1f7dfe567029c7bd21d6fcaf310ad28c44e6511a0e1f68c79ea"
+        }
+      ]
+    },
+    {
+      "componente": "rand",
+      "versao": "0.8.8",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "e058c7de0b26af77780c769414d6257830bb240f3c38477dbc2c16e5f54d6d4c",
+      "fonte": "https://crates.io/crates/rand/0.8.8",
+      "repositorio_upstream": "https://github.com/rust-random/rand",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/rand-0.8.8/LICENSE-APACHE",
+          "sha256": "35242e7a83f69875e6edeff02291e688c97caafe2f8902e4e19b49d3e78b4cab"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/rand-0.8.8/LICENSE-MIT",
+          "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b"
+        }
+      ]
+    },
+    {
+      "componente": "rand_core",
+      "versao": "0.6.4",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c",
+      "fonte": "https://crates.io/crates/rand_core/0.6.4",
+      "repositorio_upstream": "https://github.com/rust-random/rand",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/rand_core-0.6.4/LICENSE-APACHE",
+          "sha256": "6df43f6f4b5d4587f3d8d71e45532c688fd168afa5fe89d571cb32fa09c4ef51"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/rand_core-0.6.4/LICENSE-MIT",
+          "sha256": "209fbbe0ad52d9235e37badf9cadfe4dbdc87203179c0899e738b39ade42177b"
+        }
+      ]
+    },
+    {
+      "componente": "sec1",
+      "versao": "0.7.3",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "d3e97a565f76233a6003f9f5c54be1d9c5bdfa3eccfb189469f11ec4901c47dc",
+      "fonte": "https://crates.io/crates/sec1/0.7.3",
+      "repositorio_upstream": "https://github.com/RustCrypto/formats/tree/master/sec1",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/sec1-0.7.3/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/sec1-0.7.3/LICENSE-MIT",
+          "sha256": "4a883ecc3bb1010faed542bf63d53e530fea5e5e12cf676aed588784298ba929"
+        }
+      ]
+    },
+    {
+      "componente": "universal-hash",
+      "versao": "0.5.1",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT OR Apache-2.0",
+      "checksum_crate": "fc1de2c688dc15305988b563c3854064043356019f97a4b46276fe734c4f07ea",
+      "fonte": "https://crates.io/crates/universal-hash/0.5.1",
+      "repositorio_upstream": "https://github.com/RustCrypto/traits",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/universal-hash-0.5.1/LICENSE-APACHE",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/universal-hash-0.5.1/LICENSE-MIT",
+          "sha256": "6b50510a0400c72172355cc5d2ba0f2c5c2eb33149b8f96539dc345fdc484920"
+        }
+      ]
+    },
+    {
+      "componente": "voprf",
+      "versao": "0.5.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "MIT",
+      "checksum_crate": "28f59c30c76e2fea54cdece6a054e2662feffa7ab19658a7887524265ee39470",
+      "fonte": "https://crates.io/crates/voprf/0.5.0",
+      "repositorio_upstream": "https://github.com/facebook/voprf/",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/voprf-0.5.0/LICENSE-APACHE",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/voprf-0.5.0/LICENSE-MIT",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+        }
+      ]
+    },
+    {
+      "componente": "zeroize_derive",
+      "versao": "1.5.0",
+      "tipo": "rust-lock-v3",
+      "licenca_declarada": "Apache-2.0 OR MIT",
+      "checksum_crate": "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328",
+      "fonte": "https://crates.io/crates/zeroize_derive/1.5.0",
+      "repositorio_upstream": "https://github.com/RustCrypto/utils",
+      "avisos": [
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/zeroize_derive-1.5.0/LICENSE-APACHE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "origem": "docs/distribuicao/licencas/textos/crypto-v3/zeroize_derive-1.5.0/LICENSE-MIT",
+          "sha256": "b8c6939380a400f53e11923d50fcc4dd2fa1ba8339fd9d04cda38a0251b6c9b0"
+        }
+      ]
+    }
+  ],
+  "removidos_do_lock": [
+    {
+      "name": "curve25519-dalek",
+      "version": "5.0.0"
+    },
+    {
+      "name": "fiat-crypto",
+      "version": "0.3.0"
+    },
+    {
+      "name": "openssl-src",
+      "version": "300.6.1+3.6.3"
+    },
+    {
+      "name": "x25519-dalek",
+      "version": "3.0.0"
+    }
+  ]
+}

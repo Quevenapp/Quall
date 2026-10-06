@@ -4,11 +4,14 @@ Quall Studio é um estúdio gratuito para Windows, macOS, Android e iOS/iPadOS. 
 ou câmera entre aparelhos, recebe vídeo, oferece teleprompter e gravação local no emissor.
 No desktop, o vídeo recebido pode alimentar uma câmera virtual ou uma fonte nativa do OBS.
 
-Este repositório publica um snapshot do fonte, sem o histórico anterior nem mídia, logs ou relatos
-privados de desenvolvimento. Os ícones substitutos identificam apenas este snapshot público de
-desenvolvimento. Não são um pacote comercial final nem um redesign autorizado da marca.
-Não representam capturas de uma release ou capacidades adicionais. Publicar o fonte não certifica
-builds, testes ou aprovação nas lojas.
+Este repositório publica fontes sem o histórico anterior nem mídia, logs ou relatos privados de
+desenvolvimento. A preparação das lojas reúne as alterações dos apps e do plugin OBS, as receitas
+de empacotamento e os recursos de marca autorizados para reprodução técnica dos pacotes. Os
+recursos de marca têm termos próprios; modificações de código continuam sob suas licenças.
+Consulte o [escopo](LICENSE-SCOPE.md) e os documentos de proveniência de cada plataforma.
+Publicar o fonte não certifica builds, testes, segurança ou aprovação nas lojas. Os pacotes precisam
+corresponder à revisão de fonte identificada em sua proveniência; a base histórica isolada não
+representa as novas builds.
 
 ## Recursos
 
@@ -18,7 +21,7 @@ builds, testes ou aprovação nas lojas.
 | Pareamento | PIN na primeira conexão e pares persistidos localmente; endereço manual quando necessário. |
 | Teleprompter | Texto local, controle remoto e composição com câmera. |
 | Gravação | No emissor; controles e formatos dependem da plataforma. O receptor não tem gravação própria. |
-| Câmera virtual | Integrações macOS e Windows com instalação e permissões próprias. |
+| Câmera virtual | Integrações macOS e Windows com instalação e permissões próprias; a edição Microsoft Store usa somente exibição interna e não inclui a câmera virtual externa. |
 | OBS | Plugin separado para macOS e Windows; gravação e composição são recursos do OBS. |
 | USB e DVD | Exclusivos Android: exigem Android 11+, arm64, acessórios e hardware compatíveis. |
 | Idiomas | Português e inglês. |
@@ -43,6 +46,7 @@ paridade entre plataformas ou compatibilidade com todo aparelho e acessório.
 - [Uso e permissões](docs/uso.md)
 - [Compilar por plataforma](docs/compilar.md)
 - [Arquitetura](docs/arquitetura.md)
+- [Pareamento, descoberta e sinalização v3](docs/seguranca-protocolo-v3.md)
 - [Limites e validação](docs/limites.md)
 - [Contribuir](CONTRIBUTING.md) e [relatar segurança](SECURITY.md)
 

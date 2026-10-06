@@ -42,6 +42,8 @@ class SessaoDoPrompter(
             /** A recusa anterior (PIN errado, versão), para a tela dizer por que o PIN mudou. */
             val ultimaRecusa: String?,
             val tentativa: Int,
+            /** Alias da publicação mDNS, sem nome/ID persistente do aparelho. */
+            val aliasNaRede: String = "",
         ) : Fase()
 
         data class ComControle(
@@ -115,6 +117,7 @@ class SessaoDoPrompter(
         if (anunciar && anunciante == 0L) {
             Log.w(TAG, "anúncio mDNS não subiu status=${QuallNative.lastStatus()}: ${Log.erroExterno(QuallNative.lastError())} — só o endereço digitado vai funcionar")
         }
+        val aliasNaRede = if (anunciante != 0L) QuallNative.advertiserLabel(anunciante) else ""
         val canc = QuallNative.cancellerNew()
         synchronized(trincoDoCancelador) { cancelador = canc }
 
@@ -127,7 +130,7 @@ class SessaoDoPrompter(
         try {
             while (!pararPedido && !replica.fechada) {
                 tentativa++
-                ouvinte.fase(Fase.Esperando(pin, enderecos, anunciante != 0L, ultimaRecusa, tentativa))
+                ouvinte.fase(Fase.Esperando(pin, enderecos, anunciante != 0L, ultimaRecusa, tentativa, aliasNaRede))
                 Log.i(TAG, "prompter: esperando o controle na porta $porta (tentativa $tentativa, PIN ${if (pinDado != null) "da bancada" else "sorteado"})")
                 val comecou = SystemClock.elapsedRealtime()
                 val sessao = QuallNative.hostWithRole(

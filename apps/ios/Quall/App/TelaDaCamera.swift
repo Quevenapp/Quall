@@ -361,9 +361,9 @@ struct TelaDaCamera: View {
     }
 
     private func blocoDaEspera(_ parte: BlocoDaEspera.Parte, casa: CGSize) -> some View {
-        BlocoDaEspera(nome: Identidade.nome, pin: camera.pin, endereco: camera.enderecoParaDigitar,
+        BlocoDaEspera(nome: camera.nomeNaDescoberta ?? "Quall", pin: camera.pin, endereco: camera.enderecoParaDigitar, // sem-traducao: marca literal
                       notaDoEnlace: camera.notaDoEnlace, temPares: camera.haParesConhecidos,
-                      casa: casa, parte: parte)
+                      anunciando: camera.nomeNaDescoberta != nil, casa: casa, parte: parte)
             .frame(maxWidth: .infinity)
     }
 
@@ -696,7 +696,7 @@ struct ControlesDaTelaDaCamera: View {
     }
 
     private var espaco: String? {
-        gravador.espacoLivre.map { String(format: "%.1f GB", Double($0) / 1_000_000_000) }
+        nil
     }
 
     private var valorAcessivelDoGravar: String {

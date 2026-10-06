@@ -995,6 +995,7 @@ class MirrorService : LifecycleService() {
             // multicast, e é o mesmo caminho de código do mDNS do outro lado.
             Log.w(TAG, "anúncio mDNS não subiu status=${QuallNative.lastStatus()}: ${Log.erroExterno(QuallNative.lastError())} — só o IP digitado vai funcionar")
         }
+        val aliasNaRede = if (anunciante != 0L) QuallNative.advertiserLabel(anunciante) else ""
 
         val canceller = QuallNative.cancellerNew()
         synchronized(cancelLock) { cancellerHandle = canceller }
@@ -1133,13 +1134,14 @@ class MirrorService : LifecycleService() {
                         mensagem = buildString {
                             append(
                                 if (anunciante == 0L) tx(R.string.esp_sem_anuncio)
-                                else tx(R.string.esp_anunciando, eu.displayName, QuallNative.serviceType())
+                                else tx(R.string.esp_anunciando, aliasNaRede, QuallNative.serviceType())
                             )
                             ultimaRecusa?.let { append('\n').append(tx(R.string.esp_ultima_recusa, it)) }
                         },
                         // Estado, não aviso; e o anúncio dito por campo (a frase é traduzida).
                         mensagemEhAnuncio = true,
                         anunciando = anunciante != 0L,
+                        aliasNaRede = aliasNaRede,
                     )
                 )
                 atualizarNotificacao(tx(R.string.esp_notif_esperando, pin), fonteRotulo)

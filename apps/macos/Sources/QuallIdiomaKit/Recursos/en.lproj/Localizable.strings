@@ -80,7 +80,7 @@
 "Controlar" = "Remote";
 "Texto com a câmera" = "Text with camera";
 "Teleprompter" = "Teleprompter";
-"Este Mac aparece como" = "This Mac appears as";
+"Nome deste Mac" = "This Mac's name";
 "Ajustes" = "Settings";
 
 /* QuallApp/Emissor.swift */
@@ -384,7 +384,6 @@
 "parada" = "stopped";
 "Receber a câmera (Quall Studio → Exibir, ou o OBS)" = "Receive the camera (Quall Studio → Receive, or OBS)";
 "O PIN e o endereço desta sessão, em letra grande" = "This session's PIN and address, in large type";
-"Aparecendo na lista dos outros aparelhos." = "Showing in other devices' lists.";
 "Sem anúncio na rede — digite o endereço." = "Not announced on the network — type the address.";
 "Lado do texto" = "Text side";
 "Esconder a prévia (a câmera continua)" = "Hide the preview (the camera keeps going)";
@@ -540,7 +539,7 @@
 /* QuallCaptureKit/PermissaoDeTela.swift */
 "Gravação de Tela já concedida." = "Screen Recording already granted.";
 "Gravação de Tela concedida agora, no diálogo do sistema." = "Screen Recording granted just now, in the system dialog.";
-"Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela **e** o áudio do sistema. O pedido foi feito, então o Quall Studio passa a aparecer em Ajustes do Sistema > Privacidade e Segurança > Gravação do Áudio do Sistema e da Tela. Marque a caixinha e abra o app de novo." = "Screen Recording permission is missing — the same grant covers the screen **and** system audio. The request was made, so Quall Studio now shows up in System Settings > Privacy & Security > Screen & System Audio Recording. Tick the box and open the app again.";
+"Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela e o áudio do sistema. O pedido foi feito, então o Quall Studio passa a aparecer em Ajustes do Sistema > Privacidade e Segurança > Gravação do Áudio do Sistema e da Tela. Marque a caixinha e abra o app de novo." = "Screen Recording permission is missing — the same grant covers the screen and system audio. The request was made, so Quall Studio now shows up in System Settings > Privacy & Security > Screen & System Audio Recording. Tick the box and open the app again.";
 
 /* QuallCaptureKit/ScreenCapturer.swift */
 "Nenhum display encontrado para captura." = "No display found to capture.";

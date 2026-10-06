@@ -18,7 +18,7 @@
 /* Prévia da câmera (TelaDoPrompterComCamera) */
 "Este aparelho não tem câmera frontal. O texto funciona; a câmera, não." = "This device has no front camera. The text works; the camera doesn't.";
 "O Quall não tem acesso à câmera deste aparelho. Abra %@ e ligue; o texto continua funcionando enquanto isso." = "Quall can't access this device's camera. Open %@ and turn it on; the text keeps working in the meantime.";
-"Ajustes → Quall → Câmera" = "Settings → Quall → Camera";
+"Ajustes → Quall Studio → Câmera" = "Settings → Quall Studio → Camera";
 "Prévia pausada: aparelho quente" = "Preview paused: device is hot";
 "Toque para mostrar" = "Tap to show";
 "Prévia pausada: aparelho quente. Toque para mostrar." = "Preview paused: device is hot. Tap to show.";
@@ -87,9 +87,10 @@
 /* Botão Gravar (GravacaoNaTelaComCamera) */
 "Parar a gravação" = "Stop Recording";
 "Gravar" = "Record";
-"SEM SOM ·" = "NO AUDIO ·";
 "Parado" = "Stopped";
 "Começando" = "Starting";
 "Fechando o arquivo" = "Closing the file";
 "Gravando há %@" = "Recording for %@";
 "Gravando há %@, sem som (microfone desligado)" = "Recording for %@, no audio (microphone off)";
+
+"SEM SOM" = "NO SOUND";

@@ -289,7 +289,7 @@ final class DonoDaCaptura: NSObject, ObservableObject {
 
     static var textoDeNegada: String {
         tr("O Quall não tem acesso à câmera deste iPhone. Abra %@ e ligue, "
-           + "depois escolha a câmera e toque em Espelhar de novo.", trSistema("Ajustes → Quall → Câmera"))
+           + "depois escolha a câmera e toque em Espelhar de novo.", trSistema("Ajustes → Quall Studio → Câmera"))
     }
 
     /// **Pede**, e não só lê (`docs/regras-de-frente.md`, "Ler o estado de uma permissão não é
@@ -1723,7 +1723,7 @@ extension DonoDaCaptura {
 
     static var textoDoMicrofoneNegado: String {
         tr("O Quall não tem acesso ao microfone. Abra %@ e ligue; "
-           + "a câmera continua sem som enquanto isso.", trSistema("Ajustes → Quall → Microfone"))
+           + "a câmera continua sem som enquanto isso.", trSistema("Ajustes → Quall Studio → Microfone"))
     }
 
     static var textoDoMicrofoneRestrito: String {

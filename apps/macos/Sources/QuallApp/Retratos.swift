@@ -288,7 +288,7 @@ enum Retratos {
                                          "som: 2210 quadros · 44.2 s capturados"], gravando: true),
                        microfone: .ligado, gravacao: .gravando(desde: ProcessInfo.processInfo.systemUptime - 768),
                        avisos: [ItemDeAviso(id: "r", texto: T("Gravando na pasta de gravações."), tipo: .info)],
-                       espacoLivre: String(format: T("%.1f GB livres"), 212.4), detalhes: true)
+                       espacoLivre: nil, detalhes: true)
             }),
             retrato("14-camera-gravando-sem-som", estudio(.espelhar, sessao: sessao(.esperando)) {
                 camera(dados(haPares: true, origem: "Câmera integrada", tela: false, imagem: "1920×1080", gravando: true),

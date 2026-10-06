@@ -33,10 +33,10 @@ enum QuemPedeAGravacao: String {
 ///   `melhorImagem` e o arquivo sai no tamanho dela, pelo segundo codificador (`TomadaDeGravacao`).
 /// - **Não depende da rede**: a tomada tem vaga própria no dono. O receptor entra, cai e volta, e o
 ///   arquivo segue.
-/// - **Recusa com motivo legível** (é o texto que o controle remoto mostra, `contrato-teleprompter.md`
-///   §13.3): sem permissão de Fotos, sem espaço, câmera interrompida ou sem entregar.
+/// - **Recusa com motivo legível** (é o texto local; a recusa remota é genérica, `contrato-teleprompter.md`
+///   §13.3): sem permissão de Fotos, falha de escrita, câmera interrompida ou sem entregar.
 /// - **Para sozinho** (§5.3) quando a câmera é interrompida ou para de entregar, quando o espaço
-///   cai abaixo de `espacoParaSeguir`, e quando a tela manda (segundo plano, a tela fechando).
+///   uma escrita falha, e quando a tela manda (segundo plano, a tela fechando).
 /// - **O arquivo**: `Documents/Gravacoes/Quall-AAAAMMDD-HHMMSS.mp4`, fragmentado enquanto grava; ao
 ///   fechar, vai a Fotos e é apagado daqui. O que não for (permissão, erro, o processo morto) fica, e
 ///   é levado na abertura seguinte (`GravacoesPendentes`).
@@ -45,8 +45,6 @@ enum QuemPedeAGravacao: String {
 final class GravadorLocal: ObservableObject {
 
     @Published private(set) var estado: EstadoDaGravacao = .parada
-    /// O espaço livre no volume do app, lido a cada 5 s gravando (e ao pedir).
-    @Published private(set) var espacoLivre: Int64?
     /// A última palavra sobre um arquivo ("salvo no rolo…", "não foi salvo…") ou uma recusa, para a
     /// linha de avisos. Some sozinha em 15 s.
     @Published private(set) var recado: (texto: String, grave: Bool)?
@@ -67,8 +65,6 @@ final class GravadorLocal: ObservableObject {
     /// liga o microfone; a pessoa liga antes, e ligar no meio grava som dali em diante).
     static var textoSemSom: String { tr("Gravando SEM SOM — ligue o microfone") }
 
-    static let espacoParaComecar: Int64 = 500_000_000
-    static let espacoParaSeguir: Int64 = 300_000_000
     /// Sem quadro novo da câmera há mais que isto, gravando: para.
     static let semQuadroPorNoMaximo: Double = 2.0
 
@@ -151,14 +147,14 @@ final class GravadorLocal: ObservableObject {
                         GravacoesPendentes.recuperar(por: "a permissão de Fotos foi dada")
                     } else {
                         for f in pendentes {
-                            self.recusar("sem permissão para salvar no rolo da câmera: Ajustes → Quall → Fotos",
+                            self.recusar("sem permissão para salvar no rolo da câmera: Ajustes → Quall Studio → Fotos",
                                          naTela: GravadorLocal.semFotosNaTela, quem: quem, fim: f)
                         }
                     }
                 }
             }
         case .denied:
-            recusar("sem permissão para salvar no rolo da câmera: Ajustes → Quall → Fotos",
+            recusar("sem permissão para salvar no rolo da câmera: Ajustes → Quall Studio → Fotos",
                     naTela: GravadorLocal.semFotosNaTela, quem: quem, fim: fim)
         case .restricted:
             recusar("sem permissão para salvar no rolo da câmera: bloqueado por Tempo de Uso ou por um perfil",
@@ -171,8 +167,8 @@ final class GravadorLocal: ObservableObject {
     }
 
     /// O que impede de gravar agora, conferido **antes** de abrir qualquer coisa. `nil`: pode.
-    /// O `motivo` em português vai ao diário e ao controle remoto (o protocolo); `naTela`, no idioma
-    /// da interface, vai ao recado desta tela.
+    /// O `motivo` em português vai ao diário e ao retorno local; a ponte do prompter usa uma recusa
+    /// genérica na rede. `naTela`, no idioma da interface, vai ao recado desta tela.
     private func motivoParaNaoGravar() -> (motivo: String, naTela: String)? {
         guard dono.montado else { return ("a câmera não está aberta", tr("a câmera não está aberta")) }
         if !dono.interrupcao.isEmpty {
@@ -182,18 +178,12 @@ final class GravadorLocal: ObservableObject {
         guard let ha = dono.ultimoQuadroHa, ha < 1.0 else {
             return ("a câmera não está entregando imagem", tr("a câmera não está entregando imagem"))
         }
-        let livre = GravadorLocal.lerEspacoLivre()
-        espacoLivre = livre
-        if let livre, livre < GravadorLocal.espacoParaComecar {
-            return ("sem espaço: sobram \(livre / 1_000_000) MB (gravar pede 500 MB livres)",
-                    tr("sem espaço: sobram %ld MB (gravar pede 500 MB livres)", Int(livre / 1_000_000)))
-        }
         return nil
     }
 
     /// A recusa sem a permissão de Fotos, com o caminho dos Ajustes na língua do sistema.
     private static var semFotosNaTela: String {
-        tr("sem permissão para salvar no rolo da câmera: %@", trSistema("Ajustes → Quall → Fotos"))
+        tr("sem permissão para salvar no rolo da câmera: %@", trSistema("Ajustes → Quall Studio → Fotos"))
     }
 
     /// O diário e a saída padrão (sem perda no `idevicedebug`).
@@ -204,8 +194,8 @@ final class GravadorLocal: ObservableObject {
         fflush(stdout)
     }
 
-    /// `motivo` (em português) vai ao diário e a quem pediu (o controle remoto o recebe pela rede);
-    /// `naTela`, no idioma da interface, ao recado.
+    /// `motivo` (em português) vai ao diário e ao retorno local; a ponte do prompter não o repassa
+    /// pela rede. `naTela`, no idioma da interface, vai ao recado.
     private func recusar(_ motivo: String, naTela: String, quem: QuemPedeAGravacao, fim: (String?) -> Void) {
         Diagnostico.nota("APP GRAVACAO recusada (\(quem.rawValue)): \(motivo)")
         mostrarRecado(tr("Não gravou: %@", naTela), grave: true)
@@ -273,7 +263,7 @@ final class GravadorLocal: ObservableObject {
         }
         dono.pendurarGravador(t)
         Diagnostico.nota("APP GRAVACAO #\(n) pedida (\(quem.rawValue))"
-            + " captura=\(dono.formatoRecebido) espaco_livre=\(espacoLivre.map { "\($0 / 1_000_000) MB" } ?? "?")"
+            + " captura=\(dono.formatoRecebido)"
             + " microfone=\(dono.microfone.ligado ? "ligado" : "desligado")"
             + " termico=\(calor.termico)\(quente ? " (quente: o arquivo sai em 720p)" : "")")
         subirSupervisor()
@@ -416,20 +406,8 @@ final class GravadorLocal: ObservableObject {
             parar(motivo: "o arquivo parou de receber imagem (o codificador da gravação não está entregando)")
             return
         }
-        if voltas % 5 == 0 {
-            // Fora da principal: a conta do espaço purgável pode demorar (revisão M6).
-            DispatchQueue.global(qos: .utility).async { [weak self, weak t] in
-                let l = GravadorLocal.lerEspacoLivre()
-                naPrincipal {
-                    guard let self, let t, self.tomada === t else { return }
-                    self.espacoLivre = l
-                    if let l, l < GravadorLocal.espacoParaSeguir, self.estado.gravando {
-                        self.parar(motivo: "sem espaço: sobram \(l / 1_000_000) MB")
-                    }
-                }
-            }
-        }
-        if voltas % 10 == 0 { t.relatar(espacoLivre: espacoLivre) }
+
+        if voltas % 10 == 0 { t.relatar() }
     }
 
     // --- o segundo plano -------------------------------------------------------------------------
@@ -479,13 +457,8 @@ final class GravadorLocal: ObservableObject {
         }
     }
 
-    /// O espaço que o iOS diz estar disponível para uso importante (inclui o que ele pode liberar de
-    /// caches). `nil` quando a leitura falha.
-    static func lerEspacoLivre() -> Int64? {
-        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let v = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        return v?.volumeAvailableCapacityForImportantUsage
-    }
+    /// A capacidade de armazenamento não é consultada. Falhas de escrita vêm do writer.
+
 
     static func nomeDoArquivo(_ d: Date, sufixo: Int? = nil) -> String {
         let f = DateFormatter()

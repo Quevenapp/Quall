@@ -2,57 +2,90 @@ import AppKit
 import XCTest
 @testable import QuallBarraDeMenusKit
 
-/// Testa pixels do placeholder original, transparência, indicação no ar e cores de aparência.
-/// O bitmap é sintético e não captura a tela de nenhuma máquina.
-/// `QUALL_PNG_DA_BARRA=<pasta>` permite exportar as variantes para inspeção local.
+/// **A marca da barra de menus**: a geometria contra a de `tools/icones/marca.py`, e a imagem desenhada
+/// de verdade num bitmap — o anel, o furo, o vão em volta da bolinha, o vermelho do NO AR e o anel que
+/// segue o tema da barra. Nada aqui captura tela: o bitmap é nosso.
+///
+/// Com `QUALL_PNG_DA_BARRA=<pasta>`, `test_grava_os_pngs_para_olhar` grava as variantes em PNG (as duas
+/// imagens nas barras clara e escura, ampliadas) — o jeito de olhar o desenho sem abrir o app.
 final class TestesDaMarcaNaBarra: XCTestCase {
+
+    // MARK: - a geometria
+
+    /// Os números do `marca.py`: a caixa vai de 2,7 a 29,8 (27,1 de lado), e a bolinha encosta na borda
+    /// direita e na de baixo; o anel, na de cima e na da esquerda.
+    func test_a_caixa_e_a_do_marca_py() {
+        XCTAssertEqual(GeometriaDaMarca.inicio, 2.7, accuracy: 1e-9)
+        XCTAssertEqual(GeometriaDaMarca.ladoDaMarca, 27.1, accuracy: 1e-9)
+        XCTAssertEqual(GeometriaDaMarca.raioDoCorte, 6.1, accuracy: 1e-9)
+        let g = GeometriaDaMarca(lado: 18)
+        XCTAssertEqual(g.escala, 18 / 27.1, accuracy: 1e-9)
+        XCTAssertEqual(g.anelDeFora.minX, 0, accuracy: 1e-9)
+        XCTAssertEqual(g.anelDeFora.minY, 0, accuracy: 1e-9)
+        XCTAssertEqual(g.luz.maxX, 18, accuracy: 1e-9)
+        XCTAssertEqual(g.luz.maxY, 18, accuracy: 1e-9)
+        // A bolinha: raio 4,6 unidades ≈ 3,06 pt; o traço do anel, 3,6 ≈ 2,39 pt; o vão, 1,5 ≈ 1 pt.
+        XCTAssertEqual(g.luz.width / 2, 4.6 * 18 / 27.1, accuracy: 1e-9)
+        XCTAssertEqual((g.anelDeFora.width - g.anelDeDentro.width) / 2, 3.6 * 18 / 27.1, accuracy: 1e-9)
+        XCTAssertEqual((g.corte.width - g.luz.width) / 2, 1.5 * 18 / 27.1, accuracy: 1e-9)
+    }
+
+    /// O corte morde o anel (senão não haveria "corte do O"), e a bolinha fica fora do furo.
+    func test_o_corte_morde_o_anel() {
+        let d = hypot(GeometriaDaMarca.centroDaLuz.x - GeometriaDaMarca.centroDoAnel.x,
+                      GeometriaDaMarca.centroDaLuz.y - GeometriaDaMarca.centroDoAnel.y)
+        XCTAssertLessThan(d - GeometriaDaMarca.raioDoCorte, GeometriaDaMarca.raioDeFora)
+        XCTAssertGreaterThan(d - GeometriaDaMarca.raioDaLuz, GeometriaDaMarca.raioDeDentro)
+    }
 
     // MARK: - a imagem desenhada
 
-    /// Pronto: imagem modelo; a moldura e o indicador opacos, o furo e o vão transparentes.
-    func test_pronto_e_modelo_com_o_centro_transparente() {
+    /// Pronto: imagem modelo; o anel e a bolinha opacos, o furo e o vão transparentes.
+    func test_pronto_e_modelo_com_o_vao_vazio() {
         let img = MarcaNaBarra.imagem(noAr: false)
         XCTAssertTrue(img.isTemplate)
         XCTAssertEqual(img.size, NSSize(width: 18, height: 18))
         let b = TestesDaMarcaNaBarra.desenhar(img, aparencia: .aqua)
-        XCTAssertGreaterThan(alfa(b, 16, 6), 0.9, "o alto da moldura")
-        XCTAssertGreaterThan(alfa(b, 6, 16), 0.9, "a esquerda da moldura")
-        XCTAssertLessThan(alfa(b, 12, 16), 0.05, "o furo")
-        XCTAssertGreaterThan(alfa(b, 16, 16), 0.9, "o indicador")
-        XCTAssertLessThan(alfa(b, 12, 16), 0.1, "o espaço entre a moldura e o indicador")
+        XCTAssertGreaterThan(alfa(b, 15, 4.5), 0.9, "o alto do anel")
+        XCTAssertGreaterThan(alfa(b, 4.5, 15), 0.9, "a esquerda do anel")
+        XCTAssertLessThan(alfa(b, 15, 15), 0.05, "o furo")
+        XCTAssertGreaterThan(alfa(b, 25.2, 25.2), 0.9, "a bolinha")
+        // No meio do vão (a 5,35 unidades da bolinha, entre 4,6 e 6,1) e dentro da faixa do anel (a
+        // 9,08 do centro dele, entre 8,7 e 12,3): sem o corte, aqui haveria anel.
+        XCTAssertLessThan(alfa(b, 21.42, 21.42), 0.1, "o vão em volta da bolinha")
     }
 
-    /// No ar: o indicador é o vermelho do NO AR, e a imagem deixa de ser modelo.
-    func test_no_ar_tem_o_indicador_vermelho() {
+    /// No ar: a bolinha é o vermelho do NO AR, e a imagem deixa de ser modelo.
+    func test_no_ar_tem_a_bolinha_vermelha() {
         let img = MarcaNaBarra.imagem(noAr: true)
         XCTAssertFalse(img.isTemplate)
         for aparencia in [NSAppearance.Name.aqua, .darkAqua] {
             let b = TestesDaMarcaNaBarra.desenhar(img, aparencia: aparencia)
-            let c = b.rgba(marca: 16, 16)
+            let c = b.rgba(marca: 25.2, 25.2)
             XCTAssertGreaterThan(c.a, 0.99, "\(aparencia.rawValue)")
             XCTAssertEqual(c.r, 1, accuracy: 0.01, "\(aparencia.rawValue)")
             XCTAssertEqual(c.g, 69 / 255, accuracy: 0.01, "\(aparencia.rawValue)")
             XCTAssertEqual(c.b, 58 / 255, accuracy: 0.01, "\(aparencia.rawValue)")
-            XCTAssertLessThan(alfa(b, 12, 16), 0.1, "o vão (\(aparencia.rawValue))")
-            XCTAssertLessThan(alfa(b, 12, 16), 0.05, "o furo (\(aparencia.rawValue))")
+            XCTAssertLessThan(alfa(b, 21.42, 21.42), 0.1, "o vão (\(aparencia.rawValue))")
+            XCTAssertLessThan(alfa(b, 15, 15), 0.05, "o furo (\(aparencia.rawValue))")
         }
     }
 
-    /// No ar, a moldura segue o tema de quem desenha: escuro na barra clara, claro na escura — inclusive nas
+    /// No ar, o anel segue o tema de quem desenha: escuro na barra clara, claro na escura — inclusive nas
     /// aparências "vibrantes" que a barra de menus usa (medido em 01/10: a barra pede a imagem em
     /// `VibrantLight`, `Aqua`, `VibrantDark` e `DarkAqua`).
-    func test_no_ar_a_moldura_segue_o_tema() {
+    func test_no_ar_o_anel_segue_o_tema() {
         let img = MarcaNaBarra.imagem(noAr: true)
         for (aparencia, escuraABarra) in [(NSAppearance.Name.aqua, false), (.vibrantLight, false),
                                           (.darkAqua, true), (.vibrantDark, true)] {
             let b = TestesDaMarcaNaBarra.desenhar(img, aparencia: aparencia)
-            XCTAssertGreaterThan(alfa(b, 16, 6), 0.5, "a moldura aparece (\(aparencia.rawValue))")
-            let c = b.rgba(marca: 16, 6)
+            XCTAssertGreaterThan(alfa(b, 15, 4.5), 0.5, "o anel aparece (\(aparencia.rawValue))")
+            let c = b.rgba(marca: 15, 4.5)
             let brilho = (c.r + c.g + c.b) / 3
             if escuraABarra {
-                XCTAssertGreaterThan(brilho, 0.7, "moldura clara na barra escura (\(aparencia.rawValue))")
+                XCTAssertGreaterThan(brilho, 0.7, "anel claro na barra escura (\(aparencia.rawValue))")
             } else {
-                XCTAssertLessThan(brilho, 0.3, "moldura escura na barra clara (\(aparencia.rawValue))")
+                XCTAssertLessThan(brilho, 0.3, "anel escuro na barra clara (\(aparencia.rawValue))")
             }
         }
     }

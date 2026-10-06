@@ -187,3 +187,5 @@
 "1 palavra" = "1 word";
 "%@ palavras" = "%@ words";
 "Esse roteiro não está mais guardado." = "That script is no longer saved.";
+
+"Na lista: %@" = "In the list: %@";

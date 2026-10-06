@@ -10,8 +10,8 @@ APP="${QUALL_APP_DESTINO:-$AQUI/dist/Quall Studio.app}"
 ARQUITETURAS="${QUALL_ARQUITETURAS:-universal}"
 IDENTIDADE="${QUALL_IDENTIDADE:--}"
 JOBS="${QUALL_JOBS:-2}"
-VERSAO="${QUALL_VERSAO:-0.1.0}"
-BUILD="${QUALL_BUILD:-1}"
+VERSAO="${QUALL_VERSAO:-1.0.0}"
+BUILD="${QUALL_BUILD:-2}"
 case "$IDENTIDADE" in
     -|"Apple Development:"*) ;;
     *) echo "ERRO: esta etapa permite só assinatura local ad-hoc ou Apple Development existente." >&2
@@ -20,6 +20,7 @@ esac
 case "$ARQUITETURAS" in host|universal) ;; *) echo "ERRO: QUALL_ARQUITETURAS deve ser host ou universal" >&2; exit 1 ;; esac
 [ -z "${QUALL_TELA_ESTENDIDA_FUTURA:-}" ] || { echo "ERRO: recurso futuro não entra no produto Store" >&2; exit 1; }
 case "$APP" in /*.app) ;; *) echo "ERRO: QUALL_APP_DESTINO deve ser caminho absoluto de um .app" >&2; exit 1 ;; esac
+bash "$RAIZ/tools/distribuicao/conferir-marca-apple.sh" mac
 
 BINARIO="${QUALL_BINARIO:-}"
 RECURSOS="${QUALL_RECURSOS:-}"
@@ -30,24 +31,32 @@ if [ -z "$BINARIO" ]; then
         if [ "$ARQUITETURAS" = universal ]; then
             FATIAS=()
             for ALVO in aarch64-apple-darwin x86_64-apple-darwin; do
-                (cd "$RAIZ" && MACOSX_DEPLOYMENT_TARGET=13.0 CARGO_PROFILE_RELEASE_LTO=false \
-                    cargo build --release -p quall-ffi --target "$ALVO" --jobs "$JOBS")
+                QUALL_JOBS="$JOBS" bash "$RAIZ/tools/distribuicao/construir-nucleo-apple.sh" "$ALVO"
                 FATIAS+=("$RAIZ/target/$ALVO/release/libquall.a")
             done
             mkdir -p "$RAIZ/target/release"
             lipo -create "${FATIAS[@]}" -output "$RAIZ/target/release/libquall.a"
         else
-            (cd "$RAIZ" && MACOSX_DEPLOYMENT_TARGET=13.0 CARGO_PROFILE_RELEASE_LTO=false \
-                cargo build --release -p quall-ffi --jobs "$JOBS")
+            case "$(uname -m)" in arm64) ALVO=aarch64-apple-darwin ;; x86_64) ALVO=x86_64-apple-darwin ;; esac
+            QUALL_JOBS="$JOBS" bash "$RAIZ/tools/distribuicao/construir-nucleo-apple.sh" "$ALVO"
+            mkdir -p "$RAIZ/target/release"
+            cp "$RAIZ/target/$ALVO/release/libquall.a" "$RAIZ/target/release/libquall.a"
         fi
     fi
     [ -s "$RAIZ/target/release/libquall.a" ] || { echo "ERRO: núcleo ausente" >&2; exit 1; }
     if [ "$ARQUITETURAS" = universal ]; then
         ARQS=(--arch arm64 --arch x86_64)
     else
-        ARQS=()
+        # Bash 3.2 do macOS trata array vazio como variável não definida com set -u.
+        # A fatia host explícita evita esse erro e mantém a arquitetura nativa.
+        ARQS=(--arch "$(uname -m)")
     fi
-    (cd "$MACOS" && xcrun swift build -c release --jobs "$JOBS" "${ARQS[@]}" --product quall-app)
+    if [ "$ARQUITETURAS" = universal ]; then RUNTIME_ARQS="arm64 x86_64"; else RUNTIME_ARQS="$(uname -m)"; fi
+    RUNTIME_DIR="$RAIZ/target/compiler-runtime/macos"
+    PLATFORM_NAME=macosx ARCHS="$RUNTIME_ARQS" DERIVED_FILE_DIR="$RUNTIME_DIR" \
+        bash "$RAIZ/apps/ios/Quall/Ferramentas/preparar-runtime-xcode.sh"
+    (cd "$MACOS" && xcrun swift build -c release --jobs "$JOBS" "${ARQS[@]}" \
+        -Xlinker "$RUNTIME_DIR/QuallAvailability.o" --product quall-app)
     PASTA_BIN="$(cd "$MACOS" && xcrun swift build -c release "${ARQS[@]}" --show-bin-path)"
     BINARIO="$PASTA_BIN/quall-app"
 fi
@@ -64,6 +73,8 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINARIO" "$APP/Contents/MacOS/quall-app"
 cp "$AQUI/Info.plist" "$APP/Contents/Info.plist"
+cp "$AQUI/PrivacyInfo.xcprivacy" "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
+cp -R "$RAIZ/vendor/datachannel-sys/OpenSSL_Privacy.bundle" "$APP/Contents/Resources/"
 cp "$AQUI/Quall.icns" "$APP/Contents/Resources/Quall.icns"
 cp -R "$RECURSOS" "$APP/Contents/Resources/"
 cp -R "$AQUI/pt.lproj" "$AQUI/en.lproj" "$APP/Contents/Resources/"

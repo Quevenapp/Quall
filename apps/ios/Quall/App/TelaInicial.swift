@@ -281,7 +281,7 @@ struct VistaDeEspelhar: View {
 
     private var nomeNaLista: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RotuloDeSecao(tr("Aparecer na lista como"))
+            RotuloDeSecao(tr("Nome após conectar"))
             HStack(spacing: 10) {
                 TextField(tr("Nome do aparelho"), text: $nome)
                     .disableAutocorrection(true)

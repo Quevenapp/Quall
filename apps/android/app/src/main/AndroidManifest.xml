@@ -29,6 +29,13 @@
          sem USB host instala do mesmo jeito. -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- Recepção e teleprompter funcionam sem câmera/microfone; evitar filtros implícitos do Play. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- A conexão manual também pode usar Ethernet; Wi-Fi é opcional. -->
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
     <!-- Áudio.
 
@@ -108,19 +115,6 @@
              Activity, com ela a `Surface`, e com a `Surface` a sessão inteira — o usuário perderia
              a imagem por virar o tablet. `keepScreenOn` fica no código (FLAG_KEEP_SCREEN_ON),
              junto da razão. -->
-        <!-- **Bancada, não produto.** Codifica YUV de arquivo para medir o custo de imagem de um
-             bitrate contra outro com a MESMA entrada — a §8.41 mostrou que com câmera viva isso é
-             impossível, porque o ruído do sensor não se repete. Exportada porque quem a dispara é
-             `adb shell am start`; ela não aparece no lançador e não tem `intent-filter` de MAIN. -->
-        <activity
-            android:name=".bancada.CodificaYuvActivity"
-            android:exported="true"
-            android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        <!-- NÃO usar `Theme.NoDisplay`: ele exige `finish()` antes do `onResume` terminar, e
-             esta tela fica viva enquanto codifica. Medido: derruba com CalledFromWrongThread
-             /"did not call finish()" no A07. -->
-
         <!-- `uiMode` (§11.3): a troca automática claro/escuro do sistema recriaria esta tela, e o
              `onDestroy` dela para a recepção. O tema é escuro fixo. -->
         <activity

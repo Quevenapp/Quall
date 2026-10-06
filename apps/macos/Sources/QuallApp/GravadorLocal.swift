@@ -48,7 +48,6 @@ enum QuemPedeAGravacao: String {
 final class GravadorLocal: ObservableObject {
 
     @Published private(set) var estado: EstadoDaGravacao = .parada
-    @Published private(set) var espacoLivre: Int64?
     /// A última palavra sobre um arquivo, ou uma recusa. Some sozinha em 15 s.
     @Published private(set) var recado: (texto: String, grave: Bool)?
 
@@ -59,8 +58,6 @@ final class GravadorLocal: ObservableObject {
     let pasta: URL
 
     static var textoSemSom: String { T("Gravando SEM SOM — ligue o microfone") }
-    static let espacoParaComecar: Int64 = 500_000_000
-    static let espacoParaSeguir: Int64 = 300_000_000
     static let semQuadroPorNoMaximo: Double = 2.0
 
     private var tomada: TomadaDeGravacao?
@@ -143,7 +140,6 @@ final class GravadorLocal: ObservableObject {
         ficha = dono.assinar(nome: "gravador #\(n)", video: { [weak t] amostra, imagem in t?.quadro(amostra, imagem: imagem) },
                              som: { [weak t] amostra in t?.audio(amostra) })
         registrar("#\(n) pedida (\(quem.rawValue)): captura=\(dono.formatoRecebido) "
-                  + "espaco_livre=\(espacoLivre.map { "\($0 / 1_000_000) MB" } ?? "?") "
                   + "microfone=\(dono.microfone.ligado ? "ligado" : "desligado")")
         subirSupervisor()
         // O primeiro quadro tem 3 s para entrar no arquivo.
@@ -158,11 +154,6 @@ final class GravadorLocal: ObservableObject {
         guard dono.montado else { return T("a câmera não está aberta") }
         if !dono.interrupcao.isEmpty { return T("câmera interrompida: %@", GravadorLocal.curto(dono.interrupcao)) }
         guard let ha = dono.ultimoQuadroHa, ha < 1.0 else { return T("a câmera não está entregando imagem") }
-        let livre = GravadorLocal.lerEspacoLivre(pasta)
-        espacoLivre = livre
-        if let livre, livre < GravadorLocal.espacoParaComecar {
-            return T("sem espaço: sobram %@ MB (gravar pede 500 MB livres)", livre / 1_000_000)
-        }
         return nil
     }
 
@@ -246,20 +237,8 @@ final class GravadorLocal: ObservableObject {
             parar(motivo: "o arquivo parou de receber imagem (o codificador da gravação não está entregando)")
             return
         }
-        if voltas % 5 == 0 {
-            let p = pasta
-            DispatchQueue.global(qos: .utility).async { [weak self, weak t] in
-                let l = GravadorLocal.lerEspacoLivre(p)
-                DispatchQueue.main.async {
-                    guard let self, let t, self.tomada === t else { return }
-                    self.espacoLivre = l
-                    if let l, l < GravadorLocal.espacoParaSeguir, self.estado.gravando {
-                        self.parar(motivo: "sem espaço: sobram \(l / 1_000_000) MB")
-                    }
-                }
-            }
-        }
-        if voltas % 10 == 0 { t.relatar(espacoLivre: espacoLivre) }
+
+        if voltas % 10 == 0 { t.relatar() }
     }
 
     // --- recados e utilidades ----------------------------------------------------------------------
@@ -274,14 +253,7 @@ final class GravadorLocal: ObservableObject {
         }
     }
 
-    static func lerEspacoLivre(_ pasta: URL) -> Int64? {
-        var alvo = pasta
-        while !FileManager.default.fileExists(atPath: alvo.path), alvo.pathComponents.count > 1 {
-            alvo = alvo.deletingLastPathComponent()
-        }
-        let v = try? alvo.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        return v?.volumeAvailableCapacityForImportantUsage
-    }
+
 
     static func nomeDoArquivo(_ d: Date, sufixo: Int? = nil) -> String {
         let f = DateFormatter()
@@ -556,9 +528,11 @@ final class GravacaoDoPrompter {
                 guard let self else { return }
                 self.atendendo = nil
                 if let motivo, let r = self.replica {
-                    let texto = GravacaoDoPrompter.caber(motivo)
+                    // A causa detalhada fica neste aparelho. Toda falha de início tem a mesma
+                    // recusa remota, sem expor espaço livre nem outro diagnóstico ao controle.
+                    let texto = "não foi possível iniciar a gravação; veja o aviso no aparelho que grava"
                     let st = r.recusarGravacao(n: p.n, motivo: texto)
-                    self.dizer("pedido n=\(p.n) recusado: causa=\(SanitizacaoDoLog.causaExterna(texto)) (\(st.nome))")
+                    self.dizer("pedido n=\(p.n) recusado: causa=\(SanitizacaoDoLog.causaExterna(motivo)) (\(st.nome))")
                 }
                 self.decidir()
             }

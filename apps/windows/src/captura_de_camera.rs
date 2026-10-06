@@ -1035,6 +1035,11 @@ fn criar_fonte(
                 // (documentação oficial; a revisão, 6).
                 MFCreateDeviceSource(&attrs).map(|f| (f, None)).map_err(|e| falha_win("MFCreateDeviceSource", e))
             }
+            #[cfg(feature = "loja")]
+            FonteDaCamera::DoQuallNoProcesso { .. } => {
+                Err(falha("A edição Microsoft Store não inclui a fonte da câmera virtual do Quall.", None))
+            }
+            #[cfg(not(feature = "loja"))]
             FonteDaCamera::DoQuallNoProcesso { regua } => {
                 let nome = format!("quall-camera-sintetica-{}-{:x}", std::process::id(), qpc_100ns());
                 let cano = quall_camera_fonte::quadros::cano_do_nome(&nome);
