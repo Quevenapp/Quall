@@ -651,7 +651,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
     /// a hospedar **com o mesmo PIN** — a câmera e a prévia não ficam sabendo.
     private func hospedar() {
         let minha = geracaoAtual()
-        let pinAgora = pin
+        let pinInicial = pin
         let nome = Identidade.nome
         let id = Identidade.deviceId
         let rotuloDaTrack = origem.rotulo(doAparelho: nome)
@@ -661,6 +661,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
         travaDoLaco.lock(); lacoVivo = true; travaDoLaco.unlock()
         let thread = Thread { [weak self] in
             guard let self else { return }
+            var pinAgora = pinInicial // só esta thread altera o PIN da próxima tentativa
             // **A tela anterior soltando a porta** (fechar e reabrir, 27/09): o laço dela sai em
             // milissegundos pelo cancelador, mas uma sessão que estava de pé ainda desmonta (dívida
             // 19). Espera calada, com prazo; o que sobrar, a repetição calada abaixo cobre. Só no
@@ -791,6 +792,22 @@ final class EmissorDeCamera: NSObject, ObservableObject {
                 guard subiu else {
                     let erro = candidato.ultimoMotivo
                     let gastou = CFAbsoluteTimeGetCurrent() - inicioDaTentativa
+                    let renovarPin = RenovacaoDoPin.exigida(apos: candidato.statusDaEspera)
+                    if renovarPin {
+                        guard let novo = RenovacaoDoPin.novo(diferenteDe: pinAgora, sortear: Nucleo.sortearPin) else {
+                            naPrincipal {
+                                guard self.geracaoAtual() == minha else { return }
+                                self.anunciante.parar()
+                                self.fase = .falhou(tr("Não foi possível sortear o PIN da sessão."))
+                            }
+                            return
+                        }
+                        pinAgora = novo
+                        naPrincipal {
+                            guard self.geracaoAtual() == minha else { return }
+                            self.pin = novo
+                        }
+                    }
                     // **A porta ainda presa pela tela anterior**, dentro da tolerância: de novo em
                     // 200 ms, sem conselho e sem contar. É a soltura em andamento, não um erro.
                     let desdeLivre = CFAbsoluteTimeGetCurrent() - portaLivreDesde
@@ -811,10 +828,12 @@ final class EmissorDeCamera: NSObject, ObservableObject {
                     // Qualquer outro motivo a pessoa precisa ler — em especial o do ICE, que é a
                     // permissão de Rede Local negada, e que ela conserta sozinha.
                     if erro != EmissorDeCamera.prazoSemNinguem { tentativasQueContam += 1 }
-                    if !erro.hasPrefix("tempo esgotado:") && !erro.isEmpty {
+                    if renovarPin || (!erro.hasPrefix("tempo esgotado:") && !erro.isEmpty) {
                         let daPorta = SolturaDaPorta.ehPortaOcupada(erro)
                         conselhoEraDaPorta = daPorta
-                        conselhoVigente = daPorta ? EmissorDeCamera.textoDaPortaPresa : Nucleo.conselho(para: erro)
+                        conselhoVigente = renovarPin
+                            ? tr("Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou.")
+                            : (daPorta ? EmissorDeCamera.textoDaPortaPresa : Nucleo.conselho(para: erro))
                         ultimoSinalDeVida = CFAbsoluteTimeGetCurrent()
                         let texto = conselhoVigente
                         let desparear = EstadoDeParConhecido.ehParDesconhecido(erro)

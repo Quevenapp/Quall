@@ -435,6 +435,11 @@ final class Emissor: ObservableObject {
         }
 
         if estado.porta > 0 { porta = estado.porta }
+        // A appex renova o pedido pelos statuses WRONG_PIN/PAIRING. Ler o
+        // arquivo atômico evita cache UserDefaults e mantém o PIN visível correto.
+        if let atual = Compartilhado.lerPedido(), atual.utilizavel,
+           atual.deviceId == Identidade.deviceId, atual.porta == porta,
+           atual.pin != pin { pin = atual.pin }
 
         // O erro cru vem junto do conselho de propósito: é ele, e não o texto traduzido, que diz
         // se a ação certa é esquecer o pareamento.

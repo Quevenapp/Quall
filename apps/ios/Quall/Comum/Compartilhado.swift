@@ -11,7 +11,7 @@ import Foundation
 ///
 /// | arquivo | quem escreve | quem lê | para quê |
 /// |---|---|---|---|
-/// | `pedido.json` | app | appex | PIN, porta, nome, teto de resolução |
+/// | `pedido.json` | app; appex renova PIN | appex; app relê PIN | PIN, porta, nome, teto de resolução |
 /// | `estado.json` | appex | app | em que pé está a transmissão, e o erro quando há |
 /// | `cancelar` | app | appex | o botão Cancelar da tela de espera |
 ///
@@ -34,12 +34,16 @@ public enum Compartilhado {
         pasta?.appendingPathComponent(nome)
     }
 
-    // --- pedido: app → appex ----------------------------------------------------------------
+    // --- pedido: app → appex; renovação do PIN: appex → app -----------------------------------
 
     public static func gravarPedido(_ pedido: PedidoDeEspelhamento) {
         guard let alvo = arquivo("pedido.json") else { return }
         guard let dados = try? JSONEncoder().encode(pedido) else { return }
-        try? dados.write(to: alvo, options: .atomic)
+        var erro: NSError?
+        NSFileCoordinator(filePresenter: nil)
+            .coordinate(writingItemAt: alvo, options: .forReplacing, error: &erro) { url in
+                try? dados.write(to: url, options: .atomic)
+            }
     }
 
     /// Devolve `nil` quando não há pedido — que é diferente de "há um pedido com valores
@@ -55,7 +59,32 @@ public enum Compartilhado {
 
     public static func apagarPedido() {
         guard let alvo = arquivo("pedido.json") else { return }
-        try? FileManager.default.removeItem(at: alvo)
+        var erro: NSError?
+        NSFileCoordinator(filePresenter: nil)
+            .coordinate(writingItemAt: alvo, options: .forDeleting, error: &erro) { url in
+                try? FileManager.default.removeItem(at: url)
+            }
+    }
+
+    /// Só a appex da mesma transmissão pode trocar o PIN do pedido. A comparação
+    /// ocorre sob a mesma coordenação usada na criação/cancelamento: não revive
+    /// pedido apagado nem pisa numa transmissão mais nova. Os demais campos ficam.
+    static func renovarPinDoPedido(esperado: PedidoDeEspelhamento, novo: String) -> Bool {
+        guard RenovacaoDoPin.valido(novo), novo != esperado.pin,
+              let alvo = arquivo("pedido.json") else { return false }
+        var erro: NSError?
+        var gravou = false
+        NSFileCoordinator(filePresenter: nil)
+            .coordinate(writingItemAt: alvo, options: .forMerging, error: &erro) { url in
+                guard let dados = try? Data(contentsOf: url),
+                      var atual = try? JSONDecoder().decode(PedidoDeEspelhamento.self, from: dados),
+                      atual.carimbo == esperado.carimbo, atual.deviceId == esperado.deviceId,
+                      atual.porta == esperado.porta, atual.pin == esperado.pin else { return }
+                atual.pin = novo
+                guard let atualizados = try? JSONEncoder().encode(atual) else { return }
+                do { try atualizados.write(to: url, options: .atomic); gravou = true } catch { }
+            }
+        return erro == nil && gravou
     }
 
     // --- estado: appex → app ----------------------------------------------------------------

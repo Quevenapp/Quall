@@ -895,10 +895,10 @@ class MirrorService : LifecycleService() {
         } else null
 
         val eu = DeviceIdentity.load(this)
-        // O PIN é sorteado **uma vez** por consentimento/tentativa e vale para todas as tentativas
-        // de espera: o usuário não deveria ter de reler um número novo porque o receptor errou de
-        // digitar.
-        val pin = QuallNative.generatePin()
+        // WRONG_PIN/PAIRING renovam o PIN antes da próxima espera por política conservadora,
+        // sem inferir fase ou modo pelo status. Outros erros preservam o valor; os pares
+        // salvos e o segredo forte usado na retomada permanecem intactos.
+        var pin = QuallNative.generatePin()
         val porta = Bancada.porta(this)
         Log.i(TAG, "bancada: ${Bancada.resumo(this)}")
         // Antes de a câmera abrir: é na volta ao app, com a sessão já no ar, que a guarda age.
@@ -1173,7 +1173,32 @@ class MirrorService : LifecycleService() {
                     // interpretar o motivo — cancelamento não é uma falha para relatar.
                     if (cancelado || cameraDvCaiu) break
                     // `lastError` é por thread; esta é a mesma thread que chamou `hostStart`.
+                    val status = QuallNative.lastStatus()
                     val motivo = QuallNative.lastError()
+                    val proximoPin = pinDepoisDaFalhaDaEspera(pin, status) { QuallNative.generatePin() }
+                    if (proximoPin == null) {
+                        val erro = tx(R.string.esp_pin_geracao_falhou)
+                        // Retirar o PIN também da notificação antes de liberar a captura:
+                        // o finally externo pode precisar aguardar o fechamento da gravação.
+                        atualizarNotificacao(erro, fonteRotulo)
+                        publicarErro(erro)
+                        // Executa ambos os finally, preservando ERRO em vez do PARADO abaixo.
+                        return
+                    }
+                    val pinRenovado = proximoPin != pin
+                    if (pinRenovado) {
+                        pin = proximoPin
+                        ultimaRecusa = tx(R.string.esp_pin_renovado)
+                        // Estado e notificação mudam antes de atender outra tentativa.
+                        // O aviso não contém o PIN recusado nem dados da conexão.
+                        MirrorBus.atualizar {
+                            it.copy(pin = pin, fase = MirrorBus.Fase.ESPERANDO,
+                                mensagem = ultimaRecusa.orEmpty(), mensagemEhAnuncio = false)
+                        }
+                        atualizarNotificacao(tx(R.string.esp_notif_esperando, pin), fonteRotulo)
+                        Log.w(TAG, "pareamento encerrado (${QuallNative.Status.nome(status)}); PIN renovado")
+                    }
+                    // A rotação não isenta a falha do teto/recuo que já existia.
                     if (decorrido < FALHA_IMEDIATA_MS) {
                         falhasImediatas++
                         Log.w(TAG, "hostStart falhou em ${decorrido}ms: ${Log.erroExterno(motivo)}")
@@ -1184,23 +1209,15 @@ class MirrorService : LifecycleService() {
                         Thread.sleep(400)
                     } else {
                         falhasImediatas = 0
-                        // **Este ramo era mudo, e isso escondeu um defeito por dois dias.** Ele
-                        // roda quando alguém completou o handshake e foi recusado por decisão
-                        // (PIN errado, prova de retomada inválida, versão incompatível) — ver
-                        // `session.rs:e_acidente_do_candidato`, que só reespera em Io/Closed/
-                        // Signaling e devolve todo o resto. Sem log, a única testemunha era a
-                        // mensagem no `MirrorBus`, que a publicação da volta seguinte
-                        // sobrescreve antes de qualquer olho ver (`docs/bancada.md` §8.36).
-                        //
-                        // E o contador que a tela mostra não é o que desiste: `tentativa` conta
-                        // todas as voltas, `falhasImediatas` só as de menos de 1 s — e é zerado
-                        // aqui. Ou seja, **este laço gira para sempre**, sem nunca chegar a
-                        // `FALHAS_IMEDIATAS_ATE_DESISTIR`.
+                        // Outras recusas mantêm o PIN. A razão permanece na próxima volta
+                        // para a UI não apagar o diagnóstico antes de ele poder ser lido.
                         Log.w(TAG, "hostStart voltou em ${decorrido}ms sem sessão (tentativa " +
                             "$tentativa, alguém conectou e foi recusado): ${Log.erroExterno(motivo)}")
-                        ultimaRecusa = motivo
-                        MirrorBus.atualizar {
-                            it.copy(fase = MirrorBus.Fase.ESPERANDO, mensagem = tx(R.string.esp_tentativa_anterior, motivo), mensagemEhAnuncio = false)
+                        if (!pinRenovado) {
+                            ultimaRecusa = motivo
+                            MirrorBus.atualizar {
+                                it.copy(fase = MirrorBus.Fase.ESPERANDO, mensagem = tx(R.string.esp_tentativa_anterior, motivo), mensagemEhAnuncio = false)
+                            }
                         }
                     }
                     continue

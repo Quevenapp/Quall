@@ -10,3 +10,11 @@
 "Foram %ld tentativas sem conseguir abrir a conexão. Confira se os dois aparelhos estão na mesma rede Wi‑Fi e se ela não isola os aparelhos entre si." = "Tried %ld times without opening the connection. Check that both devices are on the same Wi‑Fi network and that it doesn't isolate devices from each other.";
 "O iPhone ficou sem memória para a transmissão." = "The iPhone ran out of memory for the broadcast.";
 "Transmissão encerrada." = "Broadcast ended.";
+
+"Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing failed. For your security, the PIN changed.";
+
+"Não foi possível sortear o PIN da sessão." = "Could not generate the session PIN.";
+
+"Não foi possível concluir o pareamento. Toque em Espelhar de novo e passe o novo PIN." = "Could not complete pairing. Tap Mirror again and share the new PIN.";
+
+"A transmissão foi encerrada pelo sistema." = "The system ended the broadcast.";

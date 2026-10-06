@@ -37,6 +37,18 @@ pub const PORTA_DO_VIDEO: u16 = 7877;
 /// Falhas seguidas que fazem a espera desistir (o iOS, §8.3).
 pub const TETO_DE_FALHAS: u32 = 40;
 
+/// Sorteia outro PIN sem reaproveitar o PIN da espera anterior.
+/// O limite também impede um gerador defeituoso de prender a thread; nenhuma cópia textual é feita.
+fn sortear_pin_diferente(atual: &Pin) -> std::result::Result<Pin, Error> {
+    for _ in 0..8 {
+        let novo = Pin::generate()?;
+        if novo != *atual {
+            return Ok(novo);
+        }
+    }
+    Err(Error::Pairing("não conseguiu sortear um PIN diferente".into()))
+}
+
 /// Em que pé o vídeo está.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FaseDoVideo {
@@ -268,17 +280,30 @@ impl SessaoDeVideo {
                 // **O PIN que não conferiu troca** (a promessa do núcleo, `pairing.rs`: PIN novo a cada
                 // erro; a revisão do código da câmera comum, 1): quem erra não tenta de novo no mesmo.
                 // O par esquecido (a dívida 22) é o mesmo erro: a tela oferece "Esquecer pareamentos".
-                Err(e @ (Error::Pairing(_) | Error::NeedsPin(_))) => {
+                Err(e @ (Error::WrongPin(_) | Error::Pairing(_) | Error::NeedsPin(_))) => {
                     falhas += 1;
-                    let novo = Pin::generate();
+                    let novo = match sortear_pin_diferente(&pin) {
+                        Ok(novo) => novo,
+                        Err(erro) => {
+                            // Após falha de pareamento, nunca reabrir com o PIN da espera anterior.
+                            let aviso = crate::idioma::tf("Não consegui preparar o PIN do vídeo: {}", &[&erro]);
+                            registro::linha(format!("o vídeo para: não conseguiu sortear outro PIN (status={})", crate::diagnostico_rede::status(&erro)));
+                            self.mudar(|p| {
+                                p.pin.clear();
+                                p.aviso = aviso.clone();
+                                p.fase = FaseDoVideo::Parada(aviso);
+                            });
+                            drop(servidor);
+                            break;
+                        }
+                    };
                     let texto = match &e {
+                        Error::WrongPin(_) => crate::idioma::t("Um aparelho tentou entrar com o PIN errado. O PIN mudou: passe os seis dígitos novos.").to_string(),
                         Error::NeedsPin(_) => crate::idioma::t("Um aparelho tentou entrar com um pareamento que este computador não reconhece mais: peça para ele digitar o PIN novo, ou esqueça os pareamentos.").to_string(),
                         _ => crate::idioma::t("O pareamento não fechou (o PIN não conferiu, ou um pareamento esquecido): o PIN mudou; digite o novo no outro aparelho.").to_string(),
                     };
                     registro::linha(format!("hospedar: o pareamento falhou ({falhas}ª seguida): status={} — o PIN do vídeo muda", crate::diagnostico_rede::status(&e)));
-                    if let Ok(n) = novo {
-                        pin = n;
-                    }
+                    pin = novo;
                     let mostrado = pin.to_display();
                     self.mudar(|p| {
                         p.aviso = texto;
