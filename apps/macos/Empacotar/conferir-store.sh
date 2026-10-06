@@ -82,6 +82,11 @@ if [ -s "$AVISOS" ] && cmp -s "$RAIZ/THIRD_PARTY_NOTICES.txt" "$AVISOS"; then
     ok "avisos iguais à raiz: $(shasum -a 256 "$AVISOS" | awk '{print $1}')"
 else falha 'avisos ausentes/vazios/diferentes da raiz'; fi
 TABELA="$APP/Contents/Resources/QuallCapture_QuallIdiomaKit.bundle/en.lproj/Localizable.strings"
+# SwiftPM direto gera bundle plano; o backend Xcode universal usa Contents/Resources.
+# Foundation Bundle.url(localization:) do produto resolve ambos os layouts públicos.
+if [ ! -f "$TABELA" ]; then
+    TABELA="$APP/Contents/Resources/QuallCapture_QuallIdiomaKit.bundle/Contents/Resources/en.lproj/Localizable.strings"
+fi
 if [ -f "$TABELA" ]; then
     if plutil -convert json -o - "$TABELA" | python3 -c '
 import json,pathlib,sys
