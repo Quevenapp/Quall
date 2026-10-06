@@ -48,7 +48,7 @@ fn sortear_pin_diferente(atual: &Pin) -> std::result::Result<Pin, Error> {
             return Ok(novo);
         }
     }
-    Err(Error::Pairing("não conseguiu sortear um PIN diferente".into()))
+    Err(Error::Pairing(crate::idioma::t("não conseguiu sortear um PIN diferente").into()))
 }
 
 /// Em que pé o vídeo está.

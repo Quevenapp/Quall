@@ -1057,7 +1057,13 @@ mod testes {
         use quall_core::protocol::DeviceId;
         let mut guest = Pairing::new(Role::Guest, DeviceId("teste-guest".into()), Some(esperado), None).unwrap();
         let mut host = Pairing::new(Role::Host, DeviceId("teste-host".into()), Some(recebido), None).unwrap();
-        let ack = host.step(guest.open().unwrap()).unwrap().reply.unwrap();
+        // O aperto de mão v3: o papel de cada lado amarrado (como o teste do núcleo faz), e então
+        // sonda, desafio, olá, confirmação e aceite.
+        guest.bind_local_role(2).unwrap();
+        host.bind_local_role(1).unwrap();
+        let desafio = host.step(guest.open().unwrap()).unwrap().reply.unwrap();
+        let ola = guest.step(desafio).unwrap().reply.unwrap();
+        let ack = host.step(ola).unwrap().reply.unwrap();
         let confirm = guest.step(ack).unwrap().reply.unwrap();
         let aceito = host.step(confirm).unwrap();
         let rg = guest.step(aceito.reply.unwrap()).unwrap().done.unwrap();
