@@ -162,6 +162,10 @@ def main():
         for name in ['OPENSSL_armcap', 'OPENSSL_ia32cap', 'OPENSSL_CONF', 'OPENSSL_MODULES', 'RANDFILE']:
             if name in env:
                 raise RuntimeError('Refusing OpenSSL runtime capability/provider/RNG overrides: ' + name)
+        # The Rust helper runs on the host. ELF linker flags belong only to the
+        # Android core; preserve the cross-compiler CC/CFLAGS used by OpenSSL.
+        env.pop('RUSTFLAGS', None)
+        env.pop('CARGO_ENCODED_RUSTFLAGS', None)
         env['CARGO_TARGET_DIR'] = str(output / 'host-target')
         env['CARGO_MAKEFLAGS'] = '-j1'
         env['MAKEFLAGS'] = '-j1'
