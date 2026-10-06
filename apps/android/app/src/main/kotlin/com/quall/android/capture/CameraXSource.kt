@@ -358,8 +358,12 @@ class CameraXSource private constructor(
          * escura (medido no tablet em 06/10). A exposição manual não é afetada: com `AE_MODE OFF` vale
          * o `SENSOR_FRAME_DURATION` do plano, que é 1/fps.
          */
-        fun faixaDoAutomatico(faixas: List<android.util.Range<Int>>, fps: Int): android.util.Range<Int> =
-            android.util.Range(RegrasDosControles.pisoDoAutomatico(faixas.map { it.lower to it.upper }, fps), fps)
+        fun faixaDoAutomatico(faixas: List<android.util.Range<Int>>, fps: Int): android.util.Range<Int> {
+            val pares = faixas.map { it.lower to it.upper }
+            // Um fps que nenhuma faixa alcança (60 no A07) virava `[60,60]` e o CameraX recuava para a fixa.
+            val teto = RegrasDosControles.tetoAlcancavel(pares, fps)
+            return android.util.Range(RegrasDosControles.pisoDoAutomatico(pares, teto), teto)
+        }
 
         /**
          * As faixas de fps que esta câmera anuncia. **Relato, não guarda** — ver [pedirQuadros].

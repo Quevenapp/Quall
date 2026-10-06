@@ -424,6 +424,20 @@ object RegrasDosControles {
      *
      * As faixas são pares `(lower, upper)`, e não `android.util.Range`, para o teste rodar na JVM.
      */
+    /**
+     * **O fps que a câmera alcança**: o pedido, se alguma faixa chega a ele; senão o maior teto anunciado.
+     * Sem faixas lidas, o pedido.
+     *
+     * **Por que existe** (A07, 06/10): o A07 não faz 60 fps em faixa nenhuma (`[5,30]`, `[10,30]`...). Com o
+     * cardápio em 60, pedia-se `[60,60]`. O CameraX recuava para `[30,30]` **fixo** e ainda escolhia 720p,
+     * à procura de um tamanho que fizesse 60. A imagem nascia escura já na espera do PIN. Pedindo até o teto
+     * que ela alcança, a faixa variável volta (`[5,30]`) e o tamanho volta a 1080p.
+     */
+    fun tetoAlcancavel(faixas: List<Pair<Int, Int>>, fps: Int): Int {
+        val maior = faixas.maxOfOrNull { it.second } ?: return fps
+        return if (maior >= fps) fps else maior
+    }
+
     fun pisoDoAutomatico(faixas: List<Pair<Int, Int>>, fps: Int): Int {
         val variaveis = faixas.filter { it.second == fps && it.first in 1 until fps }.map { it.first }
         val preferido = maxOf(PISO_MINIMO_FPS, fps / 2)

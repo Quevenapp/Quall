@@ -354,6 +354,18 @@ class RegrasDosControlesTest {
     }
 
     @Test
+    fun um_fps_que_a_camera_nao_alcanca_vira_o_teto_dela() {
+        // O A07 traseiro (06/10): nada chega a 60.
+        val a07 = listOf(10 to 10, 15 to 15, 15 to 20, 20 to 20, 5 to 30, 10 to 30, 30 to 30)
+        assertEquals(30, RegrasDosControles.tetoAlcancavel(a07, 60))
+        assertEquals(10, RegrasDosControles.pisoDoAutomatico(a07, RegrasDosControles.tetoAlcancavel(a07, 60)))
+        assertEquals(30, RegrasDosControles.tetoAlcancavel(a07, 30))
+        // Quem faz 60 continua pedindo 60; sem faixas lidas, o pedido.
+        assertEquals(60, RegrasDosControles.tetoAlcancavel(listOf(30 to 30, 60 to 60), 60))
+        assertEquals(60, RegrasDosControles.tetoAlcancavel(emptyList(), 60))
+    }
+
+    @Test
     fun a_pouca_luz_acende_depois_de_1_s_e_apaga_depois_de_2_s() {
         val v = RegrasDosControles.VigiaDaPoucaLuz()
         val lento = 100_000_000L // 10 fps
