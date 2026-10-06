@@ -130,7 +130,18 @@ confere() {
   local so="${CARGO_TARGET_DIR:-$RAIZ/target}/$alvo/release/libquall.so"
 
   echo "==> $abi ($alvo)"
-  cargo build --locked -j "$CARGO_BUILD_JOBS" -p quall-ffi --release --target "$alvo"
+  if [ "$alvo" = "aarch64-linux-android" ]; then
+    # OpenSSL SVE2 requires executable base SVE. Validate the complete locked
+    # source archive before applying the reviewed guard in a private build copy.
+    # The official openssl-src builder retains its Configure options and defines.
+    local openssl_out="${CARGO_TARGET_DIR:-$RAIZ/target}/openssl-android-arm64-guard"
+    python3 "$AQUI/prepara-openssl-arm64.py" --repository "$RAIZ" --output "$openssl_out" --build
+    AARCH64_LINUX_ANDROID_OPENSSL_DIR="$openssl_out/openssl-build/install" \
+      OPENSSL_NO_VENDOR=1 \
+      cargo build --locked -j "$CARGO_BUILD_JOBS" -p quall-ffi --release --target "$alvo"
+  else
+    cargo build --locked -j "$CARGO_BUILD_JOBS" -p quall-ffi --release --target "$alvo"
+  fi
 
   if [ ! -f "$so" ]; then
     echo "FALHOU: $so não existe depois do build" >&2

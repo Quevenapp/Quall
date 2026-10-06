@@ -38,6 +38,20 @@ fn openssl_library_dir(out_dir: &str) -> PathBuf {
             .expect("OpenSSL Apple recipe");
         assert!(status.success(), "OpenSSL Apple privacy-safe configuration failed");
         PathBuf::from(out_dir).join("openssl-apple/install/lib")
+    } else if target == "aarch64-linux-android" {
+        // The Android recipe verifies the locked openssl-src archive and applies
+        // the base-SVE prerequisite in a private source copy. Never silently
+        // rebuild the unguarded constructor for this target.
+        let prefix = env_var_rerun("AARCH64_LINUX_ANDROID_OPENSSL_DIR")
+            .expect("Run apps/android/tools/compila-nucleo.sh for the guarded Android ARM64 OpenSSL prefix");
+        assert_eq!(env_var_rerun("OPENSSL_NO_VENDOR").as_deref(), Ok("1"),
+                   "Android ARM64 requires the explicit static OpenSSL recipe");
+        let root = PathBuf::from(prefix);
+        for file in ["lib/libcrypto.a", "lib/libssl.a", "include/openssl/opensslv.h"] {
+            assert!(root.join(file).is_file(), "Android OpenSSL static prefix is incomplete");
+            println!("cargo:rerun-if-changed={}", root.join(file).display());
+        }
+        root.join("lib")
     } else {
         openssl_artifacts().lib_dir().to_path_buf()
     }
