@@ -46,4 +46,30 @@ class SeletorDeResolucaoTest {
         SeletorDeResolucao.estado(true)
         assertEquals(antes, SeletorDeResolucao.estado(false))
     }
+
+    /** O A07 (06/10): até 30 fps em tudo e sem 4K. O 60 e o 4K se apagam, e o salvo em 60 vai a 30. */
+    @Test
+    fun o_que_a_camera_nao_faz_fica_apagado() {
+        val a07 = mapOf(Resolucao.P720 to 30, Resolucao.P1080 to 30, Resolucao.P1440 to 30, Resolucao.P2160 to null)
+        val e = SeletorDeResolucao.estado(false, tetos = a07, escolhida = Resolucao.P1080, fps = 60)
+        assertTrue(e.ativo)
+        assertEquals(setOf(Resolucao.P2160), e.resolucoesFora)
+        assertEquals(setOf(60), e.taxasFora)
+        assertEquals(30, e.fpsEfetivo)
+        // Quem faz 60 não perde nada; sem tetos (a tela, ou nada legível), tudo disponível.
+        val s24 = mapOf(Resolucao.P1080 to 60, Resolucao.P2160 to 30)
+        val e2 = SeletorDeResolucao.estado(false, tetos = s24, escolhida = Resolucao.P1080, fps = 60)
+        assertEquals(emptySet<Int>(), e2.taxasFora)
+        assertEquals(null, e2.fpsEfetivo)
+        assertEquals(setOf(60), SeletorDeResolucao.estado(false, tetos = s24, escolhida = Resolucao.P2160, fps = 30).taxasFora)
+        assertEquals(SeletorDeResolucao.estado(false), SeletorDeResolucao.estado(false, tetos = emptyMap()))
+    }
+
+    /** A menor taxa nunca se apaga: um 4K que só vai a 24 mantém o "30", que vai a 24. */
+    @Test
+    fun a_menor_taxa_nunca_se_apaga() {
+        val e = SeletorDeResolucao.estado(false, tetos = mapOf(Resolucao.P2160 to 24), escolhida = Resolucao.P2160, fps = 30)
+        assertEquals(setOf(60), e.taxasFora)
+        assertEquals(24, e.fpsEfetivo)
+    }
 }
