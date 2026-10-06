@@ -194,7 +194,24 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
         cardapio = e
         for (g in listOf(b.radioGroupResolucao, b.radioGroupQuadros)) {
             g.isEnabled = e.ativo
-            for (i in 0 until g.childCount) g.getChildAt(i).isEnabled = e.ativo
+            for (i in 0 until g.childCount) {
+                val v = g.getChildAt(i)
+                // O que a câmera escolhida não faz fica apagado (06/10), sem mexer na escolha salva.
+                val fora = v.tag in e.resolucoesFora || v.tag in e.taxasFora
+                v.isEnabled = e.ativo && !fora
+            }
+        }
+        // Marca o fps que vai de fato, sem gravar: o salvo (60) apagado e marcado parecia o escolhido. Numa
+        // câmera que faz o salvo, ele volta a aparecer marcado.
+        val fpsNaTela = e.fpsEfetivo ?: Resolucao.quadros(activity)
+        sincronizando = true
+        try {
+            for (i in 0 until b.radioGroupQuadros.childCount) {
+                val v = b.radioGroupQuadros.getChildAt(i) as? RadioButton ?: continue
+                if (v.tag == fpsNaTela && !v.isChecked) v.isChecked = true
+            }
+        } finally {
+            sincronizando = false
         }
         if (e.nota != null) b.textResolucaoNota.text = activity.getString(e.nota)
         else desenharCustoDaResolucao(Resolucao.escolhida(activity))
@@ -229,7 +246,8 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
         // O alvo entra aqui pela mesma razão do `MirrorService`: sem ele, esta nota mostraria a taxa de
         // 1080p para as quatro linhas — a nota de custo mentindo sobre o custo. Sem o núcleo carregado a
         // chamada nativa não existe: sem nota, e a tela abre (o Aviso vermelho do Início diz o porquê).
-        val fps = Resolucao.quadros(activity)
+        // O fps que vai de fato: o salvo, ou o teto da câmera escolhida quando ele passa dela.
+        val fps = cardapio.fpsEfetivo ?: Resolucao.quadros(activity)
         val bps = if (!QuallNative.carregado) 0 else {
             runCatching { QuallNative.tetoDeTaxaBps(r.pedido.width, r.pedido.height, fps, r.maxFs) }.getOrDefault(0)
         }
@@ -241,7 +259,22 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
         // O limiar é o joelho agregado do rádio da bancada (§8.10, 32–47 Mbps). Acima dele a frase muda
         // de tom, porque aí o transporte deixa de ser detalhe.
         val chave = if (bps >= 30_000_000) R.string.resolucao_custo_alto else R.string.resolucao_custo
-        b.textResolucaoNota.text = activity.getString(chave, activity.getString(R.string.esp_ent_pedido, r.rotulo, fps), mbps)
+        b.textResolucaoNota.text = activity.getString(chave, activity.getString(R.string.esp_ent_pedido, r.rotulo, fps), mbps) +
+            limiteDaCamera(r)
+    }
+
+    /** " Esta câmera vai até 30 fps em 1080p." / " Esta câmera não oferece 4K.", ou nada sem limite. */
+    private fun limiteDaCamera(r: Resolucao): String {
+        val partes = ArrayList<String>(2)
+        val semTamanho = Resolucao.entries.filter { it in cardapio.resolucoesFora }
+        if (semTamanho.isNotEmpty()) {
+            partes.add(activity.getString(R.string.in_camera_nao_oferece, semTamanho.joinToString(", ") { it.rotulo }))
+        }
+        if (cardapio.taxasFora.isNotEmpty()) {
+            val teto = cardapio.fpsEfetivo ?: Resolucao.TAXAS.filter { it !in cardapio.taxasFora }.maxOrNull()
+            if (teto != null) partes.add(activity.getString(R.string.in_teto_da_camera, teto, r.rotulo))
+        }
+        return if (partes.isEmpty()) "" else " " + partes.joinToString(" ")
     }
 
     // --- o pareamento ------------------------------------------------------------------------------

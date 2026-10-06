@@ -19,11 +19,38 @@ object SeletorDeResolucao {
         val ativo: Boolean,
         /** A frase no lugar da nota de custo (um recurso, no idioma da tela); `null` quando vale a nota de custo de sempre. */
         @StringRes val nota: Int?,
+        /** As resoluções que a câmera escolhida não oferece: o botão fica apagado. */
+        val resolucoesFora: Set<Resolucao> = emptySet(),
+        /** As taxas que a câmera escolhida não alcança na resolução escolhida: o botão fica apagado. */
+        val taxasFora: Set<Int> = emptySet(),
+        /** O fps que vai de fato na resolução escolhida, quando a escolha salva passa do teto da câmera. */
+        val fpsEfetivo: Int? = null,
     )
 
-    /** [fonteEhFilmadoraDv]: a fonte é o vídeo USB; [daPlaca]: e é (ou parece ser) a placa de captura. */
-    fun estado(fonteEhFilmadoraDv: Boolean, daPlaca: Boolean = false): Estado = when {
-        !fonteEhFilmadoraDv -> Estado(ativo = true, nota = null)
+    /**
+     * [fonteEhFilmadoraDv]: a fonte é o vídeo USB; [daPlaca]: e é (ou parece ser) a placa de captura.
+     *
+     * [tetos]: com uma câmera do aparelho escolhida, o fps máximo de cada resolução (`null` = a câmera
+     * não oferece o tamanho; resolução ausente = não se sabe, fica disponível). **O que a câmera não faz
+     * fica apagado** (pedido de produto, 06/10): o A07 não faz 60 fps em faixa nenhuma, e escolher 60 dava
+     * 720p a 30 fixos, com a imagem escura. A escolha salva não muda; [Estado.fpsEfetivo] diz o que vai.
+     */
+    fun estado(
+        fonteEhFilmadoraDv: Boolean,
+        daPlaca: Boolean = false,
+        tetos: Map<Resolucao, Int?> = emptyMap(),
+        escolhida: Resolucao = Resolucao.P1080,
+        fps: Int = 30,
+    ): Estado = when {
+        !fonteEhFilmadoraDv -> {
+            val fora = tetos.filterValues { it == null }.keys
+            val teto = tetos[escolhida]
+            // A menor taxa nunca se apaga: numa câmera que faz 4K só a 24, o "30" continua e vai a 24.
+            val menor = Resolucao.TAXAS.minOrNull()
+            val taxasFora = if (teto != null) Resolucao.TAXAS.filter { it > teto && it != menor }.toSet() else emptySet()
+            val efetivo = if (teto != null && fps > teto) teto else null
+            Estado(ativo = true, nota = null, resolucoesFora = fora, taxasFora = taxasFora, fpsEfetivo = efetivo)
+        }
         daPlaca -> Estado(ativo = false, nota = R.string.in_nota_da_placa)
         else -> Estado(ativo = false, nota = R.string.in_nota_da_fita)
     }
