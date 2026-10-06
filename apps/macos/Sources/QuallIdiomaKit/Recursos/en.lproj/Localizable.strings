@@ -140,7 +140,6 @@
 "a câmera não está aberta" = "the camera isn't open";
 "câmera interrompida: %@" = "camera interrupted: %@";
 "a câmera não está entregando imagem" = "the camera isn't delivering video";
-"sem espaço: sobram %@ MB (gravar pede 500 MB livres)" = "out of space: %@ MB left (recording needs 500 MB free)";
 "Não gravou: %@" = "Didn't record: %@";
 "A gravação não começou: %@" = "Recording didn't start: %@";
 "A gravação parou com erro (%@); o que foi gravado fica em %@ como \"(interrompido)\"." = "Recording stopped with an error (%@); what was recorded stays in %@ as \"(interrompido)\".";
@@ -224,7 +223,6 @@
 "O outro aparelho não reconheceu este Mac." = "The other device didn't recognize this Mac.";
 "Esquecer aparelhos pareados" = "Forget paired devices";
 "Gravando na pasta de gravações." = "Recording to the recordings folder.";
-"%.1f GB livres" = "%.1f GB free";
 "O macOS negou o microfone ao Quall Studio." = "macOS denied Quall Studio the microphone.";
 "Digite o endereço que a tela do prompter mostra (por exemplo 192.168.56.20:7979)." = "Type the address the prompter screen shows (for example 192.168.56.20:7979).";
 
@@ -621,4 +619,5 @@
 
 "Não foi possível concluir o pareamento. Toque em Espelhar de novo e passe o novo PIN." = "Could not complete pairing. Tap Mirror again and share the new PIN.";
 
-"A transmissão foi encerrada pelo sistema." = "The system ended the broadcast.";
+
+"não foi possível iniciar a gravação; veja o aviso no aparelho que grava" = "couldn't start recording; see the notice on the recording device";

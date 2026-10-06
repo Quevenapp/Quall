@@ -530,7 +530,7 @@ final class GravacaoDoPrompter {
                 if let motivo, let r = self.replica {
                     // A causa detalhada fica neste aparelho. Toda falha de início tem a mesma
                     // recusa remota, sem expor espaço livre nem outro diagnóstico ao controle.
-                    let texto = "não foi possível iniciar a gravação; veja o aviso no aparelho que grava"
+                    let texto = T("não foi possível iniciar a gravação; veja o aviso no aparelho que grava")
                     let st = r.recusarGravacao(n: p.n, motivo: texto)
                     self.dizer("pedido n=\(p.n) recusado: causa=\(SanitizacaoDoLog.causaExterna(motivo)) (\(st.nome))")
                 }
