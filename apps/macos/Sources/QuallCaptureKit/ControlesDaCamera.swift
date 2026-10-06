@@ -259,6 +259,50 @@ public enum TextosDosAjustes {
     public static var passeParaManual: String { T("Passe a exposição para Manual para escolher ISO e obturador.") }
 }
 
+// MARK: - pouca luz: imagem clara, e o aviso (§3.1)
+
+/// **A pouca luz** (decisão de produto, 06/10): o automático pode baixar o fps para clarear a imagem, até a
+/// metade do fps escolhido (nunca abaixo de 10), e a tela avisa. O Mac não lê exposição nem ISO
+/// (`API_UNAVAILABLE(macos)`), então o vigia olha o **fps que chega** da câmera. E o Mac não tem
+/// exposição manual: o conselho é a luz do ambiente.
+public enum PoucaLuz {
+    public static let pisoMinimo = 10.0
+
+    /// O piso do `activeVideoMaxFrameDuration` (1/piso): a metade do [fps], nunca abaixo de
+    /// [pisoMinimo], limitada pelo menor `minFrameRate` das faixas do formato que alcançam [fps]. Sem
+    /// faixa que desça, o próprio [fps]. A mesma regra do iOS.
+    public static func piso(faixas: [(minimo: Double, maximo: Double)], fps: Double) -> Double {
+        let mins = faixas.filter { $0.maximo >= fps - 0.01 && $0.minimo < fps }.map(\.minimo)
+        guard let menor = mins.min() else { return fps }
+        return min(fps, max(menor, pisoMinimo, fps / 2))
+    }
+
+    /// Acende depois de 1 s seguido com o fps medido abaixo de 87 % do pedido, e apaga depois de 2 s
+    /// seguidos de volta. `observar` devolve o fps medido (arredondado) enquanto acesa, ou `nil`.
+    public struct Vigia {
+        public private(set) var acesa = false
+        private var desde: Double?
+        public init() {}
+
+        public mutating func observar(fpsMedido: Double, fps: Double, agora: Double) -> Int? {
+            let lento = fps > 0 && fpsMedido > 0 && fpsMedido < fps * 0.87
+            if lento != acesa {
+                if desde == nil { desde = agora }
+                if agora - (desde ?? agora) >= (lento ? 1 : 2) { acesa = lento; desde = nil }
+            } else {
+                desde = nil
+            }
+            guard acesa else { return nil }
+            return min(max(Int(fpsMedido.rounded()), 1), Int(fps.rounded()))
+        }
+    }
+
+    /// "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps."
+    public static func texto(fpsAgora: Int, fps: Int) -> String {
+        T("Pouca luz: %@ fps para clarear a imagem. Mais luz no ambiente devolve os %@ fps.", fpsAgora, fps)
+    }
+}
+
 // MARK: - o painel (§4.3)
 
 /// Um controle da tela: aceso ou apagado, e a linha do limite embaixo quando apagado.

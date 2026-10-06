@@ -561,6 +561,52 @@ enum RegrasDosControles {
     }
 
     /// **"Durante 2 s"**: a divergência só vira texto depois de durar 2 s seguidos (§3.6).
+    // MARK: Pouca luz: imagem clara, e o aviso (§3.1)
+
+    /// **O piso do fps do automático**: o `activeVideoMaxFrameDuration` é 1/piso. É a **metade do
+    /// fps** (nunca abaixo de [pisoMinimo]), limitada pelo menor `minFrameRate` das faixas do formato
+    /// que alcançam [fps]. Sem faixa que desça, o próprio [fps].
+    ///
+    /// Medido no iPad A16 em 06/10, a 60 fps: o padrão do sistema era o quadro fixo de 1/60 s (a
+    /// exposição presa em 16,7 ms). Com o piso em 10, o AE da Apple foi a 1/15 s com ISO 340 numa sala
+    /// só meio escura: ele prefere alongar o quadro a subir o ISO. A metade do fps limita a perda de
+    /// fluidez a 1 stop de luz a mais.
+    static let pisoMinimo = 10.0
+
+    static func pisoDoAutomatico(faixas: [(minimo: Double, maximo: Double)], fps: Double) -> Double {
+        let mins = faixas.filter { $0.maximo >= fps - 0.01 && $0.minimo < fps }.map(\.minimo)
+        guard let menor = mins.min() else { return fps }
+        return min(fps, max(menor, pisoMinimo, fps / 2))
+    }
+
+    /// **A pouca luz baixou o fps**: com a exposição em Auto, o obturador lido passou de 1/fps
+    /// (mais 15 %, a folga do arredondamento). Acende depois de 1 s seguido e apaga depois de 2 s
+    /// seguidos de volta. `observar` devolve o fps de agora enquanto acesa, ou `nil`.
+    struct VigiaDaPoucaLuz {
+        private(set) var desde: Double?
+        private(set) var acesa = false
+        mutating func observar(auto: Bool, obturadorNs: Int64?, fps: Double, agora: Double) -> Int? {
+            let teto = 1e9 / Swift.max(fps, 1)
+            let lento = auto && (obturadorNs.map { Double($0) > teto * 1.15 } ?? false)
+            if lento != acesa {
+                if desde == nil { desde = agora }
+                if agora - (desde ?? agora) >= (lento ? 1 : 2) { acesa = lento; desde = nil }
+            } else {
+                desde = nil
+            }
+            guard acesa, let n = obturadorNs, n > 0 else { return nil }
+            return Swift.min(Swift.max(Int((1e9 / Double(n)).rounded()), 1), Int(fps.rounded()))
+        }
+    }
+
+    /// "Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual na engrenagem."
+    /// Sem exposição manual, o conselho é a luz do ambiente.
+    static func textoDaPoucaLuz(fpsAgora: Int, fps: Int, temManual: Bool) -> String {
+        temManual
+            ? tr("Pouca luz: %ld fps para clarear a imagem. Para %ld fps, use a exposição manual na engrenagem.", fpsAgora, fps)
+            : tr("Pouca luz: %ld fps para clarear a imagem. Mais luz no ambiente devolve os %ld fps.", fpsAgora, fps)
+    }
+
     struct VigiaDaDivergencia {
         private(set) var desde: Double?
         mutating func observar(diverge: Bool, agora: Double) -> Bool {

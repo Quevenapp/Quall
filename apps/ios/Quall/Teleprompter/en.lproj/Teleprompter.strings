@@ -70,7 +70,7 @@
 "Uma mensagem não coube no canal e foi descartada (%@)." = "A message didn't fit in the channel and was dropped (%@).";
 
 /* A sessão (SessaoDoTeleprompter) */
-"Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing didn't complete. For security, the PIN changed.";
+"Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing failed. For your security, the PIN changed.";
 "Um controle que não está pareado com este aparelho tentou entrar. Digite nele o PIN desta tela." = "A remote that isn't paired with this device tried to connect. Enter this screen's PIN on it.";
 "Um aparelho com outra versão do Quall tentou entrar. Atualize o app nos dois." = "A device with a different Quall version tried to connect. Update the app on both.";
 "A porta %@ está ocupada neste aparelho. Tentando de novo…" = "Port %@ is in use on this device. Trying again…";

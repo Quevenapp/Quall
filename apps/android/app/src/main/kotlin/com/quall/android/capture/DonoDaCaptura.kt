@@ -9,7 +9,6 @@ import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
 import com.quall.android.core.LogSeguro as Log
-import android.util.Range
 import android.util.Size
 import android.view.Display
 import android.view.Surface
@@ -132,8 +131,9 @@ class DonoDaCaptura private constructor(
             val vcBuilder = VideoCapture.Builder(saida)
                 .setMirrorMode(MirrorMode.MIRROR_MODE_OFF)
                 .comSeletor(CameraXSource.seletorPara(escolhida.pedido))
-            // A taxa, como em `CameraXSource.pedirQuadros`: 30 é o padrão do CameraX e não se escreve.
-            if (fps != 30) vcBuilder.setTargetFrameRate(Range(fps, fps))
+            // A taxa, como em `CameraXSource.pedirQuadros`: a faixa variável até o fps escolhido, a 30
+            // também, para o automático clarear a imagem em pouca luz (`faixaDoAutomatico`).
+            vcBuilder.setTargetFrameRate(CameraXSource.faixaDoAutomatico(CameraXSource.faixasDeQuadros(contexto, cameraId), fps))
             // O que a câmera disse ter usado (R9, `docs/controles-de-camera.md` §3.6 e §6): o
             // `CaptureResult` de cada quadro, para a leitura de volta, o Kelvin lido e as travas que
             // guardam valores. Só se instala antes do bind.

@@ -41,6 +41,8 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     @Published private(set) var aviso: String?
     /// A pílula do toque longo (§4.4).
     @Published private(set) var pilula: String?
+    /// "Pouca luz: 15 fps…" (§3.1) enquanto o automático baixa o fps para clarear, ou `nil`.
+    @Published private(set) var poucaLuz: String?
     /// **"Controlado por <aparelho>"** (R9b, contrato §12, filmador 6): o nome de quem mudou a câmera
     /// por pedido há menos de 4 s (`controlado_por` do estado do núcleo), ou `nil`.
     @Published private(set) var controladoPor: String?
@@ -209,8 +211,10 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     }
 
     fileprivate func publicar(_ c: CapacidadesDaCamera, _ f: FaixasDaCamera) {
+        travaDaLeitura.lock(); _cameraAberta = true; travaDaLeitura.unlock()
         naPrincipal { [weak self] in
             guard let self else { return }
+            self.reconfigurarLeitura()
             if self.capacidades != c || self.faixas != f { self.molde = MoldeDoPainel.local(c, f) }
             if self.capacidades != c { self.capacidades = c }
             if self.faixas != f { self.faixas = f }
@@ -219,9 +223,12 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     }
 
     func esquecerCamera() {
+        travaDaLeitura.lock(); _cameraAberta = false; vigiaPoucaLuz = RegrasDosControles.VigiaDaPoucaLuz(); travaDaLeitura.unlock()
         naPrincipal { [weak self] in
+            self?.reconfigurarLeitura()
             self?.prontos = false
             self?.pilula = nil
+            self?.poucaLuz = nil
             self?.aviso = nil
             self?.divergencia = nil
             self?.controladoPor = nil
@@ -467,6 +474,9 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     private let travaDaLeitura = NSLock()
     private var _painelAberto = false
     private var _ouvintesRemotos = false
+    /// A câmera montada: o vigia da pouca luz (§3.1) quer a leitura mesmo sem painel nem receptor.
+    private var _cameraAberta = false
+    private var vigiaPoucaLuz = RegrasDosControles.VigiaDaPoucaLuz()
 
     /// Liga e desliga a leitura de 4 Hz com o painel aberto. Na principal.
     func lerDeVolta(_ sim: Bool) {
@@ -488,7 +498,7 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     /// O relógio de 4 Hz existe enquanto alguém quer a leitura. Na principal.
     private func reconfigurarLeitura() {
         travaDaLeitura.lock()
-        let quer = _painelAberto || _ouvintesRemotos
+        let quer = _painelAberto || _ouvintesRemotos || _cameraAberta
         travaDaLeitura.unlock()
         if quer == (relogioDaLeitura != nil) { return }
         relogioDaLeitura?.cancel()
@@ -540,6 +550,20 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
             }
         } else {
             _ = vigias.kelvin.observar(diverge: false, agora: agora)
+        }
+        // A pouca luz (§3.1): o obturador lido passou de 1/fps com a exposição em Auto.
+        let f = faixasAgora(ap)
+        travaDaLeitura.lock()
+        let fpsDaLuz = vigiaPoucaLuz.observar(auto: a.exposicao == .auto, obturadorNs: l.obturadorNs, fps: f.fps, agora: agora)
+        travaDaLeitura.unlock()
+        let textoDaLuz = fpsDaLuz.map {
+            RegrasDosControles.textoDaPoucaLuz(fpsAgora: $0, fps: Int(f.fps.rounded()), temManual: ap.isExposureModeSupported(.custom))
+        }
+        naPrincipal { [weak self] in
+            guard let self, self.poucaLuz != textoDaLuz else { return }
+            Diagnostico.nota("APP CAMERA pouca luz " + (textoDaLuz == nil ? "apagada" : "acesa: \(fpsDaLuz ?? 0) fps")
+                + " dur_ns=\(l.obturadorNs ?? 0) iso=\(Int((l.iso ?? 0).rounded()))")
+            self.poucaLuz = textoDaLuz
         }
         travaDaLeitura.lock()
         let painel = _painelAberto, ouvintes = _ouvintesRemotos

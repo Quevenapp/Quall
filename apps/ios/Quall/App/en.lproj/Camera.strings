@@ -143,6 +143,8 @@
 "O iOS ajusta a cintilação sozinho." = "iOS handles flicker on its own.";
 "Esta câmera tem foco fixo." = "This camera has fixed focus.";
 "Travado de novo depois de medir a cena." = "Locked again after metering the scene.";
+"Pouca luz: %ld fps para clarear a imagem. Para %ld fps, use a exposição manual na engrenagem." = "Low light: %ld fps to brighten the picture. For %ld fps, use manual exposure in the gear menu.";
+"Pouca luz: %ld fps para clarear a imagem. Mais luz no ambiente devolve os %ld fps." = "Low light: %ld fps to brighten the picture. More light in the room brings back %ld fps.";
 "Destrave a exposição para compensar." = "Unlock exposure to compensate.";
 "Passe a exposição para Manual para escolher ISO e obturador." = "Switch exposure to Manual to choose ISO and shutter.";
 "Toque na imagem para focar e medir naquele ponto." = "Tap the picture to focus and meter at that point.";

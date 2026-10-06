@@ -96,7 +96,7 @@ struct PainelDaCamera<Modelo: ModeloDoPainelDaCamera>: View {
 
     @ViewBuilder
     private var linhaDoAlto: some View {
-        if let t = controles.bloqueio ?? controles.aviso ?? controles.divergencia {
+        if let t = controles.bloqueio ?? controles.aviso ?? controles.divergencia ?? controles.poucaLuz {
             Text(t)
                 .font(Self.letra(11, .semibold))
                 .foregroundColor(Estilo.aguardandoTexto)
@@ -377,6 +377,10 @@ enum AbaDoPainelDaCamera: String, CaseIterable {
 /// **O que o painel precisa de quem ele mostra** (R9b): o filmador (`ControlesDaCamera`, a câmera
 /// deste aparelho) e o receptor (`ControleRemotoDaCamera`, a câmera do outro, por pedido). As ações
 /// têm o nome das do R9; no receptor cada uma vira um pedido com **só** o que a pessoa mexeu.
+extension ModeloDoPainelDaCamera {
+    var poucaLuz: String? { nil }
+}
+
 protocol ModeloDoPainelDaCamera: ObservableObject {
     /// O registro mostrado (no receptor: o aplicado, com o pendente por cima).
     var ajustes: AjustesDaCamera { get }
@@ -389,6 +393,8 @@ protocol ModeloDoPainelDaCamera: ObservableObject {
     var leitura: RegrasDosControles.Leitura { get }
     var divergencia: String? { get }
     var aviso: String? { get }
+    /// "Pouca luz: 15 fps…" (§3.1). Só o filmador sabe; no receptor, nula.
+    var poucaLuz: String? { get }
     /// Tudo apagado, **com os valores**, e esta linha no alto (o receptor com o controle remoto não
     /// permitido pelo aparelho que filma). Sempre nula no filmador.
     var bloqueio: String? { get }

@@ -574,6 +574,43 @@ pub fn plano(r: &Registro, caps: &Capacidades, fps: f64, originais: &Lidos, toca
     v
 }
 
+/// **A abertura em automático de verdade** (§2.2, achado de 06/10): o que o registro quer em Auto e o
+/// driver **não** está em Auto vai com `Flags_Auto` (com o valor lido, que o driver aceita); o brilho
+/// fora do padrão do driver, com EV 0, volta ao padrão. A anti-cintilação fica como está.
+///
+/// Sem isto, o plano só devolvia o que o próprio Quall tinha mudado (`tocados`). Se outro app ou uma
+/// sessão interrompida deixava a webcam em manual no mínimo, o Quall mostrava "Auto", não mandava nada
+/// e a imagem saía escura (registro padrão + driver manual no mínimo = zero `Set`).
+pub fn normalizacao_da_abertura(r: &Registro, caps: &Capacidades, fps: f64, originais: &Lidos) -> Vec<Envio> {
+    let d = desejado(r, caps, fps);
+    let mut v = Vec::new();
+    for p in Propriedade::TODAS {
+        if d.contains_key(&p) || p == Propriedade::AntiCintilacao {
+            continue;
+        }
+        let Some(f) = caps.get(&p) else { continue };
+        let o = originais.get(&p);
+        if f.tem_auto() {
+            if o.is_none_or(|o| o.bandeiras & FLAGS_AUTO == 0) {
+                v.push(Envio { prop: p, valor: o.map(|o| o.valor).unwrap_or(f.padrao), bandeiras: FLAGS_AUTO });
+            }
+        } else if p == Propriedade::Brilho && o.is_some_and(|o| o.valor != f.padrao) {
+            v.push(Envio { prop: p, valor: f.padrao, bandeiras: FLAGS_MANUAL });
+        }
+    }
+    v
+}
+
+/// O "como a câmera abriu" depois da [`normalizacao_da_abertura`]: é a ele que a devolução volta
+/// (§2.2). Devolver a câmera ao manual escuro que outro app deixou seria refazer o defeito no fechar.
+pub fn originais_depois_da_normalizacao(originais: &Lidos, n: &[Envio]) -> Lidos {
+    let mut o = originais.clone();
+    for e in n {
+        o.insert(e.prop, Lido { valor: e.valor, bandeiras: e.bandeiras });
+    }
+    o
+}
+
 /// **Tudo o que a soltura devolve**: cada propriedade que o Quall mudou nesta abertura.
 pub fn devolver_tudo(caps: &Capacidades, originais: &Lidos, tocados: &BTreeSet<Propriedade>) -> Vec<Envio> {
     Propriedade::TODAS.into_iter().filter(|p| tocados.contains(p)).filter_map(|p| devolucao(p, caps, originais)).collect()
@@ -1291,6 +1328,36 @@ mod testes {
         assert!(t.contains(&Propriedade::Exposicao));
         marcar_tocado(&mut t, &p[0], true);
         assert!(t.is_empty());
+    }
+
+    #[test]
+    fn a_abertura_poe_em_auto_o_que_outro_app_deixou_em_manual() {
+        let caps = caps_de_exemplo();
+        // Já no automático, com o brilho no padrão: nada a mandar (§2.2).
+        assert!(normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &lidos_de_exemplo()).is_empty());
+        // Outro app deixou exposição e foco em manual e o brilho no mínimo: a "câmera escura" de 06/10.
+        let mut escura = lidos_de_exemplo();
+        escura.insert(Propriedade::Exposicao, Lido { valor: -11, bandeiras: FLAGS_MANUAL });
+        escura.insert(Propriedade::Foco, Lido { valor: 0, bandeiras: FLAGS_MANUAL });
+        escura.insert(Propriedade::Brilho, Lido { valor: -64, bandeiras: FLAGS_MANUAL });
+        let n = normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &escura);
+        assert_eq!(
+            n,
+            vec![
+                Envio { prop: Propriedade::Exposicao, valor: -11, bandeiras: FLAGS_AUTO },
+                Envio { prop: Propriedade::Brilho, valor: 0, bandeiras: FLAGS_MANUAL },
+                Envio { prop: Propriedade::Foco, valor: 0, bandeiras: FLAGS_AUTO },
+            ]
+        );
+        // O ganho (sem Auto) e a anti-cintilação ficam como estão.
+        assert!(n.iter().all(|e| e.prop != Propriedade::Ganho && e.prop != Propriedade::AntiCintilacao));
+        // O que o registro quer em manual não é normalizado: o plano cuida dele.
+        let manual = Registro { exposicao: ModoDeExposicao::Manual, iso: Some(50.0), obturador_ns: Some(ns_do_log2(-8)), ..Default::default() };
+        assert!(normalizacao_da_abertura(&manual, &caps, 30.0, &escura).iter().all(|e| e.prop != Propriedade::Exposicao));
+        // E a devolução volta ao normalizado, não ao manual escuro.
+        let o = originais_depois_da_normalizacao(&escura, &n);
+        let tocados: BTreeSet<_> = [Propriedade::Brilho].into();
+        assert_eq!(devolver_tudo(&caps, &o, &tocados), vec![Envio { prop: Propriedade::Brilho, valor: 0, bandeiras: FLAGS_MANUAL }]);
     }
 
     #[test]

@@ -71,6 +71,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("O PIN tem de ter seis dígitos ({}).", "The PIN must have six digits ({})."),
     // camera.rs (o vídeo da tela R5)
     ("Não consegui preparar o PIN do vídeo: {}", "Couldn't prepare the video PIN: {}"),
+    ("não conseguiu sortear um PIN diferente", "couldn't draw a different PIN"),
     ("O vídeo desistiu depois de {} tentativas seguidas que não firmaram.", "The video gave up after {} attempts in a row that didn't hold."),
     ("Um aparelho tentou entrar com um pareamento que este computador não reconhece mais: peça para ele digitar o PIN novo, ou esqueça os pareamentos.", "A device tried to connect with a pairing this computer no longer recognizes: ask it to enter the new PIN, or forget the pairings."),
     ("O pareamento não fechou (o PIN não conferiu, ou um pareamento esquecido): o PIN mudou; digite o novo no outro aparelho.", "Pairing didn't complete (the PIN didn't match, or a pairing was forgotten): the PIN changed; enter the new one on the other device."),

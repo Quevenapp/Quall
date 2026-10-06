@@ -307,11 +307,12 @@ struct LinhaDoControleRemoto: View {
 
 extension DonoDaCamera {
     /// **O que vai sobre a prévia**, na ordem: "Controlado por <aparelho>" (R9b, enquanto o núcleo disser),
-    /// o recado de 3 s (§2.1) e a pílula do ⌥-clique (§4.4).
+    /// o recado de 3 s (§2.1), a pílula do ⌥-clique (§4.4) e a pouca luz (§3.1).
     var pilulaSobreAPrevia: (texto: String, icone: String)? {
         if let nome = controladoPor { return (TextosDaCameraRemota.controladoPor(nome), "dot.radiowaves.left.and.right") }
         if let r = recadoDosAjustes { return (r, "lock.fill") }
         if let p = pilula { return (p, "lock.fill") }
+        if let l = poucaLuz { return (l, "sun.min") }
         return nil
     }
 }
@@ -346,12 +347,15 @@ struct PilulaDaCamera: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icone).font(.system(size: 10, weight: .bold))
-            Text(texto).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+            // A da pouca luz (§3.1) é uma frase inteira: até duas linhas.
+            Text(texto).font(.system(size: 11, weight: .semibold)).lineLimit(2)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .foregroundColor(Estilo.texto)
         .padding(.horizontal, 10)
-        .frame(height: 24)
-        .background(Capsule().fill(Color.black.opacity(0.85)))
+        .padding(.vertical, 4)
+        .frame(minHeight: 24)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.black.opacity(0.85)))
         .accessibilityElement(children: .combine)
     }
 }
