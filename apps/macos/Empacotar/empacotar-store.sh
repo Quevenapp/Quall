@@ -11,7 +11,7 @@ ARQUITETURAS="${QUALL_ARQUITETURAS:-universal}"
 IDENTIDADE="${QUALL_IDENTIDADE:--}"
 JOBS="${QUALL_JOBS:-2}"
 VERSAO="${QUALL_VERSAO:-1.0.0}"
-BUILD="${QUALL_BUILD:-2}"
+BUILD="${QUALL_BUILD:-3}"
 case "$IDENTIDADE" in
     -|"Apple Development:"*) ;;
     *) echo "ERRO: esta etapa permite só assinatura local ad-hoc ou Apple Development existente." >&2

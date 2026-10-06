@@ -62,7 +62,7 @@ targets:
           UIInterfaceOrientationLandscapeRight
         CODE_SIGN_ENTITLEMENTS: App/Quall.entitlements
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "2"
+        CURRENT_PROJECT_VERSION: "3"
 
         TARGETED_DEVICE_FAMILY: "1,2"
 
@@ -104,7 +104,7 @@ targets:
         INFOPLIST_FILE: Extensao/Info.plist
         CODE_SIGN_ENTITLEMENTS: Extensao/Difusao.entitlements
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "2"
+        CURRENT_PROJECT_VERSION: "3"
         TARGETED_DEVICE_FAMILY: "1,2"
 
         SWIFT_OBJC_BRIDGING_HEADER: Comum/Ponte.h
