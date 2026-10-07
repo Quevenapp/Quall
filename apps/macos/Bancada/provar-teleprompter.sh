@@ -76,7 +76,7 @@ fi
 
 if [ "$EMPACOTAR" = 1 ]; then
     echo "==> 2. o app (sem instalar em ~/Applications)"
-    QUALL_DESTINO= "$MACOS/Empacotar/empacotar.sh" > "$SAIDA/empacotar.log" 2>&1 || {
+    QUALL_DESTINO= "$MACOS/Empacotar/empacotar-dev.sh" > "$SAIDA/empacotar.log" 2>&1 || {
         echo "!! empacotar falhou — ver $SAIDA/empacotar.log"; exit 1; }
 fi
 [ -x "$APP/Contents/MacOS/quall-app" ] || { echo "!! $APP não existe"; exit 1; }
