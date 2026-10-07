@@ -123,6 +123,7 @@
     <string name="in_camera_tamanho_efetivo">Using %1$s on this camera; your saved choice stays the same.</string>
     <string name="in_taxa_efetiva">Current rate: %1$d fps, limited by this camera. Read only.</string>
     <string name="in_teto_da_camera">This camera goes up to %1$d fps at %2$s.</string>
+    <string name="in_fps">%1$d fps</string>
     <string name="in_nota_da_placa">The card sets the size: its own frame (640×480 at 30 frames per second on the EasyCap), when sending and when recording.</string>
     <string name="lic_titulo">FFmpeg (libavcodec, libavformat and libavutil %1$s)</string>
     <string name="lic_uso">This app uses FFmpeg to read DV camcorders and capture cards over USB and record the tapes, and to convert unprotected DVDs to MP4: the DV and MJPEG video decoders, the tape audio reader (DV demuxer), the MP4 writer and the MP4 reader (to close an interrupted recording); and, for DVDs, the MPEG-PS reader (the VOB), the MPEG-2 video decoder and the AC-3, MPEG audio (MP2) and DVD LPCM audio decoders. FFmpeg is licensed under the GNU Lesser General Public License, version 2.1 or later (full text below). Copyright © 2000-2026 the FFmpeg developers. FFmpeg is a registered trademark of Fabrice Bellard.</string>

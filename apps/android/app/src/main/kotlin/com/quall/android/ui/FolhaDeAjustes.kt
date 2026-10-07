@@ -223,7 +223,7 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
             taxaEfetiva.visibility = if (somenteLeitura != null) View.VISIBLE else View.GONE
             taxaEfetiva.isEnabled = false
             if (somenteLeitura != null) {
-                taxaEfetiva.text = "$somenteLeitura fps"
+                taxaEfetiva.text = activity.getString(R.string.in_fps, somenteLeitura)
                 taxaEfetiva.contentDescription = activity.getString(R.string.in_taxa_efetiva, somenteLeitura)
             }
             for ((grupo, marcado) in listOf(b.radioGroupResolucao to resolucaoNaTela, b.radioGroupQuadros to fpsNaTela)) {
