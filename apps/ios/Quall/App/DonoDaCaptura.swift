@@ -674,6 +674,11 @@ final class DonoDaCaptura: NSObject, ObservableObject {
 
         var presetAplicado: AVCaptureSession.Preset?
         if !formatoDaMelhorImagem { presetAplicado = aplicarPresetDoCardapio() }
+        // Os tetos do cardápio desta câmera (o que a folha de Ajustes apaga, 06/10), para a prova pelo diário.
+        let tetos = TetosDaCamera.tetos(cameraID: id)
+        Diagnostico.nota("APP CAMERA tetos do cardápio: " + Resolucao.allCases.map { r in
+            "\(r.rotulo)=" + ((tetos[r.rawValue] ?? nil).map { "\($0)" } ?? "não oferece")
+        }.joined(separator: " "))
         Diagnostico.nota("APP CAMERA cardápio: \(escolhida.rotulo) a \(Resolucao.quadros) fps"
             + (formatoDaMelhorImagem
                 ? " · melhor imagem por formato (preset=\(sessao.sessionPreset.rawValue))"
