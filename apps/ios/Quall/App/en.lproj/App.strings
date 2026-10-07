@@ -146,3 +146,5 @@
 
 "Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing failed. For your security, the PIN changed.";
 
+"Esta câmera não oferece %@." = "This camera doesn't offer %@.";
+"Esta câmera vai até %ld fps em %@." = "This camera goes up to %ld fps at %@.";

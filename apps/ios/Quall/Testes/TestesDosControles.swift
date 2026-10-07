@@ -7,6 +7,29 @@ import CoreVideo
 extension Testes {
     static func rodarControlesDaCamera() {
         typealias R = RegrasDosControles
+        print("TetosDoCardapio — o cardápio apaga o que a câmera não faz")
+        typealias T = TetosDoCardapio
+        let tamanhos = [(chave: 3_600, largura: 1280, altura: 720), (chave: 8_160, largura: 1920, altura: 1080),
+                        (chave: 14_400, largura: 2560, altura: 1440), (chave: 32_400, largura: 3840, altura: 2160)]
+        // Uma frontal antiga: até 1080p, só a 30.
+        let frontal = T.tetos(formatos: [(640, 480, 30), (1280, 720, 30), (1920, 1080, 30)], tamanhos: tamanhos)
+        conferir(frontal[8_160] == .some(30) && frontal[32_400] == .some(nil) && frontal[14_400] == .some(nil),
+                 "frontal até 1080p30: 1080p a 30, sem 2K nem 4K")
+        let ef = T.estado(tetos: frontal, escolhida: 8_160, fps: 60, taxas: [30, 60])
+        conferir(ef.resolucoesFora == [14_400, 32_400] && ef.taxasFora == [60] && ef.fpsEfetivo == 30,
+                 "o salvo em 1080p60 apaga 2K, 4K e o 60, e vai a 30")
+        // Uma traseira com 1080p60 e 4K30: o 2K sai do 4K (30); o 1080p chega a 60.
+        let traseira = T.tetos(formatos: [(1920, 1080, 60), (3840, 2160, 30)], tamanhos: tamanhos)
+        conferir(traseira[8_160] == .some(60) && traseira[14_400] == .some(30) && traseira[32_400] == .some(30),
+                 "traseira 1080p60 + 4K30: 1080p a 60, 2K e 4K a 30")
+        conferir(T.estado(tetos: traseira, escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(),
+                 "1080p60 numa câmera que faz: nada apagado")
+        conferir(T.estado(tetos: traseira, escolhida: 32_400, fps: 30, taxas: [30, 60]).taxasFora == [60],
+                 "4K: o 60 apaga, o salvo em 30 fica")
+        let lenta = T.estado(tetos: [32_400: .some(24)], escolhida: 32_400, fps: 30, taxas: [30, 60])
+        conferir(lenta.taxasFora == [60] && lenta.fpsEfetivo == 24, "4K só a 24: o 30 nunca se apaga e vai a 24")
+        conferir(T.estado(tetos: [:], escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(),
+                 "sem tetos (a tela, ou nada legível): tudo disponível")
         print("RegrasDosControles — pouca luz: o piso do automático e o aviso (§3.1)")
         conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 30) == 15, "faixa 2–30 a 30 fps: o piso é a metade, 15")
         conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 15) == 10, "a 15 fps a metade seria 7,5: o piso fica em 10")
