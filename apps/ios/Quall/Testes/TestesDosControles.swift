@@ -245,6 +245,54 @@ extension Testes {
                  == R.Plano(exposicao: .continua(ev: 0), balanco: .continuo, foco: .continuo, travadoDeNovo: false),
                  "a abertura aplica tudo contínuo, seja qual for o guardado")
 
+        print("GravacaoDosAjustes — a gravação adiada não troca de câmera (07/10)")
+        do {
+            var disco: [String: Data] = [:]
+            let g = GravacaoDosAjustes(ler: { disco[$0] }, escrever: { disco[$0] = $1 })
+            func lido(_ id: String) -> AjustesDaCamera? { disco[AjustesDaCamera.chave(id)].map { AjustesDaCamera.de(json: $0) } }
+            var remoto = AjustesDaCamera(); remoto.ev = 1.3
+            // A frontal abre, um pedido remoto muda o registro e adia; troca para a traseira antes dos 500 ms.
+            g.trocar(para: "frontal", registroAnterior: .padrao)
+            let ficha = g.adiar()
+            conferir(g.trocar(para: "traseira", registroAnterior: remoto) == nil && lido("frontal") == remoto,
+                     "a troca grava a adiada na chave da câmera ANTERIOR, com o registro anterior")
+            // A adiada dispara atrasada, já com o registro da traseira (o da bancada, por exemplo).
+            conferir(g.gravarAdiada(ficha, registro: noite) == nil && lido("traseira") == nil,
+                     "a adiada que dispara depois da troca não grava na câmera nova")
+            // Mesma câmera nas duas telas (a frontal da R5 e a comum): a nova lê o que a anterior gravou.
+            let ficha2 = g.adiar()
+            var r5 = AjustesDaCamera(); r5.ev = -0.7
+            conferir(g.trocar(para: "frontal", registroAnterior: r5) == remoto && lido("traseira") == r5,
+                     "reabrir a mesma chave lê depois de gravar a pendente")
+            _ = ficha2
+            // Adiamentos seguidos: só a última ficha grava, e uma gravação imediata invalida a pendente.
+            let velha = g.adiar(), nova = g.adiar()
+            conferir(g.gravarAdiada(velha, registro: noite) == nil && lido("frontal") == remoto,
+                     "uma ficha superada não grava")
+            conferir(g.gravarAdiada(nova, registro: noite) == noite && lido("frontal") == noite && g.guardado == noite,
+                     "a última ficha grava o registro de agora")
+            let f3 = g.adiar()
+            _ = g.gravarAgora(r5)
+            conferir(g.gravarAdiada(f3, registro: remoto) == nil && lido("frontal") == r5 && !g.temAdiada,
+                     "a gravação imediata leva a pendente junto")
+            // O fechamento descarrega; o padrão nunca vai ao disco (Restaurar automático não apaga).
+            _ = g.adiar()
+            conferir(g.descarregar(.padrao) == nil && lido("frontal") == r5 && !g.temAdiada,
+                     "descarregar o padrão: o guardado fica")
+            conferir(g.descarregar(remoto) == nil && lido("frontal") == r5, "descarregar sem pendente: nada")
+        }
+
+        print("RegrasDosControles — o id da câmera no diário (a prova (c) da R5)")
+        let frontalId = "com.apple.avfoundation.avcapturedevice.built-in_video:1"
+        conferir(R.idNoDiario(frontalId) == frontalId, "embutida: o uniqueID inteiro (é o mesmo em todo aparelho do modelo)")
+        conferir(R.idNoDiario("0x14100000046d0825") == "externa", "externa: sem o id (pode ter número de série)")
+        conferir(R.idNoDiario("com.apple.avfoundation.avcapturedevice.built-in_video:1 /x") == "externa",
+                 "prefixo embutido com resto estranho: externa")
+        let linhaDoDiario = SanitizacaoDoLog.mensagem("APP CAMERA controles: registro carregado de "
+            + AjustesDaCamera.chave(R.idNoDiario(frontalId)) + " no automático (tela=r5) registro_bytes=2 meus_ajustes=não")
+        conferir(linhaDoDiario.contains("registro carregado de camera.ajustes.\(frontalId) no automático (tela=r5)"),
+                 "a linha passa pelo registro seguro sem perder o id que o roteiro lê: \(linhaDoDiario)")
+
         print("RegrasDosControles — o plano de aplicação, com corte e reaplicação (§2.1, §2.2)")
         var tudo = CapacidadesDaCamera()
         tudo.exposicaoCustom = true; tudo.exposicaoUmaVez = true; tudo.exposicaoContinua = true; tudo.exposicaoTravada = true

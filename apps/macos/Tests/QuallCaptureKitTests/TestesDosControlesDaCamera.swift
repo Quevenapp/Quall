@@ -36,6 +36,20 @@ final class TestesDosControlesDaCamera: XCTestCase {
         XCTAssertEqual(AjustesDaCamera.doJSON(a.json), a)
     }
 
+    /// A linha "capacidades" do diário leva os estados num campo só, sem JSON (registro seguro), e o
+    /// roteiro da bancada procura `travaExposicao:sim|travaBalanco:sim|foco:travado` nele.
+    func testeOResumoDeUmCampoDoDiario() {
+        let a = AjustesDaCamera(travaExposicao: true, travaBalanco: false, foco: .travado)
+        XCTAssertEqual(a.resumoDeUmCampo,
+                       "exposicao:auto,travaExposicao:sim,balanco:auto,travaBalanco:não,foco:travado")
+        XCTAssertEqual(AjustesDaCamera.padrao.resumoDeUmCampo,
+                       "exposicao:auto,travaExposicao:não,balanco:auto,travaBalanco:não,foco:auto")
+        for r in [a.resumoDeUmCampo, AjustesDaCamera.padrao.resumoDeUmCampo] {
+            XCTAssertFalse(r.contains(" "), "um campo só: \(r)")
+            XCTAssertFalse(r.contains("{") || r.contains("\""), "sem JSON: \(r)")
+        }
+    }
+
     /// Só os campos que valem no Mac são escritos: nada de `ev`, `iso`, `kelvin`, `focoPosicao`…
     func testeOJsonDoMacNaoEscreveCamposQueOMacNaoAplica() throws {
         let d = try XCTUnwrap(AjustesDaCamera(travaExposicao: true).json.data(using: .utf8))

@@ -95,9 +95,13 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
         }
     }
 
-    /// O `uniqueID` da câmera aberta: a chave do registro. Sob `travaDaGravacao` (escrito na
-    /// abertura, lido por `guardar` de qualquer thread).
-    private var idDaCamera: String?
+    /// **A câmera aberta e os "meus ajustes" dela no disco** (o `uniqueID`, o guardado, a gravação
+    /// adiada). Chamada sempre **sob `trava`**, para o registro e a câmera serem um par da mesma
+    /// câmera (ver `GravacaoDosAjustes`: a gravação adiada que disparava no meio de uma troca
+    /// gravava na chave da câmera nova).
+    private let gravacao = GravacaoDosAjustes(
+        ler: { UserDefaults.standard.data(forKey: $0) },
+        escrever: { UserDefaults.standard.set($1, forKey: $0) })
 
     // --- o registro, também para a `fila` ------------------------------------------------------
 
@@ -125,10 +129,8 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
 
     /// **Os ajustes guardados desta câmera** ("meus ajustes", `camera.ajustes.<uniqueID>`), como estão
     /// no disco: o que o botão "Usar meus ajustes" recupera. Na principal; `nil` sem guardado.
+    /// A cópia para qualquer thread é `gravacao.guardado`.
     @Published private(set) var guardado: AjustesDaCamera?
-    /// A cópia de `guardado` para qualquer thread, sob `travaDaGravacao` (e não sob `trava`: quem
-    /// grava já saiu da trava do registro, e o "Usar meus ajustes" a lê antes de entrar nela).
-    private var guardadoDoDisco: AjustesDaCamera?
 
     /// O botão "Usar meus ajustes" aparece (`RegrasDosControles.meusAjustes`): há guardado diferente
     /// do padrão e do registro de agora. Lido pelo painel, na principal.
@@ -144,18 +146,22 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     /// interrupção, segundo plano) seguem reaplicando o **registro da sessão**: ali a câmera é a
     /// mesma e a luz também, e a trava que a pessoa pôs há um minuto tem de sobreviver.
     func carregar(uniqueID: String, bancada: AjustesDaCamera? = nil) {
-        // Um registro remoto que esperava a gravação adiada vai ao disco da câmera **anterior** antes.
-        descarregarGravacaoAdiada()
-        let disco = UserDefaults.standard.data(forKey: AjustesDaCamera.chave(uniqueID))
-        let g = disco.map { AjustesDaCamera.de(json: $0) }
         let a = RegrasDosControles.registroAoAbrir(bancada: bancada)
-        trava.lock(); _registro = a; _cameraAnunciada = false; _capacidadesAnunciadas = nil; trava.unlock()
-        travaDaGravacao.lock(); guardadoDoDisco = g; idDaCamera = uniqueID; travaDaGravacao.unlock()
+        // De uma vez, sob a trava do registro: um registro remoto que esperava a gravação adiada vai
+        // ao disco da câmera **anterior**, com o registro anterior, e só então se lê o guardado da
+        // nova e o registro troca. Nenhuma gravação atrasada vê a câmera nova com o registro velho.
+        trava.lock()
+        let g = gravacao.trocar(para: uniqueID, registroAnterior: _registro)
+        _registro = a; _cameraAnunciada = false; _capacidadesAnunciadas = nil
+        trava.unlock()
         naPrincipal { [weak self] in
             self?.ajustes = a
             self?.guardado = g
         }
-        Diagnostico.nota("APP CAMERA controles: registro carregado"
+        // O id vai ao diário: é ele que prova que a R5 e a câmera comum carregam a mesma chave
+        // (`provar-controles.sh`, (c)). Só o das câmeras embutidas (`idNoDiario`).
+        Diagnostico.nota("APP CAMERA controles: registro carregado de "
+            + AjustesDaCamera.chave(RegrasDosControles.idNoDiario(uniqueID))
             + (bancada != nil ? " da bancada (--camera-ajustes, só nesta sessão)" : " no automático")
             + " (tela=\(tela)) registro_bytes=\(a.json()?.count ?? 0)"
             + " meus_ajustes=\(RegrasDosControles.meusAjustes(guardado: g, registro: a) != nil ? "sim" : "não")")
@@ -165,21 +171,24 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     /// (`RegrasDosControles.aGravar`): voltar ao automático não apaga o guardado (§2, 07/10). Até
     /// 07/10 o "Restaurar automático" removia a chave; com a abertura no automático, isso apagaria a
     /// única forma de recuperar o ajuste.
-    private func guardar(_ a: AjustesDaCamera) {
-        guard let novo = RegrasDosControles.aGravar(a) else { return }
-        travaDaGravacao.lock()
-        guard let id = idDaCamera, guardadoDoDisco != novo, let j = novo.json() else { travaDaGravacao.unlock(); return }
-        guardadoDoDisco = novo
-        UserDefaults.standard.set(j, forKey: AjustesDaCamera.chave(id))
-        travaDaGravacao.unlock()
-        naPrincipal { [weak self] in self?.guardado = novo }
+    ///
+    /// `gravar` recebe o registro de agora **sob `trava`** (ver `gravacao`) e devolve o guardado
+    /// novo, se gravou; ele vai à tela fora da trava — e só se a câmera ainda for a mesma (uma troca
+    /// no meio do caminho já publicou o guardado da nova).
+    private func guardar(_ gravar: (AjustesDaCamera) -> AjustesDaCamera?) {
+        trava.lock()
+        let novo = gravar(_registro)
+        let id = gravacao.idDaCamera
+        trava.unlock()
+        guard let novo else { return }
+        naPrincipal { [weak self] in
+            guard let self, self.gravacao.idDaCamera == id else { return }
+            self.guardado = novo
+        }
     }
 
     /// O guardado de agora, de qualquer thread.
-    private var guardadoAgora: AjustesDaCamera? {
-        travaDaGravacao.lock(); defer { travaDaGravacao.unlock() }
-        return guardadoDoDisco
-    }
+    private var guardadoAgora: AjustesDaCamera? { gravacao.guardado }
 
     /// De onde vem uma escrita do registro, para o núcleo (contrato §4): uma mudança feita aqui (o
     /// painel, o toque na prévia), a escrita automática da casca (o lido que a trava guarda), ou um
@@ -224,26 +233,20 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
 
     // --- a gravação: na hora, ou adiada para os pedidos remotos ---------------------------------
 
-    private var gravacaoAdiada: DispatchWorkItem?
-    private let travaDaGravacao = NSLock()
-
     /// Um deslizante remoto a 15 por segundo não vira 15 gravações por segundo (contrato §6, passo
-    /// 3): o registro **de agora** é gravado 500 ms depois da última escrita remota.
+    /// 3): o registro **de agora** é gravado 500 ms depois da última escrita remota — se a ficha
+    /// ainda valer. A troca de câmera, o fechamento ou uma gravação imediata no meio do caminho
+    /// já gravaram (ou invalidaram) a adiada, na chave certa (`GravacaoDosAjustes`).
     private func guardarAdiado() {
-        let item = DispatchWorkItem { [weak self] in self?.guardarAgora() }
-        travaDaGravacao.lock()
-        gravacaoAdiada?.cancel()
-        gravacaoAdiada = item
-        travaDaGravacao.unlock()
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5, execute: item)
+        let ficha = gravacao.adiar()
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            self.guardar { self.gravacao.gravarAdiada(ficha, registro: $0) }
+        }
     }
 
     private func guardarAgora() {
-        travaDaGravacao.lock()
-        gravacaoAdiada?.cancel()
-        gravacaoAdiada = nil
-        travaDaGravacao.unlock()
-        guardar(registro)
+        guardar { gravacao.gravarAgora($0) }
     }
 
     fileprivate func publicar(_ c: CapacidadesDaCamera, _ f: FaixasDaCamera) {
@@ -311,12 +314,11 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
         descarregarGravacaoAdiada()
     }
 
-    /// A gravação adiada que ainda não aconteceu, agora (o fechamento, a troca de câmera).
+    /// A gravação adiada que ainda não aconteceu, agora (o fechamento; a troca de câmera grava a
+    /// sua dentro de `carregar`).
     private func descarregarGravacaoAdiada() {
-        travaDaGravacao.lock()
-        let pendente = gravacaoAdiada != nil
-        travaDaGravacao.unlock()
-        if pendente { guardarAgora() }
+        guard gravacao.temAdiada else { return }
+        guardar { gravacao.descarregar($0) }
     }
 
     var cameraAnunciada: Bool {

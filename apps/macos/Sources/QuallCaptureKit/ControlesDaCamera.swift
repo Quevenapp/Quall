@@ -71,6 +71,17 @@ public struct AjustesDaCamera: Equatable, Sendable {
         "exposicao=\(exposicao.rawValue) travaExposicao=\(travaExposicao ? "sim" : "não") "
             + "balanco=\(balanco.rawValue) travaBalanco=\(travaBalanco ? "sim" : "não") foco=\(foco.rawValue)"
     }
+
+    /// O mesmo resumo **num campo só** (`chave=valor` do diário, até o próximo espaço):
+    /// `exposicao:auto,travaExposicao:sim,balanco:auto,travaBalanco:não,foco:travado`. É o que a linha
+    /// "capacidades" do `montar` leva em `ajuste=` e `guardado=`, e o que `Bancada/provar-ajustes-da-camera.sh`
+    /// lê. **Não é o JSON** de propósito: o registro seguro (preparação pública, 05/10,
+    /// `docs/distribuicao/seguranca-diagnostico.md`) tirou o JSON de câmera desse callsite e deixou os
+    /// estados; isto são só os estados.
+    public var resumoDeUmCampo: String {
+        "exposicao:\(exposicao.rawValue),travaExposicao:\(travaExposicao ? "sim" : "não"),"
+            + "balanco:\(balanco.rawValue),travaBalanco:\(travaBalanco ? "sim" : "não"),foco:\(foco.rawValue)"
+    }
 }
 
 extension AjustesDaCamera: Codable {
