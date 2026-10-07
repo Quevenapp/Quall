@@ -39,6 +39,7 @@ enum RetratosDeBancada {
         // exemplo e **sem câmera**: a conta de "cabe sem rolar no iPhone 7" conferida na foto. Fora da
         // lista padrão (`QUALL_TELAS="ajustes-camera-exposicao …"`).
         "ajustes-camera-exposicao", "ajustes-camera-iso", "ajustes-camera-balanco", "ajustes-camera-foco",
+        "ajustes-camera-meus",
         // O mesmo painel no receptor (R9b, `docs/controle-remoto-da-camera.md` §12), com o estado de
         // exemplo de um Android que filma: pronto, e com o controle remoto não permitido.
         "ajustes-camera-remota", "ajustes-camera-remota-bloqueada",
@@ -112,7 +113,8 @@ struct TelaDeRetrato: View {
             controlar
         case "r5":
             TelaDoPrompterComCamera(voltar: {}, orientacaoDoRetrato: RetratosDeBancada.deitado ? .paisagem : .retrato)
-        case "ajustes-camera-exposicao", "ajustes-camera-iso", "ajustes-camera-balanco", "ajustes-camera-foco":
+        case "ajustes-camera-exposicao", "ajustes-camera-iso", "ajustes-camera-balanco", "ajustes-camera-foco",
+             "ajustes-camera-meus":
             ajustesDaCamera
         case "ajustes-camera-remota", "ajustes-camera-remota-bloqueada":
             ajustesDaCameraRemota
@@ -142,11 +144,22 @@ struct TelaDeRetrato: View {
         c.focoTravado = true; c.lenteCustom = true; c.balancoContinuo = true; c.balancoUmaVez = true
         c.balancoTravado = true; c.ganhosCustom = true
         let controles = ControlesDaCamera()
+        // "ajustes-camera-meus" (07/10): a câmera aberta no automático, com um manual guardado (o botão
+        // "Usar meus ajustes") e a pouca luz acesa: o pé mais cheio do painel.
+        var meus: AjustesDaCamera?
+        var luz: String?
+        if nome == "ajustes-camera-meus" {
+            var m = AjustesDaCamera()
+            m.exposicao = .manual; m.iso = 640; m.obturadorNs = 10_000_000; m.balanco = .kelvin; m.kelvin = 5200
+            meus = m
+            luz = RegrasDosControles.textoDaPoucaLuz(fpsAgora: 15, fps: 30, temManual: true)
+        }
         controles.preencherParaRetrato(a, c, FaixasDaCamera(isoMin: 23, isoMax: 736, obturadorMinNs: 22_000,
                                                             obturadorMaxNs: 1_000_000_000, evMin: -8, evMax: 8,
                                                             ganhoMax: 4, fps: 30),
                                        RegrasDosControles.Leitura(iso: 400, obturadorNs: 16_666_667, kelvin: 5200,
-                                                                  abertura: 1.8, lente: 0.6))
+                                                                  abertura: 1.8, lente: 0.6),
+                                       guardado: meus, poucaLuz: luz)
         return ZStack {
             Color.black.ignoresSafeArea()
             GeometryReader { g in

@@ -652,7 +652,10 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     /// **Só o retrato de bancada** (`RetratosDeBancada`, "ajustes-camera-…"): valores de exemplo, sem
     /// câmera nenhuma aberta e sem gravar nada.
     func preencherParaRetrato(_ a: AjustesDaCamera, _ c: CapacidadesDaCamera, _ f: FaixasDaCamera,
-                              _ l: RegrasDosControles.Leitura) {
+                              _ l: RegrasDosControles.Leitura, guardado g: AjustesDaCamera? = nil,
+                              poucaLuz luz: String? = nil) {
+        guardado = g
+        poucaLuz = luz
         ajustes = a
         trava.lock(); _registro = a; trava.unlock()
         capacidades = c
