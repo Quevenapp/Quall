@@ -15,12 +15,19 @@ public enum TetosDoCardapio {
         public var resolucoesFora: Set<Int> = []
         /// As taxas que a câmera não alcança na resolução escolhida: o segmento fica apagado.
         public var taxasFora: Set<Int> = []
-        /// O fps que vai de fato, quando a escolha salva passa do teto da câmera.
+        /// O teto de taxa previsto para a sessão, quando a escolha salva precisa recuar.
         public var fpsEfetivo: Int?
-        public init(resolucoesFora: Set<Int> = [], taxasFora: Set<Int> = [], fpsEfetivo: Int? = nil) {
+        /// Recuo para uma resolução disponível, sem regravar a preferência.
+        public var resolucaoEfetiva: Int?
+        /// Capacidade real; não é inferida das duas opções de taxa da interface.
+        public var tetoFPS: Int?
+        public init(resolucoesFora: Set<Int> = [], taxasFora: Set<Int> = [], fpsEfetivo: Int? = nil,
+                    resolucaoEfetiva: Int? = nil, tetoFPS: Int? = nil) {
             self.resolucoesFora = resolucoesFora
             self.taxasFora = taxasFora
             self.fpsEfetivo = fpsEfetivo
+            self.resolucaoEfetiva = resolucaoEfetiva
+            self.tetoFPS = tetoFPS
         }
     }
 
@@ -31,7 +38,10 @@ public enum TetosDoCardapio {
                              tamanhos: [(chave: Int, largura: Int, altura: Int)]) -> [Int: Int?] {
         var t: [Int: Int?] = [:]
         for tamanho in tamanhos {
-            let cabem = formatos.filter { $0.largura >= tamanho.largura && $0.altura >= tamanho.altura }
+            let cabem = formatos.filter {
+                max($0.largura, $0.altura) >= max(tamanho.largura, tamanho.altura)
+                    && min($0.largura, $0.altura) >= min(tamanho.largura, tamanho.altura)
+            }
             if let maior = cabem.map(\.fpsMaximo).max() {
                 t[tamanho.chave] = .some(Int(maior.rounded()))
             } else {
@@ -42,13 +52,48 @@ public enum TetosDoCardapio {
     }
 
     /// O estado do cardápio. [tetos]: `nil` = a câmera não oferece; chave ausente = não se sabe (fica
-    /// disponível). A menor taxa nunca se apaga: numa câmera que faz 4K só a 24, o "30" continua e vai a
-    /// 24. A escolha salva não muda; [Estado.fpsEfetivo] diz o que vai.
+    /// disponível). Toda taxa acima do teto se apaga; uma taxa efetiva fora das opções aparece como
+    /// indicador selecionado somente leitura. A escolha salva não muda. Uma resolução indisponível
+    /// recua para a maior disponível até ela (ou a menor disponível). O teto de capacidade e a
+    /// taxa prevista são separados: uma câmera de 45, com 30 salvos, continua prevista para 30.
     public static func estado(tetos: [Int: Int?], escolhida: Int, fps: Int, taxas: [Int]) -> Estado {
         let fora = Set(tetos.compactMap { $0.value == nil ? $0.key : nil })
-        guard let teto = tetos[escolhida] ?? nil else { return Estado(resolucoesFora: fora) }
-        let menor = taxas.min()
-        let taxasFora = Set(taxas.filter { $0 > teto && $0 != menor })
-        return Estado(resolucoesFora: fora, taxasFora: taxasFora, fpsEfetivo: fps > teto ? teto : nil)
+        var resolucao = escolhida
+        if fora.contains(escolhida) {
+            let disponiveis = tetos.compactMap { $0.value != nil ? $0.key : nil }.sorted()
+            guard let recuo = disponiveis.last(where: { $0 <= escolhida }) ?? disponiveis.first else {
+                return Estado(resolucoesFora: fora)
+            }
+            resolucao = recuo
+        }
+        guard let teto = tetos[resolucao] ?? nil else { return Estado(resolucoesFora: fora) }
+        let taxasFora = Set(taxas.filter { $0 > teto })
+        let efetivo = min(fps, teto)
+        return Estado(resolucoesFora: fora, taxasFora: taxasFora,
+                      fpsEfetivo: efetivo != fps ? efetivo : nil,
+                      resolucaoEfetiva: resolucao != escolhida ? resolucao : nil,
+                      tetoFPS: teto)
+    }
+
+    /// A captura usa a mesma geometria do cardápio: um formato que cobre o alvo, reduzido pelo
+    /// encoder quando necessário (2K a partir de 4K). Entre os que fazem a taxa, prefere a menor
+    /// área suficiente e, no empate, o não-binned; por fim a ordem do AVFoundation.
+    public static func indiceDoFormato(
+        formatos: [(largura: Int, altura: Int, faixas: [(minima: Double, maxima: Double)], binned: Bool)],
+        largura: Int, altura: Int, fps: Int
+    ) -> Int? {
+        let candidatos = formatos.indices.filter { i in
+            let f = formatos[i]
+            return max(f.largura, f.altura) >= max(largura, altura)
+                && min(f.largura, f.altura) >= min(largura, altura)
+                && f.faixas.contains { $0.minima <= Double(fps) && $0.maxima >= Double(fps) }
+        }
+        return candidatos.min { a, b in
+            let fa = formatos[a], fb = formatos[b]
+            let aa = Int64(fa.largura) * Int64(fa.altura), ab = Int64(fb.largura) * Int64(fb.altura)
+            if aa != ab { return aa < ab }
+            if fa.binned != fb.binned { return !fa.binned }
+            return a < b
+        }
     }
 }

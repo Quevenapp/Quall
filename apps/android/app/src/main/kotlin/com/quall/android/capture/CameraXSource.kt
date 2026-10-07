@@ -556,11 +556,14 @@ class CameraXSource private constructor(
             timeoutMs: Long = TIMEOUT_PADRAO_MS,
         ): CameraXSource {
             val base = preparar(context, cameraId, timeoutMs)
-            // **A geometria é a que o usuário escolheu**, e não mais um literal. Ver
-            // `core/Resolucao.kt` e `docs/fluxo-de-uso.md`. Sem escolha vale 1080p, que é o que
-            // esta linha pedia antes do cardápio.
-            val escolhida = com.quall.android.core.Resolucao.escolhida(context)
-            val fps = com.quall.android.core.Resolucao.quadros(context)
+            // A mesma decisão do cardápio e do dono normal: tamanho oferecido/teto da câmera,
+            // sem mudar o salvo. Prévia e codificador conservam juntos esse pedido efetivo.
+            val salva = com.quall.android.core.Resolucao.escolhida(context)
+            val fpsSalvo = com.quall.android.core.Resolucao.quadros(context)
+            val cardapio = com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = tetosPorResolucao(context, cameraId), escolhida = salva, fps = fpsSalvo)
+            val escolhida = cardapio.resolucaoPara(salva)
+            val fps = cardapio.quadrosPara(fpsSalvo)
             val faixas = faixasDeQuadros(context, cameraId)
             Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} (${escolhida.pedido}) a $fps fps; " +
                 "faixas anunciadas: $faixas")

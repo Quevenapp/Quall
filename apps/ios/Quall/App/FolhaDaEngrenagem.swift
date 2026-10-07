@@ -116,17 +116,34 @@ struct FolhaDaEngrenagem: View {
 
     private var qualidade: some View {
         let l = limite
-        // O fps que vai de fato aparece marcado; tocar grava a escolha como sempre.
-        let quadrosNaTela = Binding<Int>(get: { l.fpsEfetivo ?? quadros }, set: { quadros = $0 })
+        let efetiva = TetosDaCamera.resolucao(para: l, preferida: resolucao)
+        // Os getters mostram o recuo sem gravá-lo; apenas um toque muda a preferência. Taxas
+        // efetivas fora de 30/60 têm indicador selecionado somente leitura, sem setter.
+        let resolucaoNaTela = Binding<Resolucao>(get: { efetiva }, set: { resolucao = $0 })
+        let fpsEfetivo = l.fpsEfetivo ?? quadros
+        let quadrosNaTela = Binding<Int>(get: { fpsEfetivo }, set: { quadros = $0 })
         return grupo(tr("Qualidade do espelhamento")) {
             VStack(alignment: .leading, spacing: 8) {
                 Segmentos(titulo: tr("Resolução"),
                           opcoes: Resolucao.allCases.map { ($0, $0.rotulo, !l.resolucoesFora.contains($0.rawValue)) },
-                          escolhida: $resolucao)
-                Segmentos(titulo: tr("Quadros"),
-                          opcoes: Resolucao.taxas.map { ($0, "\($0) fps", !l.taxasFora.contains($0)) },
-                          escolhida: quadrosNaTela)
-                Text(FolhaDaEngrenagem.custo(resolucao: resolucao, quadros: l.fpsEfetivo ?? quadros)
+                          escolhida: resolucaoNaTela)
+                HStack(spacing: 6) {
+                    Segmentos(titulo: tr("Quadros"),
+                              opcoes: Resolucao.taxas.map { ($0, "\($0) fps", !l.taxasFora.contains($0)) },
+                              escolhida: quadrosNaTela)
+                    if l.tetoFPS != nil && !Resolucao.taxas.contains(fpsEfetivo) {
+                        Text(verbatim: "\(fpsEfetivo) fps")
+                            .font(Estilo.corpo(.subheadline, .semibold))
+                            .foregroundColor(Estilo.texto)
+                            .frame(minHeight: 32)
+                            .padding(.horizontal, 12)
+                            .background(Capsule().fill(Estilo.acento))
+                            .accessibilityAddTraits(.isSelected)
+                            .accessibilityLabel(tr("Quadros: %ld fps", fpsEfetivo))
+                            .accessibilityHint(tr("Taxa limitada por esta câmera. A preferência salva foi mantida."))
+                    }
+                }
+                Text(FolhaDaEngrenagem.custo(resolucao: efetiva, quadros: l.fpsEfetivo ?? quadros)
                      + FolhaDaEngrenagem.textoDoLimite(l, resolucao: resolucao))
                     .font(Estilo.corpo(.footnote))
                     .foregroundColor(Estilo.texto2)
@@ -330,9 +347,12 @@ struct FolhaDaEngrenagem: View {
         var partes: [String] = []
         let sem = Resolucao.allCases.filter { l.resolucoesFora.contains($0.rawValue) }
         if !sem.isEmpty { partes.append(tr("Esta câmera não oferece %@.", sem.map(\.rotulo).joined(separator: ", "))) }
-        if !l.taxasFora.isEmpty,
-           let teto = l.fpsEfetivo ?? Resolucao.taxas.filter({ !l.taxasFora.contains($0) }).max() {
-            partes.append(tr("Esta câmera vai até %ld fps em %@.", teto, resolucao.rotulo))
+        let efetiva = TetosDaCamera.resolucao(para: l, preferida: resolucao)
+        if !l.taxasFora.isEmpty, let teto = l.tetoFPS {
+            partes.append(tr("Esta câmera vai até %ld fps em %@.", teto, efetiva.rotulo))
+        }
+        if l.resolucaoEfetiva != nil {
+            partes.append(tr("Para esta câmera, usando %@. A resolução salva foi mantida.", efetiva.rotulo))
         }
         return partes.isEmpty ? "" : " " + partes.joined(separator: " ")
     }

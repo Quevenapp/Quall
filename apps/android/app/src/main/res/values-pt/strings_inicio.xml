@@ -113,6 +113,8 @@
     <string name="in_instrucao_sem_nome">No outro aparelho, abra o Quall em %1$s e digite o endereço abaixo.</string>
     <string name="in_nota_da_fita">A fita define o tamanho: 1280×720 a 30 quadros por segundo na gravação e, no espelhamento, o tamanho da própria fita.</string>
     <string name="in_camera_nao_oferece">Esta câmera não oferece %1$s.</string>
+    <string name="in_camera_tamanho_efetivo">Nesta câmera, usa %1$s; sua escolha salva continua a mesma.</string>
+    <string name="in_taxa_efetiva">Taxa atual: %1$d fps, limitada por esta câmera. Somente leitura.</string>
     <string name="in_teto_da_camera">Esta câmera vai até %1$d fps em %2$s.</string>
     <string name="in_nota_da_placa">A placa define o tamanho: o quadro dela (640×480 a 30 quadros por segundo na EasyCap), na transmissão e na gravação.</string>
     <string name="lic_titulo">FFmpeg (libavcodec, libavformat e libavutil %1$s)</string>

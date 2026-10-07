@@ -102,11 +102,12 @@ struct TelaInicial: View {
         return .nenhuma
     }
 
-    /// "1080p · 30": o cardápio gravado (`Resolucao`), que a folha de Ajustes muda, com o fps que vai de
-    /// fato quando a câmera escolhida não alcança o salvo (06/10).
+    /// "1080p · 30": a qualidade prevista pelo mesmo contrato da montagem. A câmera pode recuar
+    /// resolução/taxa sem regravar a preferência; calor e pouca luz ainda podem reduzir a entrega.
     private static func qualidade(para origem: Origem) -> String {
-        let fps = TetosDaCamera.estado(cameraID: cameraID(de: origem)).fpsEfetivo ?? Resolucao.quadros
-        return "\(Resolucao.escolhida.rotulo) · \(fps)"
+        let estado = TetosDaCamera.estado(cameraID: cameraID(de: origem))
+        let resolucao = TetosDaCamera.resolucao(para: estado, preferida: Resolucao.escolhida)
+        return "\(resolucao.rotulo) · \(estado.fpsEfetivo ?? Resolucao.quadros)"
     }
 
     private static func cameraID(de origem: Origem) -> String? {

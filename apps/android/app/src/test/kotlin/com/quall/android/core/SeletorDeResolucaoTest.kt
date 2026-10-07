@@ -65,11 +65,91 @@ class SeletorDeResolucaoTest {
         assertEquals(SeletorDeResolucao.estado(false), SeletorDeResolucao.estado(false, tetos = emptyMap()))
     }
 
-    /** A menor taxa nunca se apaga: um 4K que só vai a 24 mantém o "30", que vai a 24. */
+    /** Num teto 24, nenhum preset acima dele é oferecido; o indicador derivado não grava taxa. */
     @Test
-    fun a_menor_taxa_nunca_se_apaga() {
+    fun teto_vinte_e_quatro_desativa_os_dois_presets_e_indica_a_taxa_real() {
         val e = SeletorDeResolucao.estado(false, tetos = mapOf(Resolucao.P2160 to 24), escolhida = Resolucao.P2160, fps = 30)
-        assertEquals(setOf(60), e.taxasFora)
+        assertEquals(setOf(30, 60), e.taxasFora)
         assertEquals(24, e.fpsEfetivo)
+        assertEquals(24, e.taxaSomenteLeitura(30))
+        assertEquals(24, e.tetoDeQuadros)
+    }
+
+    @Test
+    fun quatro_k_salvo_indisponivel_usa_dois_k_e_o_teto_desse_tamanho() {
+        val tetos = mapOf(Resolucao.P720 to 60, Resolucao.P1080 to 60,
+            Resolucao.P1440 to 30, Resolucao.P2160 to null)
+        val salva = Resolucao.P2160
+        val e = SeletorDeResolucao.estado(false, tetos = tetos, escolhida = salva, fps = 60)
+        assertEquals(Resolucao.P1440, e.resolucaoPara(salva))
+        assertEquals(30, e.quadrosPara(60))
+        assertNull(e.taxaSomenteLeitura(60))
+        assertEquals(setOf(60), e.taxasFora)
+        // Voltar à tela recupera a escolha: o estado não altera a entrada nem a preferência.
+        val tela = SeletorDeResolucao.estado(false, escolhida = salva, fps = 60)
+        assertEquals(Resolucao.P2160, tela.resolucaoPara(salva))
+        assertEquals(60, tela.quadrosPara(60))
+    }
+
+    @Test
+    fun trocar_camera_recalcula_o_tamanho_e_a_taxa_sem_carregar_o_fallback_anterior() {
+        val salva = Resolucao.P2160
+        val traseira = mapOf(Resolucao.P720 to 30, Resolucao.P1080 to 30,
+            Resolucao.P1440 to null, Resolucao.P2160 to null)
+        val frontal = traseira + (Resolucao.P1440 to 45)
+        val a = SeletorDeResolucao.estado(false, tetos = traseira, escolhida = salva, fps = 60)
+        val b = SeletorDeResolucao.estado(false, tetos = frontal, escolhida = salva, fps = 60)
+        assertEquals(Resolucao.P1080, a.resolucaoPara(salva))
+        assertEquals(30, a.quadrosPara(60))
+        assertEquals(Resolucao.P1440, b.resolucaoPara(salva))
+        assertEquals(45, b.quadrosPara(60))
+        assertEquals(45, b.taxaSomenteLeitura(60))
+    }
+
+    @Test
+    fun teto_quarenta_e_cinco_e_independente_da_escolha_trinta() {
+        val e = SeletorDeResolucao.estado(false, tetos = mapOf(Resolucao.P1080 to 45), fps = 30)
+        assertNull(e.fpsEfetivo)
+        assertEquals(30, e.quadrosPara(30))
+        assertNull(e.taxaSomenteLeitura(30))
+        assertEquals(45, e.tetoDeQuadros)
+        assertEquals(setOf(60), e.taxasFora)
+    }
+
+    @Test
+    fun desconhecido_nao_vira_fallback_inventado_nem_taxa_zero() {
+        val desconhecido = SeletorDeResolucao.estado(false,
+            tetos = mapOf(Resolucao.P1080 to 30), escolhida = Resolucao.P2160, fps = 60)
+        assertNull(desconhecido.resolucaoEfetiva)
+        assertNull(desconhecido.fpsEfetivo)
+        val todosFora = SeletorDeResolucao.estado(false,
+            tetos = Resolucao.entries.associateWith { null }, escolhida = Resolucao.P2160, fps = 60)
+        assertNull(todosFora.resolucaoEfetiva)
+        val invalido = SeletorDeResolucao.estado(false,
+            tetos = mapOf(Resolucao.P2160 to null, Resolucao.P1080 to 0), escolhida = Resolucao.P2160, fps = 60)
+        assertNull(invalido.resolucaoEfetiva)
+        assertNull(invalido.tetoDeQuadros)
+    }
+
+    @Test
+    fun sem_tamanho_menor_o_fallback_e_o_menor_oferecido_acima() {
+        val e = SeletorDeResolucao.estado(false,
+            tetos = mapOf(Resolucao.P720 to null, Resolucao.P1080 to 30, Resolucao.P1440 to 60),
+            escolhida = Resolucao.P720, fps = 60)
+        assertEquals(Resolucao.P1080, e.resolucaoPara(Resolucao.P720))
+        assertEquals(30, e.quadrosPara(60))
+    }
+
+    @Test
+    fun encoder_usa_o_teto_da_camera_e_depois_o_menor_teto_negociado() {
+        val e = SeletorDeResolucao.estado(false, tetos = mapOf(Resolucao.P1080 to 30), fps = 60)
+        assertEquals(30, e.quadrosParaCodificar(60))
+        assertEquals(24, e.quadrosParaCodificar(60, 24))
+        // Um relato maior não eleva o pedido acima da capacidade; inválido não vira fps zero.
+        assertEquals(30, e.quadrosParaCodificar(60, 60))
+        assertEquals(30, e.quadrosParaCodificar(60, 0))
+        assertEquals(30, e.quadrosParaCodificar(60, -1))
+        // A tela não tem mapa de câmera: a escolha 60 continua 60.
+        assertEquals(60, SeletorDeResolucao.estado(false).quadrosParaCodificar(60))
     }
 }

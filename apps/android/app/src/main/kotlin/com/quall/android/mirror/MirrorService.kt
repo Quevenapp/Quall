@@ -1337,7 +1337,21 @@ class MirrorService : LifecycleService() {
         // caminho (`Fonte.Camera.dv` é "vídeo USB").
         val dvd = transmissaoDvd.takeIf { fonte is Fonte.Dvd }
         // O DVD anda na taxa do disco (29,97 ou 25), como a DV.
-        val fpsEscolhido = if (dv) 30 else dvd?.fps ?: com.quall.android.core.Resolucao.quadros(this)
+        val fpsPedido = if (dv) 30 else dvd?.fps ?: com.quall.android.core.Resolucao.quadros(this)
+        val cameraIdDoCardapio = when (fonte) {
+            is Fonte.Camera -> fonte.cameraId.takeUnless { fonte.dv }
+            is Fonte.CameraDoPrompter -> fonte.cameraId
+            is Fonte.Tela, is Fonte.Dvd -> null
+        }
+        val cardapioDaCamera = cameraIdDoCardapio?.let { id ->
+            com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = com.quall.android.capture.CameraXSource.tetosPorResolucao(this, id),
+                escolhida = escolhida, fps = fpsPedido)
+        }
+        // A preferência continua como pedido/relato. Encoder, orçamento e teto usam a mesma
+        // escolha efetiva da câmera; tela/DV/DVD conservam suas regras anteriores.
+        var fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido) ?: fpsPedido
+        val tamanhoEscolhido = cardapioDaCamera?.resolucaoPara(escolhida) ?: escolhida
         // O tamanho da DV: o exibido pelo aspecto da câmera na abertura (854x480 em 16:9, 640x480
         // em 4:3), ou 848 se o codec não aceitar 854 (854 não é múltiplo de 16; a revisão, B9). O
         // da placa: o do quadro negociado (640x480), sem tarja e sem o aspecto da DV (o `disp_169`
@@ -1376,7 +1390,7 @@ class MirrorService : LifecycleService() {
                 ?.takeIf { escolhida.maxFs > com.quall.android.core.TransmissaoLeve.TETO.maxFs }
         } else null
         val resolucao = com.quall.android.core.Resolucao.entries.first {
-            it.maxFs == com.quall.android.core.TransmissaoLeve.maxFs(escolhida, motivoLeve != null)
+            it.maxFs == com.quall.android.core.TransmissaoLeve.maxFs(tamanhoEscolhido, motivoLeve != null)
         }
         if (resolucao != escolhida) Log.i(TAG, "transmissão leve: a rede da câmera em ${resolucao.rotulo}, e não ${escolhida.rotulo} ($motivoLeve)")
         val donoR5 = if (fonte is Fonte.CameraDoPrompter || comumPeloDono) {
@@ -1392,6 +1406,10 @@ class MirrorService : LifecycleService() {
                 return
             }
         } else null
+        donoR5?.let { d ->
+            fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido, d.quadrosNegociados ?: d.fpsPedido)
+                ?: fpsEscolhido
+        }
         // **A rotação da rede**: na tela R5, a da tela (e um giro no meio vira tarja); na câmera comum,
         // a do APARELHO no pareamento, congelada pela sessão (a revisão de 24/09, B1) — o app fica
         // atrás no tripé, e a tela do momento é a de outro app, a do bloqueio, ou retrato fixo.
@@ -1405,8 +1423,8 @@ class MirrorService : LifecycleService() {
                 "${if (comumPeloDono) ", fixa pela sessão" else ""}), rede em ${g.first}x${g.second}")
             g
         }
-        Log.i(TAG, "resolução escolhida: ${resolucao.rotulo} (maxFs=${resolucao.maxFs}) " +
-            "a ${fpsEscolhido} fps")
+        Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} a $fpsPedido fps; " +
+            "configuração da rede: ${resolucao.rotulo} (maxFs=${resolucao.maxFs}) a $fpsEscolhido fps")
 
         // **Um segundo de vídeo, e não trinta quadros.** `TrackFrameSink` documenta o limiar
         // como "um segundo"; passá-lo como a constante 30 só era verdade a 30 fps. A 60 já vale
@@ -1496,7 +1514,7 @@ class MirrorService : LifecycleService() {
         // lido já — é característica do aparelho, não da sessão.
         var negociadaDaCamera: android.util.Size? = null
         val capacidadeDaCamera = (fonte as? Fonte.Camera)?.takeIf { !it.dv }?.let {
-            com.quall.android.capture.CameraXSource.capacidadeNoTamanho(this, it.cameraId, resolucao.pedido)
+            com.quall.android.capture.CameraXSource.capacidadeNoTamanho(this, it.cameraId, escolhida.pedido)
         }
         if (fonte is Fonte.CameraDoPrompter) negociadaDaCamera = android.util.Size(larguraDaFonte, alturaDaFonte)
         // A câmera comum pelo dono: o que a câmera entrega (o tamanho do buffer), para a frase da entrega.
@@ -1593,6 +1611,8 @@ class MirrorService : LifecycleService() {
                 // caminho de uma fase e sem prévia, porque um segundo fluxo saindo da mesma câmera
                 // mudaria o que ele mede.
                 val src = subirFonteDaCamera(fonte.cameraId)
+                fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido, src.quadrosNegociados)
+                    ?: fpsEscolhido
                 if (!src.timestampSourceRealtime) {
                     // Achado em bancada (A07): sem REALTIME, `encode_latency_us` desta câmera não
                     // é comparável a relógio de sistema nenhum — ver H264CameraEncoder. Fica só no
@@ -1675,7 +1695,7 @@ class MirrorService : LifecycleService() {
                         pedido = tx(if (placaDeCaptura) R.string.esp_pedido_placa else R.string.esp_pedido_filmadora),
                         largura = larguraDaFonte, altura = alturaDaFonte, quadros = if (placaDeCaptura) 30.0 else 29.97,
                     ) else com.quall.android.core.Entrega.daCamera(
-                        textos, escolhida, fpsEscolhido,
+                        textos, escolhida, fpsPedido,
                         negociadaDaCamera?.let { it.width to it.height },
                         if (fonte.peloDono) donoR5?.quadrosNegociados else cameraSource?.quadrosNegociados,
                         capacidadeDaCamera ?: com.quall.android.core.Entrega.Camera(true, null),
@@ -1727,7 +1747,7 @@ class MirrorService : LifecycleService() {
                         falhasDeEnvio = sink.falhas,
                         pedidosDeIdr = sink.pedidosDeIdr,
                         idrsEnviados = i.idrs,
-                        fpsPedido = fpsEscolhido,
+                        fpsPedido = fpsPedido,
                         fpsObtido = i.fpsObtido,
                         latenciaP50Ms = i.p50Us / 1000.0,
                         latenciaP95Ms = i.p95Us / 1000.0,
@@ -1990,7 +2010,7 @@ class MirrorService : LifecycleService() {
             Log.i(
                 TAG,
                 "sessão encerrada ($fonteRotulo): enviados=${sink.enviados} falhas=${sink.falhas} " +
-                    "pedidos_de_idr=${sink.pedidosDeIdr} fps_pedido=$fpsEscolhido " +
+                    "pedidos_de_idr=${sink.pedidosDeIdr} fps_pedido=$fpsPedido fps_configurado=$fpsEscolhido " +
                     "fps_obtido=${"%.1f".format(r.achievedFps)} " +
                     "p50=${r.encodeLatencyP50Us / 1000.0}ms p95=${r.encodeLatencyP95Us / 1000.0}ms " +
                     "idr_com_csd_colado=${r.idrsComParametrosColados} " +

@@ -623,7 +623,7 @@ class MainActivity : AppCompatActivity() {
     private fun desenharChipDeQualidade() {
         val e = estadoDoCardapio()
         val texto = if (e.ativo) {
-            "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${e.fpsEfetivo ?: com.quall.android.core.Resolucao.quadros(this)}"
+            "${e.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${e.quadrosPara(com.quall.android.core.Resolucao.quadros(this))}"
         } else {
             getString(R.string.in_tamanho_da_fonte)
         }
@@ -1629,8 +1629,10 @@ class MainActivity : AppCompatActivity() {
         // espera da câmera, o pedido. O motivo de a entrega não ser a pedida vira Aviso de informação.
         val entregue = when {
             e.entregue.isNotBlank() -> e.entregueCurto
-            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO ->
-                "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${estadoDoCardapio().fpsEfetivo ?: com.quall.android.core.Resolucao.quadros(this)} fps"
+            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO -> {
+                val cardapio = estadoDoCardapio()
+                "${cardapio.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${cardapio.quadrosPara(com.quall.android.core.Resolucao.quadros(this))} fps"
+            }
             else -> ""
         }
         binding.textEntrega.text = entregue

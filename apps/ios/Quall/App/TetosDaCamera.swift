@@ -16,8 +16,26 @@ enum TetosDaCamera {
     }
 
     /// O estado do cardápio para a câmera [cameraID], com a escolha salva.
-    static func estado(cameraID: String?, tetos: [Int: Int?]? = nil) -> TetosDoCardapio.Estado {
-        TetosDoCardapio.estado(tetos: tetos ?? self.tetos(cameraID: cameraID), escolhida: Resolucao.escolhida.rawValue,
-                               fps: Resolucao.quadros, taxas: Resolucao.taxas)
+    static func estado(cameraID: String?, tetos: [Int: Int?]? = nil,
+                       resolucao: Resolucao = Resolucao.escolhida, fps: Int = Resolucao.quadros) -> TetosDoCardapio.Estado {
+        TetosDoCardapio.estado(tetos: tetos ?? self.tetos(cameraID: cameraID), escolhida: resolucao.rawValue,
+                               fps: fps, taxas: Resolucao.taxas)
+    }
+
+    static func resolucao(para estado: TetosDoCardapio.Estado, preferida: Resolucao) -> Resolucao {
+        estado.resolucaoEfetiva.flatMap(Resolucao.init(rawValue:)) ?? preferida
+    }
+
+    static func formato(em aparelho: AVCaptureDevice, alvo: Resolucao, fps: Int) -> AVCaptureDevice.Format? {
+        let formatos = aparelho.formats
+        let oferecidos = formatos.map { f in
+            let dim = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
+            return (largura: Int(dim.width), altura: Int(dim.height),
+                    faixas: f.videoSupportedFrameRateRanges.map { (minima: $0.minFrameRate, maxima: $0.maxFrameRate) },
+                    binned: f.isVideoBinned)
+        }
+        guard let i = TetosDoCardapio.indiceDoFormato(formatos: oferecidos,
+                                                     largura: alvo.teto.maior, altura: alvo.teto.menor, fps: fps) else { return nil }
+        return formatos[i]
     }
 }

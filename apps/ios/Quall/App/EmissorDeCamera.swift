@@ -1188,7 +1188,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
         // que a regra do produto reserva para aquela geometria (a corrida de sete emissores de
         // 07/09 é a testemunha de campo).
         let base = EmissorDeCamera.bitrateBase(largura: Int(c.largura), altura: Int(c.altura),
-                                              fps: Int32(PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros,
+                                              fps: Int32(PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento,
                                                                                    reduzida: reduzidaNoEncoder)))
         let alvo = PoliticaDeCalor.taxaDaRede(base: base, termico: estado.rawValue, economia: economia)
         let precisa = alvo != bitrateAtual
@@ -1337,7 +1337,7 @@ extension EmissorDeCamera: AssinanteDaCaptura {
         travaDoEnvio.lock()
         let quenteNaRede = redeReduzida
         travaDoEnvio.unlock()
-        let alvoDeFps = PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros, reduzida: quenteNaRede)
+        let alvoDeFps = PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento, reduzida: quenteNaRede)
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         // **O quadro velho não entra** (§8.12.1): pulado antes do encoder, nada se quebra.
         let idade = dono.idadeDoQuadro(pts)
@@ -1377,7 +1377,7 @@ extension EmissorDeCamera: AssinanteDaCaptura {
         let (l, a) = CodificadorH264.destino(largura: Int(entrada.width),
                                              altura: Int(entrada.height),
                                              tetoMaior: teto.maior, tetoMenor: teto.menor)
-        let fpsDaRede = PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros, reduzida: reduzida)
+        let fpsDaRede = PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento, reduzida: reduzida)
         if let atual = codificador, entrada == entradaAtual, (l, a) == saidaAtual, fpsDaRede == fpsDoEncoder {
             reduzidaNoEncoder = reduzida
             travaDoEnvio.unlock()

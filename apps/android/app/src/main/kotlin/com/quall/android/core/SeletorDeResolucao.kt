@@ -25,7 +25,21 @@ object SeletorDeResolucao {
         val taxasFora: Set<Int> = emptySet(),
         /** O fps que vai de fato na resolução escolhida, quando a escolha salva passa do teto da câmera. */
         val fpsEfetivo: Int? = null,
-    )
+        /** Tamanho oferecido usado em vez de uma resolução salva explicitamente indisponível. */
+        val resolucaoEfetiva: Resolucao? = null,
+        /** Teto anunciado para o tamanho efetivo; não se deduz dos botões 30/60. */
+        val tetoDeQuadros: Int? = null,
+    ) {
+        fun resolucaoPara(escolhida: Resolucao): Resolucao = resolucaoEfetiva ?: escolhida
+        fun quadrosPara(escolhido: Int): Int = fpsEfetivo ?: escolhido
+        /** O teto do pedido/SurfaceRequest, não a cadência medida de sensor em pouca luz. */
+        fun quadrosParaCodificar(escolhido: Int, negociado: Int? = null): Int {
+            val alvo = quadrosPara(escolhido)
+            return negociado?.takeIf { it > 0 }?.let { minOf(alvo, it) } ?: alvo
+        }
+        /** Um teto 24/45 é indicado como selecionado sem virar uma nova preferência. */
+        fun taxaSomenteLeitura(escolhido: Int): Int? = quadrosPara(escolhido).takeIf { it !in Resolucao.TAXAS }
+    }
 
     /**
      * [fonteEhFilmadoraDv]: a fonte é o vídeo USB; [daPlaca]: e é (ou parece ser) a placa de captura.
@@ -44,12 +58,21 @@ object SeletorDeResolucao {
     ): Estado = when {
         !fonteEhFilmadoraDv -> {
             val fora = tetos.filterValues { it == null }.keys
-            val teto = tetos[escolhida]
-            // A menor taxa nunca se apaga: numa câmera que faz 4K só a 24, o "30" continua e vai a 24.
-            val menor = Resolucao.TAXAS.minOrNull()
-            val taxasFora = if (teto != null) Resolucao.TAXAS.filter { it > teto && it != menor }.toSet() else emptySet()
+            // Só um "não oferece" explícito permite mudar o pedido. Ausência no mapa é desconhecido.
+            // Prefere o tamanho oferecido mais próximo abaixo; se não houver, o menor acima.
+            // Nunca grava a preferência: voltar para a tela/outra câmera recupera a escolha salva.
+            val oferecidas = tetos.filterValues { it != null && it > 0 }.keys
+            val substituta = if (escolhida in fora) {
+                oferecidas.filter { it.maxFs < escolhida.maxFs }.maxByOrNull { it.maxFs }
+                    ?: oferecidas.minByOrNull { it.maxFs }
+            } else null
+            val teto = tetos[substituta ?: escolhida]?.takeIf { it > 0 }
+            // Nenhuma opção nominal acima do teto fica disponível. 24/45 são apenas indicação
+            // derivada, não um setter que gravaria uma taxa fora dos presets 30/60.
+            val taxasFora = if (teto != null) Resolucao.TAXAS.filter { it > teto }.toSet() else emptySet()
             val efetivo = if (teto != null && fps > teto) teto else null
-            Estado(ativo = true, nota = null, resolucoesFora = fora, taxasFora = taxasFora, fpsEfetivo = efetivo)
+            Estado(ativo = true, nota = null, resolucoesFora = fora, taxasFora = taxasFora,
+                fpsEfetivo = efetivo, resolucaoEfetiva = substituta, tetoDeQuadros = teto)
         }
         daPlaca -> Estado(ativo = false, nota = R.string.in_nota_da_placa)
         else -> Estado(ativo = false, nota = R.string.in_nota_da_fita)

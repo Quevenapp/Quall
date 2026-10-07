@@ -22,14 +22,61 @@ extension Testes {
         let traseira = T.tetos(formatos: [(1920, 1080, 60), (3840, 2160, 30)], tamanhos: tamanhos)
         conferir(traseira[8_160] == .some(60) && traseira[14_400] == .some(30) && traseira[32_400] == .some(30),
                  "traseira 1080p60 + 4K30: 1080p a 60, 2K e 4K a 30")
-        conferir(T.estado(tetos: traseira, escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(),
-                 "1080p60 numa câmera que faz: nada apagado")
+        conferir(T.estado(tetos: traseira, escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(tetoFPS: 60),
+                 "1080p60 numa câmera que faz: sem recuo, com o teto real")
         conferir(T.estado(tetos: traseira, escolhida: 32_400, fps: 30, taxas: [30, 60]).taxasFora == [60],
                  "4K: o 60 apaga, o salvo em 30 fica")
         let lenta = T.estado(tetos: [32_400: .some(24)], escolhida: 32_400, fps: 30, taxas: [30, 60])
-        conferir(lenta.taxasFora == [60] && lenta.fpsEfetivo == 24, "4K só a 24: o 30 nunca se apaga e vai a 24")
+        conferir(lenta.taxasFora == [30, 60] && lenta.fpsEfetivo == 24, "4K só a 24: 30/60 apagados, efetivo 24")
+        conferir(![30, 60].contains(lenta.fpsEfetivo ?? 30) && lenta.tetoFPS == 24,
+                 "teto sintético 24: indicador selecionado fora dos presets, sem opção nominal falsa")
+        let lenta60 = T.estado(tetos: [32_400: .some(24)], escolhida: 32_400, fps: 60, taxas: [30, 60])
+        conferir(lenta60.fpsEfetivo == 24 && lenta60.taxasFora == [30, 60],
+                 "teto sintético 24 com salvo 60: mostra 24 e não oferece 30/60")
+        let teto45 = T.estado(tetos: [32_400: .some(45)], escolhida: 32_400, fps: 30, taxas: [30, 60])
+        conferir(teto45.fpsEfetivo == nil && teto45.tetoFPS == 45 && teto45.taxasFora == [60],
+                 "teto sintético 45 com salvo 30: conserva 30 e informa capacidade 45")
+        let recuo45 = T.estado(tetos: [32_400: .some(45)], escolhida: 32_400, fps: 60, taxas: [30, 60])
+        conferir(recuo45.fpsEfetivo == 45 && recuo45.taxasFora == [60] && recuo45.tetoFPS == 45,
+                 "teto sintético 45 com salvo 60: mostra 45 somente leitura, nunca 30 nominal")
+        let salvo4K = (resolucao: 32_400, fps: 60)
+        let frontal4K = T.estado(tetos: frontal, escolhida: salvo4K.resolucao, fps: salvo4K.fps, taxas: [30, 60])
+        conferir(frontal4K.resolucaoEfetiva == 8_160 && frontal4K.fpsEfetivo == 30
+                 && frontal4K.taxasFora == [60],
+                 "4K60 salvo na frontal 1080p30: folha e chip usam 1080p30")
+        let voltou = T.estado(tetos: [32_400: .some(60)], escolhida: salvo4K.resolucao,
+                              fps: salvo4K.fps, taxas: [30, 60])
+        conferir(voltou.resolucaoEfetiva == nil && voltou.fpsEfetivo == nil,
+                 "ao voltar a uma câmera 4K60, a mesma preferência volta a valer sem recuo")
+        let tetosMenores: [Int: Int?] = [3_600: nil, 8_160: 60]
+        let menor = T.estado(tetos: tetosMenores, escolhida: 3_600, fps: 60, taxas: [30, 60])
+        conferir(menor.resolucaoEfetiva == 8_160 && menor.fpsEfetivo == nil,
+                 "sem resolução menor disponível, usa a menor opção disponível")
         conferir(T.estado(tetos: [:], escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(),
                  "sem tetos (a tela, ou nada legível): tudo disponível")
+        print("TetosDoCardapio — formato da captura cobre o mesmo alvo da folha")
+        let formatos: [(largura: Int, altura: Int, faixas: [(minima: Double, maxima: Double)], binned: Bool)] = [
+            (1280, 720, [(1, 60)], false), (1920, 1080, [(1, 30)], false),
+            (3840, 2160, [(1, 60)], false)]
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1920, altura: 1080, fps: 60) == 2,
+                 "1080p60 escolhe 4K60 reduzido, nunca 720p60")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 2560, altura: 1440, fps: 60) == 2,
+                 "2K60 vem do formato 4K60, como o teto do cardápio anuncia")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1920, altura: 1080, fps: 30) == 1,
+                 "1080p30 prefere a menor área suficiente")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 3840, altura: 2160, fps: 60) == 2,
+                 "4K60 usa o formato que cobre o alvo exato")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1080, altura: 1920, fps: 60) == 2,
+                 "orientação retrato tem o mesmo contrato geométrico")
+        let empate = [(largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: true),
+                      (largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: false),
+                      (largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: false)]
+        conferir(T.indiceDoFormato(formatos: empate, largura: 1920, altura: 1080, fps: 60) == 1,
+                 "mesma área: prefere não-binned e preserva a primeira ordem no empate")
+        conferir(T.indiceDoFormato(formatos: [(1920, 1080, [(120, 240)], false)], largura: 1920, altura: 1080, fps: 60) == nil,
+                 "máximo 240 não prova que a faixa 120–240 faça 60")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 3840, altura: 2160, fps: 120) == nil,
+                 "nenhum formato fora da faixa entra na captura")
         print("RegrasDosControles — pouca luz: o piso do automático e o aviso (§3.1)")
         conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 30) == 15, "faixa 2–30 a 30 fps: o piso é a metade, 15")
         conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 15) == 10, "a 15 fps a metade seria 7,5: o piso fica em 10")

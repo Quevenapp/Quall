@@ -120,6 +120,8 @@
     <string name="in_instrucao_sem_nome">On the other device, open Quall in %1$s and type the address below.</string>
     <string name="in_nota_da_fita">The tape sets the size: 1280×720 at 30 frames per second when recording and, when mirroring, the tape’s own size.</string>
     <string name="in_camera_nao_oferece">This camera doesn’t offer %1$s.</string>
+    <string name="in_camera_tamanho_efetivo">Using %1$s on this camera; your saved choice stays the same.</string>
+    <string name="in_taxa_efetiva">Current rate: %1$d fps, limited by this camera. Read only.</string>
     <string name="in_teto_da_camera">This camera goes up to %1$d fps at %2$s.</string>
     <string name="in_nota_da_placa">The card sets the size: its own frame (640×480 at 30 frames per second on the EasyCap), when sending and when recording.</string>
     <string name="lic_titulo">FFmpeg (libavcodec, libavformat and libavutil %1$s)</string>
