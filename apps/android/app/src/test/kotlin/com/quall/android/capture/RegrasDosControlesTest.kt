@@ -335,4 +335,86 @@ class RegrasDosControlesTest {
         assertEquals(27, c.atraso(1_040))
         assertEquals(0, c.atraso(1_100))
     }
+
+    // --- a pouca luz (§3.1) ---
+
+    @Test
+    fun o_piso_do_automatico_e_o_das_faixas_da_bancada() {
+        // As faixas anunciadas em 06/10 (`dumpsys media.camera`).
+        val a07 = listOf(10 to 10, 15 to 15, 15 to 20, 20 to 20, 5 to 30, 30 to 30)
+        val a07Frontal = listOf(10 to 10, 15 to 15, 15 to 20, 20 to 20, 10 to 30, 30 to 30)
+        val tablet = listOf(15 to 15, 15 to 20, 20 to 20, 24 to 24, 15 to 30, 30 to 30)
+        assertEquals(5, RegrasDosControles.pisoDoAutomatico(a07, 30))
+        assertEquals(10, RegrasDosControles.pisoDoAutomatico(a07Frontal, 30))
+        assertEquals(15, RegrasDosControles.pisoDoAutomatico(tablet, 30))
+        // Prefere o piso de 10 a um que desce mais; sem faixa variável, a fixa de antes.
+        assertEquals(10, RegrasDosControles.pisoDoAutomatico(listOf(5 to 30, 10 to 30, 30 to 30), 30))
+        assertEquals(60, RegrasDosControles.pisoDoAutomatico(listOf(30 to 30, 60 to 60), 60))
+        assertEquals(30, RegrasDosControles.pisoDoAutomatico(emptyList(), 30))
+    }
+
+    @Test
+    fun abre_no_automatico_e_lembra_o_ultimo_manual() {
+        val m = RegrasDosControles.MeusAjustes
+        // O S24 das provas (07/10): manual guardado. A abertura ignora e vai no automático.
+        val manual = AjusteDaCamera(exposicao = AjusteDaCamera.Exposicao.MANUAL, iso = 640, obturadorNs = 10_000_000,
+            balanco = AjusteDaCamera.Balanco.KELVIN, kelvin = 5200, foco = AjusteDaCamera.Foco.TRAVADO, focoPosicao = 0.34)
+        assertTrue(m.naAbertura().ehPadrao)
+        // Só o manual se grava; voltar ao automático não apaga a lembrança.
+        assertEquals(manual, m.aGravar(manual))
+        assertNull(m.aGravar(AjusteDaCamera()))
+        // O botão aparece com lembrança diferente do que vale, e some quando ela já vale.
+        assertTrue(m.ofereceMeusAjustes(manual, AjusteDaCamera()))
+        assertFalse(m.ofereceMeusAjustes(manual, manual))
+        assertFalse(m.ofereceMeusAjustes(null, AjusteDaCamera()))
+        assertFalse(m.ofereceMeusAjustes(AjusteDaCamera(), AjusteDaCamera()))
+    }
+
+    @Test
+    fun um_fps_que_a_camera_nao_alcanca_vira_o_teto_dela() {
+        // O A07 traseiro (06/10): nada chega a 60.
+        val a07 = listOf(10 to 10, 15 to 15, 15 to 20, 20 to 20, 5 to 30, 10 to 30, 30 to 30)
+        assertEquals(30, RegrasDosControles.tetoAlcancavel(a07, 60))
+        assertEquals(10, RegrasDosControles.pisoDoAutomatico(a07, RegrasDosControles.tetoAlcancavel(a07, 60)))
+        assertEquals(30, RegrasDosControles.tetoAlcancavel(a07, 30))
+        // Quem faz 60 continua pedindo 60; sem faixas lidas, o pedido.
+        assertEquals(60, RegrasDosControles.tetoAlcancavel(listOf(30 to 30, 60 to 60), 60))
+        assertEquals(60, RegrasDosControles.tetoAlcancavel(emptyList(), 60))
+    }
+
+    @Test
+    fun a_pouca_luz_acende_depois_de_1_s_e_apaga_depois_de_2_s() {
+        val v = RegrasDosControles.VigiaDaPoucaLuz()
+        val lento = 100_000_000L // 10 fps
+        val normal = 33_333_333L
+        assertNull(v.observar(0, auto = true, duracaoDoQuadroNs = lento, fps = 30))
+        assertNull(v.observar(999, auto = true, duracaoDoQuadroNs = lento, fps = 30))
+        assertEquals(10, v.observar(1_000, auto = true, duracaoDoQuadroNs = lento, fps = 30))
+        // Um quadro normal no meio não apaga (e o fps dito é o do quadro); 2 s seguidos apagam.
+        assertEquals(30, v.observar(1_250, auto = true, duracaoDoQuadroNs = normal, fps = 30))
+        assertEquals(10, v.observar(1_500, auto = true, duracaoDoQuadroNs = lento, fps = 30))
+        assertEquals(30, v.observar(2_000, auto = true, duracaoDoQuadroNs = normal, fps = 30))
+        assertEquals(30, v.observar(3_999, auto = true, duracaoDoQuadroNs = normal, fps = 30))
+        assertNull(v.observar(4_000, auto = true, duracaoDoQuadroNs = normal, fps = 30))
+    }
+
+    @Test
+    fun a_pouca_luz_nao_acende_com_exposicao_manual_nem_na_folga_do_hal() {
+        val v = RegrasDosControles.VigiaDaPoucaLuz()
+        assertNull(v.observar(0, auto = false, duracaoDoQuadroNs = 100_000_000, fps = 30))
+        assertNull(v.observar(5_000, auto = false, duracaoDoQuadroNs = 100_000_000, fps = 30))
+        val w = RegrasDosControles.VigiaDaPoucaLuz()
+        assertNull(w.observar(0, auto = true, duracaoDoQuadroNs = 36_000_000, fps = 30))
+        assertNull(w.observar(5_000, auto = true, duracaoDoQuadroNs = 36_000_000, fps = 30))
+    }
+
+    @Test
+    fun o_texto_da_pouca_luz_nas_duas_linguas() {
+        assertEquals("Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual na engrenagem.",
+            RegrasDosControles.textoDaPoucaLuz(PT, 15, 30, temManual = true))
+        assertEquals("Low light: 15 fps to brighten the picture. For 30 fps, use manual exposure in the gear menu.",
+            RegrasDosControles.textoDaPoucaLuz(EN, 15, 30, temManual = true))
+        assertEquals("Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.",
+            RegrasDosControles.textoDaPoucaLuz(PT, 15, 30, temManual = false))
+    }
 }

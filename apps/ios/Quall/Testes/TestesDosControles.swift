@@ -7,6 +7,100 @@ import CoreVideo
 extension Testes {
     static func rodarControlesDaCamera() {
         typealias R = RegrasDosControles
+        print("TetosDoCardapio — o cardápio apaga o que a câmera não faz")
+        typealias T = TetosDoCardapio
+        let tamanhos = [(chave: 3_600, largura: 1280, altura: 720), (chave: 8_160, largura: 1920, altura: 1080),
+                        (chave: 14_400, largura: 2560, altura: 1440), (chave: 32_400, largura: 3840, altura: 2160)]
+        // Uma frontal antiga: até 1080p, só a 30.
+        let frontal = T.tetos(formatos: [(640, 480, 30), (1280, 720, 30), (1920, 1080, 30)], tamanhos: tamanhos)
+        conferir(frontal[8_160] == .some(30) && frontal[32_400] == .some(nil) && frontal[14_400] == .some(nil),
+                 "frontal até 1080p30: 1080p a 30, sem 2K nem 4K")
+        let ef = T.estado(tetos: frontal, escolhida: 8_160, fps: 60, taxas: [30, 60])
+        conferir(ef.resolucoesFora == [14_400, 32_400] && ef.taxasFora == [60] && ef.fpsEfetivo == 30,
+                 "o salvo em 1080p60 apaga 2K, 4K e o 60, e vai a 30")
+        // Uma traseira com 1080p60 e 4K30: o 2K sai do 4K (30); o 1080p chega a 60.
+        let traseira = T.tetos(formatos: [(1920, 1080, 60), (3840, 2160, 30)], tamanhos: tamanhos)
+        conferir(traseira[8_160] == .some(60) && traseira[14_400] == .some(30) && traseira[32_400] == .some(30),
+                 "traseira 1080p60 + 4K30: 1080p a 60, 2K e 4K a 30")
+        conferir(T.estado(tetos: traseira, escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(tetoFPS: 60),
+                 "1080p60 numa câmera que faz: sem recuo, com o teto real")
+        conferir(T.estado(tetos: traseira, escolhida: 32_400, fps: 30, taxas: [30, 60]).taxasFora == [60],
+                 "4K: o 60 apaga, o salvo em 30 fica")
+        let lenta = T.estado(tetos: [32_400: .some(24)], escolhida: 32_400, fps: 30, taxas: [30, 60])
+        conferir(lenta.taxasFora == [30, 60] && lenta.fpsEfetivo == 24, "4K só a 24: 30/60 apagados, efetivo 24")
+        conferir(![30, 60].contains(lenta.fpsEfetivo ?? 30) && lenta.tetoFPS == 24,
+                 "teto sintético 24: indicador selecionado fora dos presets, sem opção nominal falsa")
+        let lenta60 = T.estado(tetos: [32_400: .some(24)], escolhida: 32_400, fps: 60, taxas: [30, 60])
+        conferir(lenta60.fpsEfetivo == 24 && lenta60.taxasFora == [30, 60],
+                 "teto sintético 24 com salvo 60: mostra 24 e não oferece 30/60")
+        let teto45 = T.estado(tetos: [32_400: .some(45)], escolhida: 32_400, fps: 30, taxas: [30, 60])
+        conferir(teto45.fpsEfetivo == nil && teto45.tetoFPS == 45 && teto45.taxasFora == [60],
+                 "teto sintético 45 com salvo 30: conserva 30 e informa capacidade 45")
+        let recuo45 = T.estado(tetos: [32_400: .some(45)], escolhida: 32_400, fps: 60, taxas: [30, 60])
+        conferir(recuo45.fpsEfetivo == 45 && recuo45.taxasFora == [60] && recuo45.tetoFPS == 45,
+                 "teto sintético 45 com salvo 60: mostra 45 somente leitura, nunca 30 nominal")
+        let salvo4K = (resolucao: 32_400, fps: 60)
+        let frontal4K = T.estado(tetos: frontal, escolhida: salvo4K.resolucao, fps: salvo4K.fps, taxas: [30, 60])
+        conferir(frontal4K.resolucaoEfetiva == 8_160 && frontal4K.fpsEfetivo == 30
+                 && frontal4K.taxasFora == [60],
+                 "4K60 salvo na frontal 1080p30: folha e chip usam 1080p30")
+        let voltou = T.estado(tetos: [32_400: .some(60)], escolhida: salvo4K.resolucao,
+                              fps: salvo4K.fps, taxas: [30, 60])
+        conferir(voltou.resolucaoEfetiva == nil && voltou.fpsEfetivo == nil,
+                 "ao voltar a uma câmera 4K60, a mesma preferência volta a valer sem recuo")
+        let tetosMenores: [Int: Int?] = [3_600: nil, 8_160: 60]
+        let menor = T.estado(tetos: tetosMenores, escolhida: 3_600, fps: 60, taxas: [30, 60])
+        conferir(menor.resolucaoEfetiva == 8_160 && menor.fpsEfetivo == nil,
+                 "sem resolução menor disponível, usa a menor opção disponível")
+        conferir(T.estado(tetos: [:], escolhida: 8_160, fps: 60, taxas: [30, 60]) == T.Estado(),
+                 "sem tetos (a tela, ou nada legível): tudo disponível")
+        print("TetosDoCardapio — formato da captura cobre o mesmo alvo da folha")
+        let formatos: [(largura: Int, altura: Int, faixas: [(minima: Double, maxima: Double)], binned: Bool)] = [
+            (1280, 720, [(1, 60)], false), (1920, 1080, [(1, 30)], false),
+            (3840, 2160, [(1, 60)], false)]
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1920, altura: 1080, fps: 60) == 2,
+                 "1080p60 escolhe 4K60 reduzido, nunca 720p60")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 2560, altura: 1440, fps: 60) == 2,
+                 "2K60 vem do formato 4K60, como o teto do cardápio anuncia")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1920, altura: 1080, fps: 30) == 1,
+                 "1080p30 prefere a menor área suficiente")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 3840, altura: 2160, fps: 60) == 2,
+                 "4K60 usa o formato que cobre o alvo exato")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 1080, altura: 1920, fps: 60) == 2,
+                 "orientação retrato tem o mesmo contrato geométrico")
+        let empate = [(largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: true),
+                      (largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: false),
+                      (largura: 1920, altura: 1080, faixas: [(minima: 1.0, maxima: 60.0)], binned: false)]
+        conferir(T.indiceDoFormato(formatos: empate, largura: 1920, altura: 1080, fps: 60) == 1,
+                 "mesma área: prefere não-binned e preserva a primeira ordem no empate")
+        conferir(T.indiceDoFormato(formatos: [(1920, 1080, [(120, 240)], false)], largura: 1920, altura: 1080, fps: 60) == nil,
+                 "máximo 240 não prova que a faixa 120–240 faça 60")
+        conferir(T.indiceDoFormato(formatos: formatos, largura: 3840, altura: 2160, fps: 120) == nil,
+                 "nenhum formato fora da faixa entra na captura")
+        print("RegrasDosControles — pouca luz: o piso do automático e o aviso (§3.1)")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 30) == 15, "faixa 2–30 a 30 fps: o piso é a metade, 15")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 15) == 10, "a 15 fps a metade seria 7,5: o piso fica em 10")
+        conferir(R.pisoDoAutomatico(faixas: [(15, 30)], fps: 30) == 15, "faixa 15–30: o piso é 15")
+        conferir(R.pisoDoAutomatico(faixas: [(30, 30)], fps: 30) == 30, "faixa fixa: o fps de antes")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30), (2, 60)], fps: 60) == 30, "a 60, a metade: 30")
+        conferir(R.pisoDoAutomatico(faixas: [(2, 30)], fps: 60) == 60, "nenhuma faixa alcança 60: fixa")
+        var luz = R.VigiaDaPoucaLuz()
+        conferir(luz.observar(auto: true, obturadorNs: 100_000_000, fps: 30, agora: 0) == nil, "não acende no primeiro quadro lento")
+        conferir(luz.observar(auto: true, obturadorNs: 100_000_000, fps: 30, agora: 1) == 10, "acende depois de 1 s: 10 fps")
+        conferir(luz.observar(auto: true, obturadorNs: 33_000_000, fps: 30, agora: 2) == 30, "um quadro normal não apaga")
+        conferir(luz.observar(auto: true, obturadorNs: 33_000_000, fps: 30, agora: 4) == nil, "2 s normais apagam")
+        var manual = R.VigiaDaPoucaLuz()
+        _ = manual.observar(auto: false, obturadorNs: 100_000_000, fps: 30, agora: 0)
+        conferir(manual.observar(auto: false, obturadorNs: 100_000_000, fps: 30, agora: 5) == nil, "com exposição manual, nunca")
+        var folga = R.VigiaDaPoucaLuz()
+        _ = folga.observar(auto: true, obturadorNs: 36_000_000, fps: 30, agora: 0)
+        conferir(folga.observar(auto: true, obturadorNs: 36_000_000, fps: 30, agora: 5) == nil, "36 ms a 30 fps é folga, não aviso")
+        conferir(R.textoDaPoucaLuz(fpsAgora: 15, fps: 30, temManual: true)
+                 == "Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual na engrenagem.",
+                 "o texto com manual")
+        conferir(R.textoDaPoucaLuz(fpsAgora: 15, fps: 30, temManual: false)
+                 == "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.",
+                 "o texto sem manual")
         print("RegrasDosControles — obturador: nunca acima de 1/fps (§3.1)")
         // A traseira de um iPhone típico: de 1/45000 s a ~1 s no formato ativo.
         let min = Int64(22_000), max = Int64(1_000_000_000)
@@ -104,6 +198,100 @@ extension Testes {
                  "JSON ilegível ou ausente: o padrão")
         conferir(AjustesDaCamera.chave("ABC") == "camera.ajustes.ABC", "a chave é camera.ajustes.<uniqueID>")
         conferir(!texto.contains("travaIso"), "o que é nenhum não vai ao JSON")
+
+        print("RegrasDosControles — abrir no automático, lembrar o último manual (§2, 07/10)")
+        // O guardado de uma noite: ISO e obturador fixos, Kelvin, foco travado.
+        var noite = AjustesDaCamera()
+        noite.exposicao = .manual; noite.iso = 1600; noite.obturadorNs = 33_333_333
+        noite.balanco = .kelvin; noite.kelvin = 3200; noite.foco = .travado; noite.focoPosicao = 0.3
+        conferir(R.registroAoAbrir(bancada: nil) == .padrao, "abrir: o padrão, tudo automático (nunca o guardado)")
+        conferir(R.registroAoAbrir(bancada: noite) == noite, "abrir com --camera-ajustes: o da bancada, em memória")
+        conferir(R.aGravar(noite) == noite, "gravar: um registro fora do padrão vira os meus ajustes")
+        conferir(R.aGravar(.padrao) == nil, "gravar: o padrão não grava nada (Restaurar automático não apaga)")
+        var soEv = AjustesDaCamera(); soEv.ev = 0.7
+        conferir(R.aGravar(soEv) == soEv, "gravar: um EV só já é ajuste da pessoa")
+        // A sessão de um dia: abre no automático, o botão está lá.
+        let aberto = R.registroAoAbrir(bancada: nil)
+        conferir(R.meusAjustes(guardado: noite, registro: aberto) == noite, "abriu no automático: Usar meus ajustes oferece o da noite")
+        conferir(R.meusAjustes(guardado: noite, registro: noite) == nil, "já em uso: o botão some")
+        conferir(R.meusAjustes(guardado: nil, registro: aberto) == nil, "sem guardado: sem botão")
+        conferir(R.meusAjustes(guardado: .padrao, registro: soEv) == nil, "guardado igual ao padrão (de antes de 07/10): sem botão")
+        conferir(R.meusAjustes(guardado: noite, registro: soEv) == noite, "mexeu em outra coisa: o botão continua oferecendo o guardado")
+        // A sequência inteira, pelas três regras: abre, usa, restaura (o guardado fica), reabre.
+        var disco: AjustesDaCamera? = noite
+        var registro = R.registroAoAbrir(bancada: nil)
+        if let m = R.meusAjustes(guardado: disco, registro: registro) { registro = m }
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(registro == noite && disco == noite, "usar meus ajustes: o registro é o guardado, e o guardado não muda")
+        registro = .padrao
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(disco == noite && R.meusAjustes(guardado: disco, registro: registro) == noite,
+                 "restaurar automático: o guardado fica, e o botão volta")
+        registro.ev = -1
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(disco == registro, "um gesto novo fora do padrão: vira o guardado (o último manual)")
+        registro = R.registroAoAbrir(bancada: nil)
+        conferir(registro == .padrao && R.meusAjustes(guardado: disco, registro: registro)?.ev == -1,
+                 "reabrir: no automático, e o botão oferece o último manual")
+        // Os meus ajustes passam pelo mesmo plano da reaplicação: cortados pelas faixas de agora.
+        var cam = CapacidadesDaCamera()
+        cam.exposicaoCustom = true; cam.exposicaoContinua = true; cam.balancoContinuo = true; cam.ganhosCustom = true
+        cam.focoContinuo = true; cam.lenteCustom = true
+        let f60r = FaixasDaCamera(isoMin: 46, isoMax: 1000, obturadorMinNs: 10_000, obturadorMaxNs: 1_000_000_000,
+                                  evMin: -8, evMax: 8, ganhoMax: 4, fps: 60)
+        conferir(R.plano(noite, cam, f60r, reaplicando: true).exposicao == .manual(iso: 1000, ns: 16_666_666),
+                 "usar meus ajustes num formato de 60 fps: ISO e obturador cortados na faixa de agora")
+        conferir(R.plano(aberto, cam, f60r, reaplicando: true)
+                 == R.Plano(exposicao: .continua(ev: 0), balanco: .continuo, foco: .continuo, travadoDeNovo: false),
+                 "a abertura aplica tudo contínuo, seja qual for o guardado")
+
+        print("GravacaoDosAjustes — a gravação adiada não troca de câmera (07/10)")
+        do {
+            var disco: [String: Data] = [:]
+            let g = GravacaoDosAjustes(ler: { disco[$0] }, escrever: { disco[$0] = $1 })
+            func lido(_ id: String) -> AjustesDaCamera? { disco[AjustesDaCamera.chave(id)].map { AjustesDaCamera.de(json: $0) } }
+            var remoto = AjustesDaCamera(); remoto.ev = 1.3
+            // A frontal abre, um pedido remoto muda o registro e adia; troca para a traseira antes dos 500 ms.
+            g.trocar(para: "frontal", registroAnterior: .padrao)
+            let ficha = g.adiar()
+            conferir(g.trocar(para: "traseira", registroAnterior: remoto) == nil && lido("frontal") == remoto,
+                     "a troca grava a adiada na chave da câmera ANTERIOR, com o registro anterior")
+            // A adiada dispara atrasada, já com o registro da traseira (o da bancada, por exemplo).
+            conferir(g.gravarAdiada(ficha, registro: noite) == nil && lido("traseira") == nil,
+                     "a adiada que dispara depois da troca não grava na câmera nova")
+            // Mesma câmera nas duas telas (a frontal da R5 e a comum): a nova lê o que a anterior gravou.
+            let ficha2 = g.adiar()
+            var r5 = AjustesDaCamera(); r5.ev = -0.7
+            conferir(g.trocar(para: "frontal", registroAnterior: r5) == remoto && lido("traseira") == r5,
+                     "reabrir a mesma chave lê depois de gravar a pendente")
+            _ = ficha2
+            // Adiamentos seguidos: só a última ficha grava, e uma gravação imediata invalida a pendente.
+            let velha = g.adiar(), nova = g.adiar()
+            conferir(g.gravarAdiada(velha, registro: noite) == nil && lido("frontal") == remoto,
+                     "uma ficha superada não grava")
+            conferir(g.gravarAdiada(nova, registro: noite) == noite && lido("frontal") == noite && g.guardado == noite,
+                     "a última ficha grava o registro de agora")
+            let f3 = g.adiar()
+            _ = g.gravarAgora(r5)
+            conferir(g.gravarAdiada(f3, registro: remoto) == nil && lido("frontal") == r5 && !g.temAdiada,
+                     "a gravação imediata leva a pendente junto")
+            // O fechamento descarrega; o padrão nunca vai ao disco (Restaurar automático não apaga).
+            _ = g.adiar()
+            conferir(g.descarregar(.padrao) == nil && lido("frontal") == r5 && !g.temAdiada,
+                     "descarregar o padrão: o guardado fica")
+            conferir(g.descarregar(remoto) == nil && lido("frontal") == r5, "descarregar sem pendente: nada")
+        }
+
+        print("RegrasDosControles — o id da câmera no diário (a prova (c) da R5)")
+        let frontalId = "com.apple.avfoundation.avcapturedevice.built-in_video:1"
+        conferir(R.idNoDiario(frontalId) == frontalId, "embutida: o uniqueID inteiro (é o mesmo em todo aparelho do modelo)")
+        conferir(R.idNoDiario("0x14100000046d0825") == "externa", "externa: sem o id (pode ter número de série)")
+        conferir(R.idNoDiario("com.apple.avfoundation.avcapturedevice.built-in_video:1 /x") == "externa",
+                 "prefixo embutido com resto estranho: externa")
+        let linhaDoDiario = SanitizacaoDoLog.mensagem("APP CAMERA controles: registro carregado de "
+            + AjustesDaCamera.chave(R.idNoDiario(frontalId)) + " no automático (tela=r5) registro_bytes=2 meus_ajustes=não")
+        conferir(linhaDoDiario.contains("registro carregado de camera.ajustes.\(frontalId) no automático (tela=r5)"),
+                 "a linha passa pelo registro seguro sem perder o id que o roteiro lê: \(linhaDoDiario)")
 
         print("RegrasDosControles — o plano de aplicação, com corte e reaplicação (§2.1, §2.2)")
         var tudo = CapacidadesDaCamera()

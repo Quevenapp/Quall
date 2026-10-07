@@ -670,6 +670,7 @@ fn criar(cfg: ConfigDaTela) -> Result<HWND> {
             Some(hinstance.into()),
             None,
         )?;
+        crate::decoracao::aplicar(hwnd);
         let dpi = GetDpiForWindow(hwnd).max(96);
         let fontes = Fontes {
             titulo: fonte(dpi, 20, FW_SEMIBOLD.0 as i32),
@@ -1346,10 +1347,15 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                 None => unsafe { DefWindowProcW(hwnd, msg, wp, lp) },
             }
         }
+        WM_THEMECHANGED | WM_SETTINGCHANGE => {
+            crate::decoracao::aplicar(hwnd);
+            unsafe { DefWindowProcW(hwnd, msg, wp, lp) }
+        }
         WM_DPICHANGED => {
             let novo = ((wp.0 >> 16) & 0xFFFF) as u32;
             let sugerido = unsafe { *(lp.0 as *const RECT) };
             t.mudar_dpi(hwnd, novo, sugerido);
+            crate::decoracao::aplicar(hwnd);
             LRESULT(0)
         }
         WM_CTLCOLOREDIT | WM_CTLCOLORLISTBOX => unsafe {
@@ -4847,11 +4853,11 @@ impl Tela {
             }
             p.linha(&self.fontes.pequeno, TINTA_CLARA_FRACA, 40, 18, &segunda, DT_LEFT);
             let anuncio = if painel.as_ref().is_some_and(|p| p.anunciando) {
-                idioma::t("Anunciando na rede. No outro aparelho: Quall → Teleprompter → Controlar.")
+                idioma::tf("Na lista: {}. No outro aparelho: Teleprompter → Controlar.", &[&painel.as_ref().map(|p| p.alias_da_descoberta.as_str()).unwrap_or("")])
             } else {
-                idioma::t("Sem anúncio na rede: digite o endereço no controle.")
+                idioma::t("Sem anúncio na rede: digite o endereço no controle.").to_string()
             };
-            p.linha(&self.fontes.pequeno, TINTA_CLARA_FRACA, 56, 16, anuncio, DT_LEFT);
+            p.linha(&self.fontes.pequeno, TINTA_CLARA_FRACA, 56, 16, &anuncio, DT_LEFT);
         }
         // À direita: com quem está, ou o aviso de controle sumido.
         let (cor, estado) = if self.avisos.par_sumido && painel.as_ref().is_some_and(|p| p.ja_houve_sessao) {

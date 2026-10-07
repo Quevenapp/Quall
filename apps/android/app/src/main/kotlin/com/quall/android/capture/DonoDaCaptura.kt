@@ -9,7 +9,6 @@ import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
 import com.quall.android.core.LogSeguro as Log
-import android.util.Range
 import android.util.Size
 import android.view.Display
 import android.view.Surface
@@ -115,8 +114,12 @@ class DonoDaCaptura private constructor(
             val sensor = chars?.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
             val frontal = chars?.get(CameraCharacteristics.LENS_FACING) != CameraCharacteristics.LENS_FACING_BACK
 
-            val escolhida = com.quall.android.core.Resolucao.escolhida(contexto)
+            val salva = com.quall.android.core.Resolucao.escolhida(contexto)
             val fps = com.quall.android.core.Resolucao.quadros(contexto)
+            val cardapio = com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = CameraXSource.tetosPorResolucao(contexto, cameraId), escolhida = salva, fps = fps)
+            val escolhida = cardapio.resolucaoPara(salva)
+            val fpsAlvo = cardapio.quadrosPara(fps)
             val divisor = DivisorGl("quall-divisor", pelaMaisNova = com.quall.android.core.Bancada.cameraPeloMaisNovo(contexto),
                 lumaMedia = com.quall.android.core.Bancada.lumaMedia(contexto)).also { it.frontal = frontal }
             val primeiro = CountDownLatch(1)
@@ -132,8 +135,9 @@ class DonoDaCaptura private constructor(
             val vcBuilder = VideoCapture.Builder(saida)
                 .setMirrorMode(MirrorMode.MIRROR_MODE_OFF)
                 .comSeletor(CameraXSource.seletorPara(escolhida.pedido))
-            // A taxa, como em `CameraXSource.pedirQuadros`: 30 é o padrão do CameraX e não se escreve.
-            if (fps != 30) vcBuilder.setTargetFrameRate(Range(fps, fps))
+            // A taxa, como em `CameraXSource.pedirQuadros`: a faixa variável até o fps escolhido, a 30
+            // também, para o automático clarear a imagem em pouca luz (`faixaDoAutomatico`).
+            vcBuilder.setTargetFrameRate(CameraXSource.faixaDoAutomatico(CameraXSource.faixasDeQuadros(contexto, cameraId), fpsAlvo))
             // O que a câmera disse ter usado (R9, `docs/controles-de-camera.md` §3.6 e §6): o
             // `CaptureResult` de cada quadro, para a leitura de volta, o Kelvin lido e as travas que
             // guardam valores. Só se instala antes do bind.
@@ -141,7 +145,7 @@ class DonoDaCaptura private constructor(
             Camera2Interop.Extender(vcBuilder).setSessionCaptureCallback(leitor)
             val vc = vcBuilder.build()
 
-            val d = DonoDaCaptura(contexto.applicationContext, cameraId, provider, vc, divisor, realtime, sensor, fps,
+            val d = DonoDaCaptura(contexto.applicationContext, cameraId, provider, vc, divisor, realtime, sensor, fpsAlvo,
                 desempatePelaDeclaracao, frontal, deQuem)
             val principal = Handler(Looper.getMainLooper())
             var falha: Throwable? = null

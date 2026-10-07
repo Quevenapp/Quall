@@ -528,7 +528,8 @@ class VideoUsbActivity : AppCompatActivity() {
         val esp = PainelDoVideoUsb.espera(t, m)
         mudar(b.vuSecaoDaTransmissao, esp != null)
         if (esp != null) {
-            texto(b.vuManchete, esp.manchete)
+            texto(b.vuManchete, if (m.fase == MirrorBus.Fase.ESPERANDO && m.aliasNaRede.isNotBlank())
+                "${m.aliasNaRede} · ${esp.manchete}" else esp.manchete)
             mudar(b.vuBlocoDoPin, esp.pin.isNotEmpty())
             b.vuPin.mostrar(esp.pin.filter { it.isDigit() })
             mudar(b.vuBlocoDoEndereco, esp.endereco.isNotEmpty())

@@ -80,7 +80,7 @@
 "Controlar" = "Remote";
 "Texto com a câmera" = "Text with camera";
 "Teleprompter" = "Teleprompter";
-"Este Mac aparece como" = "This Mac appears as";
+"Nome deste Mac" = "This Mac's name";
 "Ajustes" = "Settings";
 
 /* QuallApp/Emissor.swift */
@@ -140,7 +140,6 @@
 "a câmera não está aberta" = "the camera isn't open";
 "câmera interrompida: %@" = "camera interrupted: %@";
 "a câmera não está entregando imagem" = "the camera isn't delivering video";
-"sem espaço: sobram %@ MB (gravar pede 500 MB livres)" = "out of space: %@ MB left (recording needs 500 MB free)";
 "Não gravou: %@" = "Didn't record: %@";
 "A gravação não começou: %@" = "Recording didn't start: %@";
 "A gravação parou com erro (%@); o que foi gravado fica em %@ como \"(interrompido)\"." = "Recording stopped with an error (%@); what was recorded stays in %@ as \"(interrompido)\".";
@@ -224,7 +223,6 @@
 "O outro aparelho não reconheceu este Mac." = "The other device didn't recognize this Mac.";
 "Esquecer aparelhos pareados" = "Forget paired devices";
 "Gravando na pasta de gravações." = "Recording to the recordings folder.";
-"%.1f GB livres" = "%.1f GB free";
 "O macOS negou o microfone ao Quall Studio." = "macOS denied Quall Studio the microphone.";
 "Digite o endereço que a tela do prompter mostra (por exemplo 192.168.56.20:7979)." = "Type the address the prompter screen shows (for example 192.168.56.20:7979).";
 
@@ -384,7 +382,6 @@
 "parada" = "stopped";
 "Receber a câmera (Quall Studio → Exibir, ou o OBS)" = "Receive the camera (Quall Studio → Receive, or OBS)";
 "O PIN e o endereço desta sessão, em letra grande" = "This session's PIN and address, in large type";
-"Aparecendo na lista dos outros aparelhos." = "Showing in other devices' lists.";
 "Sem anúncio na rede — digite o endereço." = "Not announced on the network — type the address.";
 "Lado do texto" = "Text side";
 "Esconder a prévia (a câmera continua)" = "Hide the preview (the camera keeps going)";
@@ -487,8 +484,10 @@
 "Travar exposição" = "Lock exposure";
 "Travar balanço" = "Lock white balance";
 "Restaurar automático" = "Reset to auto";
+"Usar meus ajustes" = "Use my settings";
 "Toque na imagem para focar e medir naquele ponto." = "Tap the picture to focus and meter at that point.";
 "Travado de novo depois de medir a cena." = "Locked again after metering the scene.";
+"Pouca luz: %@ fps para clarear a imagem. Mais luz no ambiente devolve os %@ fps." = "Low light: %@ fps to brighten the picture. More light in the room brings back %@ fps.";
 "Exposição e foco travados" = "Exposure and focus locked";
 "Exposição travada" = "Exposure locked";
 "Foco travado" = "Focus locked";
@@ -540,7 +539,7 @@
 /* QuallCaptureKit/PermissaoDeTela.swift */
 "Gravação de Tela já concedida." = "Screen Recording already granted.";
 "Gravação de Tela concedida agora, no diálogo do sistema." = "Screen Recording granted just now, in the system dialog.";
-"Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela **e** o áudio do sistema. O pedido foi feito, então o Quall Studio passa a aparecer em Ajustes do Sistema > Privacidade e Segurança > Gravação do Áudio do Sistema e da Tela. Marque a caixinha e abra o app de novo." = "Screen Recording permission is missing — the same grant covers the screen **and** system audio. The request was made, so Quall Studio now shows up in System Settings > Privacy & Security > Screen & System Audio Recording. Tick the box and open the app again.";
+"Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela e o áudio do sistema. O pedido foi feito, então o Quall Studio passa a aparecer em Ajustes do Sistema > Privacidade e Segurança > Gravação do Áudio do Sistema e da Tela. Marque a caixinha e abra o app de novo." = "Screen Recording permission is missing — the same grant covers the screen and system audio. The request was made, so Quall Studio now shows up in System Settings > Privacy & Security > Screen & System Audio Recording. Tick the box and open the app again.";
 
 /* QuallCaptureKit/ScreenCapturer.swift */
 "Nenhum display encontrado para captura." = "No display found to capture.";
@@ -614,3 +613,12 @@
 "ganho digital" = "digital gain";
 "Perto ↔ Longe" = "Near ↔ Far";
 "A câmera usou %@ em vez de %@." = "The camera used %@ instead of %@.";
+
+"Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou." = "Someone tried to connect and pairing failed. For your security, the PIN changed.";
+
+"Não foi possível sortear o PIN da sessão." = "Could not generate the session PIN.";
+
+"Não foi possível concluir o pareamento. Toque em Espelhar de novo e passe o novo PIN." = "Could not complete pairing. Tap Mirror again and share the new PIN.";
+
+
+"não foi possível iniciar a gravação; veja o aviso no aparelho que grava" = "couldn't start recording; see the notice on the recording device";

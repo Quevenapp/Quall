@@ -695,7 +695,7 @@ final class TomadaDeGravacao: NSObject, AssinanteDaCaptura {
     }
 
     /// Escreve a linha de 10 s no diário, pela `fila`.
-    func relatar(espacoLivre: Int64?) {
+    func relatar() {
         fila.async { [self] in
             let b = buracoMaiorNoRelato
             buracoMaiorNoRelato = 0
@@ -706,7 +706,7 @@ final class TomadaDeGravacao: NSObject, AssinanteDaCaptura {
             let termico = ProcessInfo.processInfo.thermalState.rawValue
             Diagnostico.nota("APP GRAVACAO #\(numero) gravando: \(resumo())"
                 + String(format: " buraco_maior_na_janela=%.0f ms", b * 1000)
-                + " espaco_livre=\(espacoLivre.map { "\($0 / 1_000_000) MB" } ?? "?") termico=\(termico)")
+                + " termico=\(termico)")
         }
     }
 

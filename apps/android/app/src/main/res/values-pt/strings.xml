@@ -48,4 +48,6 @@
     <!-- Comuns a várias telas, e os rótulos das telas no manifesto. -->
     <string name="ajustes">Ajustes</string>
     <string name="voltar">Voltar</string>
+    <string name="esp_pin_renovado">A tentativa de pareamento terminou. Digite o novo PIN mostrado aqui para conectar.</string>
+    <string name="esp_pin_geracao_falhou">Não foi possível gerar um novo PIN. Pare e inicie o espelhamento para tentar novamente.</string>
 </resources>

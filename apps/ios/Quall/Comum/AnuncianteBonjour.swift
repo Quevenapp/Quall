@@ -1,96 +1,172 @@
 import Foundation
+import Network
+import Darwin
+import dnssd
 
-/// Anuncia este aparelho por mDNS (`_quall._tcp`) **pelo `mDNSResponder` do sistema**, e não por
-/// socket multicast cru.
-///
-/// # Por que esta peça existe, sendo que o núcleo já sabe anunciar
-///
-/// O `quall_advertiser_start` do núcleo abre socket multicast, e no iOS isso depende do
-/// entitlement `com.apple.developer.networking.multicast` — pedido que está com a Apple e que
-/// `App/Quall.entitlements` proíbe acrescentar antes de o App ID mostrar a chave habilitada. A
-/// consequência estava medida em 01/09/2026: com três iOS emitindo câmera e a porta 7877 aberta
-/// nos três, `dns-sd -B _quall._tcp` listava **os dois Android e nenhum iOS**.
-///
-/// **`NetService` não passa por ali.** Ele publica pelo daemon do sistema, que é o mesmo que
-/// anuncia `_apple-mobdev2._tcp` sozinho e atravessa até pelo cabo. Não pede entitlement nenhum, e
-/// é por isso que esta casca pode aparecer na lista hoje, sem esperar a Apple.
-///
-/// # Por que `NetService` e não `NWListener`
-///
-/// `NWListener` publicaria o serviço **e abriria a porta** — e a porta de sinalização já é do
-/// núcleo, que faz o próprio `TcpListener::bind`. Dois donos do mesmo número é defeito esperando
-/// acontecer. `NetService` anuncia sem escutar, que é exatamente o papel aqui.
-///
-/// # O formato é do núcleo, e é ele que manda
-///
-/// As chaves do TXT são as de `quall_core::discovery` — `v`, `id`, `n`, `c`, `p`, e `pa` só quando
-/// há papel — curtas de propósito, porque uma resposta mDNS que não cabe num datagrama fragmenta, e
-/// no Wi-Fi de 2,4 GHz fragmentar é perder. As capacidades são letras: `s` tela, `c` câmera, `k`
-/// exibe. Escrever isto diferente aqui faria o anúncio existir e **não ser entendido**, que é pior
-/// que não anunciar.
-///
-/// A **versão** vem de `quall_protocol_version()` e não de uma constante daqui: anunciar uma
-/// versão diferente da que a sessão vai negociar poria este aparelho na lista do outro e o faria
-/// ser recusado ao conectar — o pior dos dois mundos, e sem mensagem que explique. Duas
-/// linguagens com o mesmo número escrito à mão divergem; perguntar não diverge.
-final class AnuncianteBonjour: NSObject {
-    private var servico: NetService?
-    private let trava = NSLock()
+/// Descoberta v3 pelo daemon Bonjour público: sem socket multicast próprio ou
+/// entitlement multicast especial. O SRV aponta para um host aleatório registrado
+/// por DNSServiceRegisterRecord, nunca para o nome local do sistema. A identidade
+/// real continua em QuallDeviceDesc e só atravessa a sessão depois do PAKE/AEAD.
+final class AnuncianteBonjour {
+    private struct Pedido {
+        let token: String
+        let porta: UInt16
+        let capacidades: String
+        let papel: String?
+    }
+    private struct Endereco: Hashable {
+        let interface: UInt32
+        let tipo: UInt16
+        let dados: Data
+    }
+    private let fila = DispatchQueue(label: "quall.bonjour.publicacao")
+    private let chaveDaFila = DispatchSpecificKey<Bool>()
+    private var pedido: Pedido?
+    private var conexaoDosRegistros: DNSServiceRef?
+    private var servicos: [DNSServiceRef] = []
+    private var enderecosPublicados: Set<Endereco> = []
+    private var monitor: NWPathMonitor?
 
-    /// Começa a anunciar. Devolve `false` só quando já havia um anúncio no ar.
-    ///
-    /// Publicar **não** garante que alguém veja: rede com multicast bloqueado é caso normal e
-    /// **não é erro de produto** — o endereço digitado continua sendo o caminho obrigatório
-    /// (`PROMPT.md`). Por isso o retorno não é o veredito, e a interface não muda de discurso por
-    /// causa dele.
-    ///
-    /// `papel`: `nil` para o vídeo (o anúncio de sempre, chave a chave); `"teleprompter"` para quem
-    /// hospeda um teleprompter. Com papel, o TXT ganha a chave **`pa`** — a mesma do núcleo
-    /// (`quall_core::discovery`, `docs/contrato-teleprompter.md` §2 e §7) — e o nome da instância
-    /// passa a levar o papel. É por essa chave que os controles do Android, do Mac e do Windows
-    /// acham o prompter na lista, e é ela que faz os receptores de vídeo o esconderem.
+    init() { fila.setSpecific(key: chaveDaFila, value: true) }
+
+    /// Compatibilidade da casca: nome/deviceId continuam sendo a identidade
+    /// autenticada da sessão. Eles não são usados nos registros públicos.
+    /// True significa pedido ativo; rede/permissão podem impedir a descoberta.
     @discardableResult
-    func comecar(deviceId: String, nome: String, porta: UInt16,
+    func comecar(deviceId _: String, nome _: String, porta: UInt16,
                  emiteTela: Bool, emiteCamera: Bool, exibe: Bool = false,
                  papel: String? = nil) -> Bool {
-        trava.lock()
-        defer { trava.unlock() }
-        guard servico == nil else { return false }
+        naFila {
+            guard pedido == nil, porta != 0, quall_protocol_version() == 3,
+                  papel == nil || papel == "teleprompter" else { return false }
+            var capacidades = ""
+            if emiteTela { capacidades += "s" }
+            if emiteCamera { capacidades += "c" }
+            if exibe { capacidades += "k" }
+            pedido = Pedido(token: NomeDaInstancia.novoToken(), porta: porta,
+                            capacidades: capacidades, papel: papel)
+            atualizarPublicacao()
+            let m = NWPathMonitor()
+            m.pathUpdateHandler = { [weak self] _ in self?.atualizarPublicacao() }
+            monitor = m
+            m.start(queue: fila)
+            return true
+        }
+    }
 
-        var caps = ""
-        if emiteTela { caps += "s" }
-        if emiteCamera { caps += "c" }
-        if exibe { caps += "k" }
-
-        // Sem papel, o nome da instância é o do aparelho, como sempre foi: um sufixo evitaria
-        // colisão entre dois aparelhos de mesmo nome, e o `mDNSResponder` já resolve isso sozinho
-        // renomeando para "Nome (2)". **O que mudou é o teto**: um rótulo DNS tem 63 bytes, e acima
-        // disso o registro não vale — o nome é cortado numa fronteira de caractere, como o núcleo
-        // faz. Com papel, vai o papel e o sufixo do id, na regra do núcleo. Ver `NomeDaInstancia`.
-        let instancia = NomeDaInstancia.montar(nome: nome, deviceId: deviceId, papel: papel)
-        let s = NetService(domain: "local.", type: "_quall._tcp.", name: instancia, port: Int32(porta))
-        var txt: [String: Data] = [
-            "v": Data(String(quall_protocol_version()).utf8),
-            "id": Data(deviceId.utf8),
-            // O nome **inteiro** fica aqui: é o que as listas mostram.
-            "n": Data(nome.utf8),
-            "c": Data(caps.utf8),
-            "p": Data(String(porta).utf8),
-        ]
-        // Só quando existe: sem papel o registro é o de antes, chave a chave.
-        if let papel, !papel.isEmpty { txt["pa"] = Data(papel.utf8) }
-        s.setTXTRecord(NetService.data(fromTXTRecord: txt))
-        s.publish()
-        servico = s
-        return true
+    /// Exatamente o alias que o parser v3 mostra na lista, sem identidade real.
+    var nomePublico: String? {
+        naFila { pedido.map { "Quall " + String($0.token.prefix(8)) } }
     }
 
     func parar() {
-        trava.lock()
-        let atual = servico
-        servico = nil
-        trava.unlock()
-        atual?.stop()
+        naFila {
+            monitor?.cancel()
+            monitor = nil
+            pedido = nil
+            retirarRegistros()
+        }
+    }
+
+    private func naFila<T>(_ operacao: () -> T) -> T {
+        if DispatchQueue.getSpecific(key: chaveDaFila) == true { return operacao() }
+        return fila.sync(execute: operacao)
+    }
+
+    /// Apenas interfaces locais en*: exclui loopback, túnel VPN e rede celular.
+    /// A/AAAA são publicados na mesma interface do endereço; IPv6 link-local
+    /// mantém seu escopo pela interface, sem colocar scope-id nos 16 bytes AAAA.
+    private static func enderecosLocais() -> Set<Endereco> {
+        var lista: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&lista) == 0 else { return [] }
+        defer { freeifaddrs(lista) }
+        var cursor = lista
+        var encontrados: Set<Endereco> = []
+        while let atual = cursor {
+            let item = atual.pointee
+            defer { cursor = item.ifa_next }
+            guard let nome = item.ifa_name, let sa = item.ifa_addr,
+                  String(cString: nome).hasPrefix("en"),
+                  item.ifa_flags & UInt32(IFF_UP) != 0,
+                  item.ifa_flags & UInt32(IFF_LOOPBACK) == 0 else { continue }
+            let indice = if_nametoindex(nome)
+            guard indice != 0 else { continue }
+            switch Int32(sa.pointee.sa_family) {
+            case AF_INET:
+                var ip = UnsafeRawPointer(sa).assumingMemoryBound(to: sockaddr_in.self).pointee.sin_addr
+                let dados = Data(bytes: &ip, count: 4)
+                guard dados.first != 0, dados.first != 127 else { continue }
+                encontrados.insert(Endereco(interface: indice, tipo: UInt16(kDNSServiceType_A), dados: dados))
+            case AF_INET6:
+                var ip = UnsafeRawPointer(sa).assumingMemoryBound(to: sockaddr_in6.self).pointee.sin6_addr
+                let dados = Data(bytes: &ip, count: 16)
+                guard dados.contains(where: { $0 != 0 }), dados.first != 0xff else { continue }
+                encontrados.insert(Endereco(interface: indice, tipo: UInt16(kDNSServiceType_AAAA), dados: dados))
+            default: continue
+            }
+        }
+        return encontrados
+    }
+
+    private func atualizarPublicacao() {
+        guard let pedido else { return }
+        let atuais = Self.enderecosLocais()
+        guard atuais != enderecosPublicados || servicos.isEmpty else { return }
+        retirarRegistros()
+        guard !atuais.isEmpty,
+              let instancia = NomeDaInstancia.montar(token: pedido.token),
+              let host = NomeDaInstancia.host(token: pedido.token) else { return }
+        let contexto = Unmanaged.passUnretained(self).toOpaque()
+        var conexao: DNSServiceRef?
+        guard DNSServiceCreateConnection(&conexao) == kDNSServiceErr_NoError, let conexao else { return }
+        conexaoDosRegistros = conexao
+        for endereco in atuais {
+            var registro: DNSRecordRef?
+            let erro = endereco.dados.withUnsafeBytes { bytes in
+                DNSServiceRegisterRecord(conexao, &registro, DNSServiceFlags(kDNSServiceFlagsShared),
+                    endereco.interface, host, endereco.tipo, UInt16(kDNSServiceClass_IN),
+                    UInt16(bytes.count), bytes.baseAddress, 60,
+                    { _, _, _, erro, contexto in
+                        guard erro != kDNSServiceErr_NoError, let contexto else { return }
+                        Unmanaged<AnuncianteBonjour>.fromOpaque(contexto).takeUnretainedValue().retirarRegistros()
+                    }, contexto)
+            }
+            guard erro == kDNSServiceErr_NoError else { retirarRegistros(); return }
+        }
+        guard DNSServiceSetDispatchQueue(conexao, fila) == kDNSServiceErr_NoError else {
+            retirarRegistros(); return
+        }
+        var txt = ["v": Data("3".utf8), "t": Data(pedido.token.utf8),
+                   "p": Data(String(pedido.porta).utf8), "c": Data(pedido.capacidades.utf8)]
+        if let papel = pedido.papel { txt["pa"] = Data(papel.utf8) }
+        let dadosTXT = NetService.data(fromTXTRecord: txt)
+        for indice in Set(atuais.map(\.interface)) {
+            var servico: DNSServiceRef?
+            let erro = dadosTXT.withUnsafeBytes { bytes in
+                DNSServiceRegister(&servico, 0, indice, instancia, "_quall._tcp", "local.", host,
+                    pedido.porta.bigEndian, UInt16(bytes.count), bytes.baseAddress,
+                    { _, _, erro, _, _, _, contexto in
+                        guard erro != kDNSServiceErr_NoError, let contexto else { return }
+                        Unmanaged<AnuncianteBonjour>.fromOpaque(contexto).takeUnretainedValue().retirarRegistros()
+                    }, contexto)
+            }
+            guard erro == kDNSServiceErr_NoError, let servico else { retirarRegistros(); return }
+            servicos.append(servico)
+            guard DNSServiceSetDispatchQueue(servico, fila) == kDNSServiceErr_NoError else {
+                retirarRegistros(); return
+            }
+        }
+        enderecosPublicados = atuais
+    }
+
+    /// Executado na mesma fila dos callbacks: sem deallocation concorrente.
+    /// Deallocate da conexão remove também todos os DNSRecordRef A/AAAA dela.
+    private func retirarRegistros() {
+        for servico in servicos { DNSServiceRefDeallocate(servico) }
+        servicos.removeAll()
+        if let conexaoDosRegistros { DNSServiceRefDeallocate(conexaoDosRegistros) }
+        conexaoDosRegistros = nil
+        enderecosPublicados.removeAll()
     }
 
     deinit { parar() }

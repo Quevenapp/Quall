@@ -104,7 +104,7 @@ cd "$obra/build"
   --disable-programs --disable-swscale --disable-swresample \
   --disable-avfilter --disable-avdevice --disable-network --disable-doc \
   --enable-shared --disable-static --enable-pic --enable-neon --disable-debug \
-  --extra-ldflags="-Wl,-z,max-page-size=16384" >/dev/null
+  --extra-ldflags="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" >/dev/null
 grep -q '^#define CONFIG_GPL 0' config.h || { echo "configure saiu com GPL" >&2; exit 1; }
 grep -q '^#define CONFIG_NONFREE 0' config.h || { echo "configure saiu com nonfree" >&2; exit 1; }
 make -j"$jobs" >/dev/null

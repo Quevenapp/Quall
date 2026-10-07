@@ -790,7 +790,8 @@ class ConversaoDvdActivity : AppCompatActivity() {
                     getString(if (t.fase == TransmissaoDvdBus.Fase.PREPARANDO) R.string.dvd_conferindo_o_disco else R.string.dvd_preparando)
                 m.fase == MirrorBus.Fase.ERRO -> m.mensagem
                 m.fase == MirrorBus.Fase.ESPELHANDO -> comAndamento(getString(R.string.dvd_enviando_para, m.par), t)
-                else -> getString(R.string.dvd_esperando_receptor) +
+                else -> (if (m.aliasNaRede.isNotBlank()) "${m.aliasNaRede} · " else "") +
+                    getString(R.string.dvd_esperando_receptor) +
                     if (m.tentativa > 1 && m.mensagem.isNotEmpty()) "\n${m.mensagem}" else ""
             }
             b.dvdTxTempo.text = "${relogio(t.posicao90k)} / ${relogio(t.duracao90k)}"

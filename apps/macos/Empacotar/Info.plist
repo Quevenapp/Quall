@@ -2,81 +2,52 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!--
-      Os dois idiomas (`docs/traducao.md`, "macOS"): o português é o de origem. Sem esta lista, o
-      macOS não oferece o Quall em Ajustes do Sistema > Geral > Idioma e Região > Aplicativos, e as
-      frases de permissão de `en.lproj/InfoPlist.strings` nunca seriam escolhidas.
-    -->
-    <key>CFBundleDevelopmentRegion</key>
-    <string>pt</string>
-    <key>CFBundleLocalizations</key>
-    <array>
-        <string>pt</string>
-        <string>en</string>
-    </array>
-    <key>CFBundleName</key>
-    <string>Quall Studio</string>
-    <key>CFBundleDisplayName</key>
-    <string>Quall Studio</string>
-    <key>CFBundleIdentifier</key>
-    <string>br.com.queven.quall.mac</string>
-    <key>CFBundleExecutable</key>
-    <string>quall-app</string>
-    <key>CFBundleIconFile</key>
-    <string>Quall</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>LSApplicationCategoryType</key>
-    <string>public.app-category.utilities</string>
-
-    <!--
-      A frase do diálogo de Câmera. Ela precisa dizer a verdade sobre **este** app: o Quall do Mac
-      é emissor, e quando a pessoa escolhe uma câmera no seletor, a imagem dela vai para o outro
-      aparelho. Um app cujo papel fosse só receber não precisaria desta permissão (medido em
-      2026-08-24 na câmera virtual: quem fornece quadro não pede, quem consome pede) e não poderia
-      dizer que precisa — ver `docs/regras-de-frente.md`.
-    -->
-    <key>NSCameraUsageDescription</key>
-    <string>O Quall Studio transmite a imagem da câmera que você escolher para o outro aparelho na sua rede local.</string>
-
-    <!--
-      O microfone (R5, 25/09): a regra "este app nunca abre o microfone" caiu para todo emissor de
-      câmera (`docs/audio.md` §8.2). É um botão na tela da câmera que começa desligado; a permissão é
-      pedida no primeiro toque, nunca ao abrir a tela. Na bancada, o microfone do MacBook nunca abre
-      (G5, `docs/teleprompter-com-camera.md` §8).
-    -->
-    <key>NSMicrophoneUsageDescription</key>
-    <string>O Quall Studio manda o som do microfone junto da câmera, quando você liga o botão do microfone, e o grava junto quando você grava.</string>
-
-    <!--
-      Rede local: o Quall é LAN-only por desenho, sem servidor online e sem nuvem. A partir do
-      macOS 15 o sistema cobra esta permissão para tráfego na rede local, e sem ela o mDNS e o ICE
-      falham de um jeito mudo — que é o pior jeito de falhar.
-    -->
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>O Quall Studio encontra e conversa com os outros aparelhos direto na sua rede local. Nada é enviado para a internet.</string>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_quall._tcp</string>
-    </array>
-
-    <!--
-      Gravação de Tela **não tem** chave de Info.plist. Quem dispara o diálogo é a primeira
-      consulta real ao ScreenCaptureKit; o texto do diálogo é escrito pelo sistema e não é
-      configurável. Registrado aqui para o próximo que vier procurar a chave que falta e não
-      existir.
-    -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>pt</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>pt</string>
+		<string>en</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>Quall Studio</string>
+	<key>CFBundleDisplayName</key>
+	<string>Quall Studio</string>
+	<key>CFBundleIdentifier</key>
+	<string>br.com.queven.quall</string>
+	<key>CFBundleExecutable</key>
+	<string>quall-app</string>
+	<key>CFBundleIconFile</key>
+	<string>Quall</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>3</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.video</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Quall Studio usa a câmera para mostrar a prévia, gravar vídeo e transmitir a imagem para os aparelhos que você escolher.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O Quall Studio usa o microfone para incluir áudio na transmissão e na gravação quando você liga o botão do microfone.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Quall Studio usa a rede local para descobrir e conectar os aparelhos que você escolher, enviar a tela e a imagem da câmera e receber conteúdo de outro aparelho.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_quall._tcp</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 Veneri &amp; Quellis Ltda.</string>
 </dict>
 </plist>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Esqueleto de manifesto MSIX para o componente de câmera virtual do Quall no Windows.
+
+  NÃO É O PACOTE DO PRODUTO. `apps/windows` (outra frente) é quem vai empacotar o app de verdade;
+  isto embala só o instalador da câmera virtual (a DLL da fonte de mídia + os scripts de
+  instalação e remoção), como um companheiro instalável separadamente — decisão de arquitetura
+  ainda NÃO tomada pelo orquestrador. Ver docs/camera-virtual.md, seção "Empacotamento MSIX", para
+  o que falta e por quê.
+
+  A identidade abaixo é a única registrada até agora (docs/identidade-windows.md, Partner Center,
+  2026-08-23) — reaproveitada aqui porque inventar uma segunda identidade sem reserva no Partner
+  Center não teria validade nenhuma para distribuição real. Se o produto decidir por um pacote
+  companheiro separado, uma nova identidade (`Quven.Quall.CameraVirtual` ou similar) precisaria ser
+  reservada lá antes de valer para a Store.
+
+  `Executable="quall-camera-sonda.exe"` é um placeholder: aponta para a sonda de bancada desta
+  frente porque é o único binário compilado que existe aqui. Não é o app de produto. Trocar pelo
+  executável real quando ele existir.
+-->
+<Package
+    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+    IgnorableNamespaces="uap rescap">
+
+  <Identity
+      Name="Quven.Quall"
+      Publisher="CN=4EAB9D59-8495-46DE-A09A-46666F12757F"
+      Version="0.1.0.0"
+      ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Quéven</DisplayName>
+    <PublisherDisplayName>Quéven</PublisherDisplayName>
+    <Logo>Assets\Square150x150Logo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26200.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="pt-BR" />
+  </Resources>
+
+  <Capabilities>
+    <!-- Fonte de mídia roda fora do contêiner (svchost do Frame Server); o app hospedeiro
+         precisa de confiança plena para copiar a DLL e chamar regsvr32/MFCreateVirtualCamera
+         durante a instalação. Sem isto, Add-AppxPackage recusa o pacote. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Applications>
+    <Application Id="QuallCameraVirtual"
+        Executable="quall-camera-sonda.exe"
+        EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+          DisplayName="Quall — Câmera Virtual"
+          Description="Instalador da câmera virtual do Quall (Media Foundation)."
+          BackgroundColor="transparent"
+          Square150x150Logo="Assets\Square150x150Logo.png"
+          Square44x44Logo="Assets\Square44x44Logo.png" />
+    </Application>
+  </Applications>
+</Package>

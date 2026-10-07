@@ -114,6 +114,7 @@ pub struct Estado {
     pub conselho: String,
     pub oferece_desparear: bool,
     pub anunciando_por_mdns: bool,
+    pub alias_da_descoberta: String,
     pub resumo: String,
     /// Corrida de bancada pediu para o processo sair.
     pub sair: bool,
@@ -199,6 +200,9 @@ pub struct Emissor {
     /// **R9b**: o aparelho que mexeu na câmera comum de longe, nos 4 s depois ("Controlado por").
     /// Escrito pela thread da câmera comum, do painel dos ajustes.
     controlada_por: Mutex<Option<String>>,
+    /// **Pouca luz** (§3.1): o automático da câmera comum baixou o fps para clarear. Escrito pela
+    /// thread da câmera comum, do painel dos ajustes, como o "Controlado por".
+    pouca_luz: Mutex<Option<crate::regras_dos_controles::PoucaLuz>>,
 }
 
 impl Emissor {
@@ -256,6 +260,7 @@ impl Emissor {
                 conselho: String::new(),
                 oferece_desparear: false,
                 anunciando_por_mdns: false,
+                alias_da_descoberta: String::new(),
                 resumo: String::new(),
                 sair: false,
                 receptores: Vec::new(),
@@ -280,6 +285,7 @@ impl Emissor {
             thread_da_camera_comum: Mutex::new(None),
             ajustes_disponiveis: AtomicBool::new(false),
             controlada_por: Mutex::new(None),
+            pouca_luz: Mutex::new(None),
         })
     }
 
@@ -804,6 +810,7 @@ impl Emissor {
         {
             let mut e = self.estado();
             e.anunciando_por_mdns = anunciante.is_some();
+            e.alias_da_descoberta = anunciante.as_ref().map(|a| a.discovery_label().to_owned()).unwrap_or_default();
             e.mudou();
         }
         registro::linha(format!(
@@ -913,6 +920,7 @@ impl Emissor {
         {
             let mut e = self.estado();
             e.anunciando_por_mdns = false;
+            e.alias_da_descoberta.clear();
             e.mudou();
         }
 
@@ -1341,6 +1349,7 @@ impl Emissor {
         e.par.clear();
         e.endereco = None;
         e.anunciando_por_mdns = false;
+        e.alias_da_descoberta.clear();
         e.resumo.clear();
         e.ha_pares_conhecidos = identidade::ha_pares_conhecidos();
         self.aplicar_lista(&mut e, geracao, nova);
@@ -1616,6 +1625,11 @@ impl Emissor {
         self.controlada_por.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
+    /// **Pouca luz** na câmera comum (§3.1): o fps de agora e o pedido, para a linha da gravação.
+    pub fn camera_com_pouca_luz(&self) -> Option<crate::regras_dos_controles::PoucaLuz> {
+        *self.pouca_luz.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     /// **Abre a janela "Ajustes da câmera"** da câmera comum, com a prévia dentro (§4.2).
     pub fn abrir_ajustes_da_camera(&self) {
         let dono = self.camera_comum.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|c| Arc::clone(&c.dono));
@@ -1767,7 +1781,15 @@ impl Emissor {
                 *g = controlada;
                 mudou
             };
-            if mudou {
+            // Pouca luz (§3.1), do mesmo painel e do mesmo jeito.
+            let pouca_luz = dono.ajustes().and_then(|p| p.painel_pouca_luz());
+            let mudou_a_luz = {
+                let mut g = self.pouca_luz.lock().unwrap_or_else(|e| e.into_inner());
+                let mudou = *g != pouca_luz;
+                *g = pouca_luz;
+                mudou
+            };
+            if mudou || mudou_a_luz {
                 self.estado().mudou();
             }
             if let Some(a) = aberta_em {
@@ -1848,6 +1870,7 @@ impl Emissor {
         }
         self.ajustes_disponiveis.store(false, Ordering::SeqCst);
         *self.controlada_por.lock().unwrap_or_else(|e| e.into_inner()) = None;
+        *self.pouca_luz.lock().unwrap_or_else(|e| e.into_inner()) = None;
         // A janela dos ajustes solta a prévia antes de a câmera fechar.
         crate::janela_dos_ajustes::fechar_se_aberta(Duration::from_secs(4));
         dono.pedir_fechar();
@@ -1948,6 +1971,7 @@ impl Emissor {
             || e.par != p.par
             || e.resumo != p.resumo
             || e.anunciando_por_mdns != p.anunciando
+            || e.alias_da_descoberta != p.alias_da_descoberta
             || e.rotulo_gravar != rotulo
             || e.linha_da_gravacao != linha
             || e.gravando != gravando
@@ -1960,6 +1984,7 @@ impl Emissor {
             e.par = p.par.clone();
             e.resumo = if transmitindo { p.resumo.clone() } else { p.aviso.clone() };
             e.anunciando_por_mdns = p.anunciando;
+            e.alias_da_descoberta = p.alias_da_descoberta.clone();
             e.rotulo_gravar = rotulo;
             e.linha_da_gravacao = linha;
             e.gravando = gravando;

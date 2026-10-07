@@ -88,6 +88,8 @@ object MirrorBus {
         val mensagemEhAnuncio: Boolean = false,
         /** O anúncio na rede desta espera: `true` anunciando, `false` sem mDNS, `null` sem notícia nova. */
         val anunciando: Boolean? = null,
+        /** Alias efêmero da lista LAN desta publicação, consultado com o handle ainda vivo. */
+        val aliasNaRede: String = "",
         /**
          * A sessão é a da câmera do teleprompter (a R5), e não a de Espelhar. A home não a desenha:
          * sem isto, fechar a R5 no X deixava a home em Espelhar, porque o fim da sessão era lido

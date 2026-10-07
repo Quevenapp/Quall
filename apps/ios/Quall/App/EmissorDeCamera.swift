@@ -83,6 +83,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
 
     /// O anúncio por mDNS enquanto a câmera espera. Ver `AnuncianteBonjour`.
     private let anunciante = AnuncianteBonjour()
+    var nomeNaDescoberta: String? { anunciante.nomePublico }
 
     /// Prazo de cada tentativa de `quall_host`, re-armado em laço. O mesmo da appex, e pela mesma
     /// dívida (10) — mas aqui ele **não** é o ponto de cancelamento: ver `armarCancelador`.
@@ -410,7 +411,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
             guard self.fase == .pedindoPermissao else { return }
             if resposta == .negada {
                 self.conselho = tr("O Quall precisa de acesso à rede local para achar o outro "
-                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall → Rede Local"))
+                    + "aparelho. Abra %@ e ligue.", trSistema("Ajustes → Quall Studio → Rede Local"))
                 self.conselhoEhDaPortaPresa = false
             }
             self.montarEHospedar()
@@ -650,7 +651,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
     /// a hospedar **com o mesmo PIN** — a câmera e a prévia não ficam sabendo.
     private func hospedar() {
         let minha = geracaoAtual()
-        let pinAgora = pin
+        let pinInicial = pin
         let nome = Identidade.nome
         let id = Identidade.deviceId
         let rotuloDaTrack = origem.rotulo(doAparelho: nome)
@@ -660,6 +661,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
         travaDoLaco.lock(); lacoVivo = true; travaDoLaco.unlock()
         let thread = Thread { [weak self] in
             guard let self else { return }
+            var pinAgora = pinInicial // só esta thread altera o PIN da próxima tentativa
             // **A tela anterior soltando a porta** (fechar e reabrir, 27/09): o laço dela sai em
             // milissegundos pelo cancelador, mas uma sessão que estava de pé ainda desmonta (dívida
             // 19). Espera calada, com prazo; o que sobrar, a repetição calada abaixo cobre. Só no
@@ -790,6 +792,22 @@ final class EmissorDeCamera: NSObject, ObservableObject {
                 guard subiu else {
                     let erro = candidato.ultimoMotivo
                     let gastou = CFAbsoluteTimeGetCurrent() - inicioDaTentativa
+                    let renovarPin = RenovacaoDoPin.exigida(apos: candidato.statusDaEspera)
+                    if renovarPin {
+                        guard let novo = RenovacaoDoPin.novo(diferenteDe: pinAgora, sortear: Nucleo.sortearPin) else {
+                            naPrincipal {
+                                guard self.geracaoAtual() == minha else { return }
+                                self.anunciante.parar()
+                                self.fase = .falhou(tr("Não foi possível sortear o PIN da sessão."))
+                            }
+                            return
+                        }
+                        pinAgora = novo
+                        naPrincipal {
+                            guard self.geracaoAtual() == minha else { return }
+                            self.pin = novo
+                        }
+                    }
                     // **A porta ainda presa pela tela anterior**, dentro da tolerância: de novo em
                     // 200 ms, sem conselho e sem contar. É a soltura em andamento, não um erro.
                     let desdeLivre = CFAbsoluteTimeGetCurrent() - portaLivreDesde
@@ -810,10 +828,12 @@ final class EmissorDeCamera: NSObject, ObservableObject {
                     // Qualquer outro motivo a pessoa precisa ler — em especial o do ICE, que é a
                     // permissão de Rede Local negada, e que ela conserta sozinha.
                     if erro != EmissorDeCamera.prazoSemNinguem { tentativasQueContam += 1 }
-                    if !erro.hasPrefix("tempo esgotado:") && !erro.isEmpty {
+                    if renovarPin || (!erro.hasPrefix("tempo esgotado:") && !erro.isEmpty) {
                         let daPorta = SolturaDaPorta.ehPortaOcupada(erro)
                         conselhoEraDaPorta = daPorta
-                        conselhoVigente = daPorta ? EmissorDeCamera.textoDaPortaPresa : Nucleo.conselho(para: erro)
+                        conselhoVigente = renovarPin
+                            ? tr("Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou.")
+                            : (daPorta ? EmissorDeCamera.textoDaPortaPresa : Nucleo.conselho(para: erro))
                         ultimoSinalDeVida = CFAbsoluteTimeGetCurrent()
                         let texto = conselhoVigente
                         let desparear = EstadoDeParConhecido.ehParDesconhecido(erro)
@@ -1168,7 +1188,7 @@ final class EmissorDeCamera: NSObject, ObservableObject {
         // que a regra do produto reserva para aquela geometria (a corrida de sete emissores de
         // 07/09 é a testemunha de campo).
         let base = EmissorDeCamera.bitrateBase(largura: Int(c.largura), altura: Int(c.altura),
-                                              fps: Int32(PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros,
+                                              fps: Int32(PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento,
                                                                                    reduzida: reduzidaNoEncoder)))
         let alvo = PoliticaDeCalor.taxaDaRede(base: base, termico: estado.rawValue, economia: economia)
         let precisa = alvo != bitrateAtual
@@ -1317,7 +1337,7 @@ extension EmissorDeCamera: AssinanteDaCaptura {
         travaDoEnvio.lock()
         let quenteNaRede = redeReduzida
         travaDoEnvio.unlock()
-        let alvoDeFps = PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros, reduzida: quenteNaRede)
+        let alvoDeFps = PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento, reduzida: quenteNaRede)
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         // **O quadro velho não entra** (§8.12.1): pulado antes do encoder, nada se quebra.
         let idade = dono.idadeDoQuadro(pts)
@@ -1357,7 +1377,7 @@ extension EmissorDeCamera: AssinanteDaCaptura {
         let (l, a) = CodificadorH264.destino(largura: Int(entrada.width),
                                              altura: Int(entrada.height),
                                              tetoMaior: teto.maior, tetoMenor: teto.menor)
-        let fpsDaRede = PoliticaDeCalor.fpsDaRede(cardapio: Resolucao.quadros, reduzida: reduzida)
+        let fpsDaRede = PoliticaDeCalor.fpsDaRede(cardapio: dono.quadrosDoEspelhamento, reduzida: reduzida)
         if let atual = codificador, entrada == entradaAtual, (l, a) == saidaAtual, fpsDaRede == fpsDoEncoder {
             reduzidaNoEncoder = reduzida
             travaDoEnvio.unlock()

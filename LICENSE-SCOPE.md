@@ -28,6 +28,21 @@ arquivos que contenham código coberto, nos termos da MPL; arquivos independente
 termos. Manter todo o código próprio aberto é a política deste projeto, além do mínimo exigido
 pela licença.
 
+## Recursos da preparação das lojas
+
+As descrições de exclusões e placeholders deste documento se referem à base pública
+`3172b188c29a010cd161c56bbeeb2cbcefbb220a`. A preparação das lojas inclui os recursos aprovados
+de marca Android, Apple e Windows, os geradores e as modificações de interface necessários para
+reproduzir os pacotes. Os termos de reprodução técnica dos recursos estão em
+`tools/icones/DIREITOS-DA-MARCA.txt`, `brand/apple/DIREITOS-DA-MARCA.txt` e
+`brand/windows/DIREITOS.md`. Eles permitem a reprodução prevista nesses documentos
+sem conceder uma nova identidade de marca, atribuir autoria ou transformar os assets em
+placeholders MPL. Geradores e modificações dos arquivos de código cobertos continuam MPL-2.0.
+As receitas Windows/MSIX e OBS, os avisos Apple e a proveniência Android documentam a
+preparação e suas limitações. Antes da distribuição pública, disponibilizar os fontes cobertos
+correspondentes e suas modificações; o commit da base pública, isoladamente, não representa
+as novas builds. A presença de uma receita ou evidência anterior não certifica um pacote novo.
+
 ## Terceiros, recursos e direitos pendentes
 
 Não recebem nova licença ou atribuição de autoria por este aviso:
@@ -39,13 +54,14 @@ Não recebem nova licença ou atribuição de autoria por este aviso:
 - `apps/windows/terceiros/sudovda/**`: a nova licença própria não autoriza redistribuir o driver.
 - FFmpeg, headers e bibliotecas em `apps/android/app/src/main/jniLibsDv/{include,lib}` e runtimes
   como `jniLibs/*/libc++_shared.so`, regidos pelos termos terceiros do inventário.
-- Imagens, fontes, símbolos e outros assets terceiros. Os antigos 44 vetores Material e a marca
-  antiga não integram este snapshot. Os 46 `ic_q_*` atuais são novos placeholders originais,
+- Imagens, fontes, símbolos e outros assets terceiros. Os antigos 44 vetores Material não
+  integram este snapshot. Os 46 `ic_q_*` são placeholders originais,
   sem paths Material, e recebem a MPL própria conforme `tools/icones/README.md`.
 - Textos de licenças, atribuições, inventários e avisos terceiros copiados no checkout, inclusive
   [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Cópias de textos legais conservam seus termos.
-- Marca antiga, imagens, ícones antigos, coelho/tartaruga originais, capturas e mídia cujos direitos
-  específicos não estejam confirmados: foram omitidos. A licença dos placeholders novos não
+- Imagens, ícones, coelho/tartaruga originais, capturas e mídia cujos direitos específicos não
+  estejam confirmados permanecem omitidos. Os recursos aprovados identificados na seção de
+  preparação acima têm seus termos próprios. A licença dos placeholders novos não
   concede direitos sobre a marca Quall Studio/Quéven nem reinterpreta os direitos dos assets antigos.
 - `tools/espiao-dv-s24/teste-mesa/stub/**` e `plugins/obs/bancada/prova-remendo-sps.c`: proveniência
   e autorização específicas pendentes; estes caminhos foram omitidos deste snapshot.

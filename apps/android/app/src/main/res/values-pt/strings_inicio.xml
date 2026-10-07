@@ -8,7 +8,7 @@
     <string name="in_esquecer_pareados">Esquecer aparelhos pareados</string>
     <string name="in_sobre">Sobre</string>
     <string name="in_este_aparelho">Este aparelho</string>
-    <string name="in_aparece_como">Aparece na lista como</string>
+    <string name="in_aparece_como">Nome após conectar</string>
     <string name="in_versao">Versão</string>
     <string name="in_nucleo">Núcleo</string>
     <string name="in_licencas">Licenças de terceiros</string>
@@ -112,6 +112,11 @@
     <string name="in_instrucao_com_nome">No outro aparelho, abra o Quall em %1$s e escolha %2$s na lista, ou digite o endereço abaixo.</string>
     <string name="in_instrucao_sem_nome">No outro aparelho, abra o Quall em %1$s e digite o endereço abaixo.</string>
     <string name="in_nota_da_fita">A fita define o tamanho: 1280×720 a 30 quadros por segundo na gravação e, no espelhamento, o tamanho da própria fita.</string>
+    <string name="in_camera_nao_oferece">Esta câmera não oferece %1$s.</string>
+    <string name="in_camera_tamanho_efetivo">Nesta câmera, usa %1$s; sua escolha salva continua a mesma.</string>
+    <string name="in_taxa_efetiva">Taxa atual: %1$d fps, limitada por esta câmera. Somente leitura.</string>
+    <string name="in_teto_da_camera">Esta câmera vai até %1$d fps em %2$s.</string>
+    <string name="in_fps">%1$d fps</string>
     <string name="in_nota_da_placa">A placa define o tamanho: o quadro dela (640×480 a 30 quadros por segundo na EasyCap), na transmissão e na gravação.</string>
     <string name="lic_titulo">FFmpeg (libavcodec, libavformat e libavutil %1$s)</string>
     <string name="lic_uso">Este app usa o FFmpeg para ler filmadoras DV e placas de captura pelo USB e gravar as fitas, e para converter DVDs sem proteção em MP4: os decodificadores de vídeo DV e MJPEG, o leitor do som da fita (demuxer DV), o gravador de MP4 e o leitor de MP4 (para fechar uma gravação interrompida); e, no DVD, o leitor de MPEG-PS (o VOB), os decodificadores de vídeo MPEG-2 e de som AC-3, MPEG áudio (MP2) e LPCM do DVD. O FFmpeg é licenciado sob a GNU Lesser General Public License, versão 2.1 ou posterior (texto completo abaixo). Copyright © 2000-2026 os desenvolvedores do FFmpeg. FFmpeg é marca registrada de Fabrice Bellard.</string>

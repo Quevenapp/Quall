@@ -44,6 +44,7 @@ final class ModeloDoTeleprompter: ObservableObject {
     /// Frase avulsa da sessão ("alguém errou o PIN", "ocupado, tentando de novo").
     @Published private(set) var aviso = ""
     @Published private(set) var pin = ""
+    @Published private(set) var nomeNaDescoberta: String?
     @Published private(set) var porta: UInt16 = LinkDePareamento.portaPadrao
     /// O endereço para conectar, quando este aparelho é o controle.
     @Published private(set) var enderecoDoPrompter = ""
@@ -246,6 +247,7 @@ final class ModeloDoTeleprompter: ObservableObject {
         o.fase = { [weak self] f in DispatchQueue.main.async { self?.mudarFase(f) } }
         o.aviso = { [weak self] a in DispatchQueue.main.async { self?.aviso = a } }
         o.pin = { [weak self] p in DispatchQueue.main.async { self?.pin = p } }
+        o.anuncio = { [weak self] alias in DispatchQueue.main.async { self?.nomeNaDescoberta = alias } }
         o.mudou = { [weak self] bits in DispatchQueue.main.async { self?.aplicar(bits) } }
         o.estado = { [weak self] in DispatchQueue.main.async { self?.releitura() } }
         // O salto vai direto para a caixa, desta thread: ver `CaixaDeSalto`.

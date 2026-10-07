@@ -37,12 +37,12 @@ class DeviceIdentity private constructor(
                 id = "android-" + UUID.randomUUID().toString().take(8)
                 prefs.edit().putString(CHAVE_ID, id).apply()
             }
-            // `Build.MODEL` é o nome que a pessoa reconhece na lista do outro aparelho
+            // `Build.MODEL` é o nome que a pessoa reconhece depois de autenticar a conexão
             // ("SM-A107M"). Sem `MANUFACTURER` junto porque em quase todo aparelho da bancada ele
             // já vem embutido no modelo, e o rótulo fica longo à toa.
             val nome = Build.MODEL?.takeIf { it.isNotBlank() } ?: "Android"
-            // Prefixo de bancada (vazio em produto): a rede da bancada é compartilhada entre
-            // frentes, e sem prefixo dois aparelhos de rodadas diferentes se acham por mDNS.
+            // Prefixo de bancada (vazio em produto): distingue rodadas depois da autenticação.
+            // A descoberta pública usa somente o alias efêmero do anunciante, sem este nome.
             return DeviceIdentity(prefs, id, Bancada.prefixoDeNome(context) + nome)
         }
     }
@@ -51,19 +51,16 @@ class DeviceIdentity private constructor(
     fun knownPeersJson(): String? = prefs.getString(CHAVE_PARES, null)?.takeIf { it.isNotBlank() }
 
     /**
-     * `true` se este aparelho já pareou com **algum** outro antes — nunca "com este", que a
+     * `true` se este aparelho tem vínculo seguro v3 com **algum** outro — nunca "com este", que a
      * casca não sabe até o receptor tentar. É o gatilho da manchete condicional da tela de
      * espera (`docs/ux-m6.md`, tarefa 1): PIN grande quando não há nenhum par conhecido,
-     * "aparelhos pareados entram direto" quando há. O formato vem de `PairedPeers::to_json`
-     * (`crates/quall-core/src/pairing.rs`): `{"pares": {"<device_id>": {...}, ...}}` — presente e
-     * não vazio é o teste, e `org.json` (já usado em `QuallBrowser`/`MirrorService`) evita
-     * inventar um parser de string para isso.
+     * "aparelhos pareados entram direto" quando há. O núcleo valida o formato e a revisão de
+     * segurança. Vínculos antigos são preservados, mas exigem novo PIN; contar apenas entradas
+     * no JSON esconderia o PIN de migração sem que nenhum vínculo pudesse ser retomado.
      */
     fun temParesConhecidos(): Boolean {
         val json = knownPeersJson() ?: return false
-        return runCatching {
-            org.json.JSONObject(json).optJSONObject("pares")?.length() ?: 0
-        }.getOrDefault(0) > 0
+        return runCatching { QuallNative.hasSecureKnownPeers(json) }.getOrDefault(false)
     }
 
     /** Grava o estado que veio de `quall_session_known_peers_json`. */

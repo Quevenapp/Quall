@@ -44,7 +44,7 @@ struct TelaDeEspera: View {
 
     var body: some View {
         VistaDaEspera(estado: estado,
-                      nome: emissor.nome,
+                      nome: emissor.nomeNaDescoberta ?? "Quall", // sem-traducao: marca literal
                       par: emissor.par,
                       pin: emissor.pin,
                       endereco: emissor.enderecoParaDigitar,
@@ -59,7 +59,8 @@ struct TelaDeEspera: View {
                       mostrarSocorro: emissor.fase != .transmitindo && emissor.segundosSemAppex >= 8,
                       aoDesparear: { emissor.esquecerPares() },
                       aoAbrirSeletor: { emissor.abrirOSeletorDeNovo() },
-                      aoCancelar: { emissor.cancelar() })
+                      aoCancelar: { emissor.cancelar() },
+                      anunciando: emissor.nomeNaDescoberta != nil)
             .overlay(alignment: .topTrailing) {
                 MenuDaTelaAcesa()
                     .padding(.trailing, Estilo.margem)
@@ -108,6 +109,7 @@ struct VistaDaEspera: View {
     let aoDesparear: () -> Void
     let aoAbrirSeletor: () -> Void
     let aoCancelar: () -> Void
+    var anunciando = true
 
     @Environment(\.verticalSizeClass) private var classeVertical
 
@@ -132,7 +134,7 @@ struct VistaDaEspera: View {
                                     avisoDoConteudo
                                 } else {
                                     BlocoDaEspera(nome: nome, pin: pin, endereco: endereco,
-                                                  notaDoEnlace: notaDoEnlace, temPares: temPares,
+                                                  notaDoEnlace: notaDoEnlace, temPares: temPares, anunciando: anunciando,
                                                   parte: .codigos)
                                 }
                                 Spacer(minLength: 16)
@@ -149,7 +151,7 @@ struct VistaDaEspera: View {
                             } else {
                                 cabecaAguardando
                                 BlocoDaEspera(nome: nome, pin: pin, endereco: endereco,
-                                              notaDoEnlace: notaDoEnlace, temPares: temPares,
+                                              notaDoEnlace: notaDoEnlace, temPares: temPares, anunciando: anunciando,
                                               parte: .codigos)
                             }
                             avisoDoConselho
@@ -193,7 +195,7 @@ struct VistaDaEspera: View {
                 .padding(.top, 12)
                 .accessibilityAddTraits(.isHeader)
             BlocoDaEspera(nome: nome, pin: pin, endereco: endereco, notaDoEnlace: notaDoEnlace,
-                          temPares: temPares, parte: .instrucao)
+                          temPares: temPares, anunciando: anunciando, parte: .instrucao)
                 .padding(.top, 8)
         }
     }

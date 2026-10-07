@@ -53,6 +53,11 @@ struct ZonaDeToqueDaPrevia: View {
                 if let quem = controles.controladoPor {
                     PilulaDosControles(texto: RegrasDoControleRemoto.textoDoControladoPor(quem))
                 }
+                // A pouca luz (§3.1) só quando nenhuma das outras está à vista: é uma frase inteira, em
+                // até duas linhas.
+                if controles.pilula == nil, controles.controladoPor == nil, let luz = controles.poucaLuz {
+                    PilulaDosControles(texto: luz, linhas: 2)
+                }
             }
             .allowsHitTesting(false)
         }
@@ -62,16 +67,19 @@ struct ZonaDeToqueDaPrevia: View {
 /// A pílula âmbar da prévia (R9 §4.4): "Exposição e foco travados", e no R9b "Controlado por …".
 struct PilulaDosControles: View {
     let texto: String
+    var linhas = 1
 
     var body: some View {
         Text(texto)
             .font(.system(size: 12, weight: .bold))
             .foregroundColor(.black)
-            .lineLimit(1)
+            .lineLimit(linhas)
+            .multilineTextAlignment(.center)
             .minimumScaleFactor(0.8)
+            .frame(maxWidth: linhas > 1 ? 420 : nil)
             .padding(.horizontal, 12)
             .frame(minHeight: 26)
-            .background(Capsule().fill(Estilo.aguardando))
+            .background(RoundedRectangle(cornerRadius: 13, style: .continuous).fill(Estilo.aguardando))
             .padding(8)
     }
 }

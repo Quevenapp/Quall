@@ -11,7 +11,7 @@
 	     o relógio desenhado nos pixels. O diálogo tem que dizer o motivo verdadeiro. -->
 	<string>O Quall abre a câmera para conferir, medindo nos próprios quadros, que o vídeo recebido está chegando ao aplicativo que vai usá-lo.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>O Quall recebe vídeo de aparelhos da sua rede local. Nada sai da rede.</string>
+	<string>O Quall Studio usa a rede local para conectar os aparelhos que você escolher e receber vídeo para a câmera virtual.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_quall._tcp</string>

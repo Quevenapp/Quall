@@ -117,9 +117,11 @@ final class GravacaoDoPrompter {
                 guard let self else { return }
                 self.atendendo = nil
                 if let motivo, let r = self.modelo?.replica {
-                    let texto = GravacaoDoPrompter.caber(motivo)
+                    // A causa detalhada fica neste aparelho. Toda falha de início tem a mesma
+                    // recusa remota, sem expor espaço livre nem outro diagnóstico ao controle.
+                    let texto = "não foi possível iniciar a gravação; veja o aviso no aparelho que grava"
                     let st = r.recusarGravacao(n: p.n, motivo: texto)
-                    DiarioDoTeleprompter.dizer("gravação: pedido n=\(p.n) recusado: \(SanitizacaoDoLog.causaExterna(texto)) (\(SessaoDoTeleprompter.nome(st)))")
+                    DiarioDoTeleprompter.dizer("gravação: pedido n=\(p.n) recusado: \(SanitizacaoDoLog.causaExterna(motivo)) (\(SessaoDoTeleprompter.nome(st)))")
                 }
                 // Aceito, o `definirGravando(true)` do arquivo começando já respondeu. `BUSY`: outro
                 // pedido chegou; e, de todo jeito, pode ter chegado um "parar" nesse meio.
@@ -188,9 +190,8 @@ struct BotaoDeGravar: View {
                         HStack(spacing: 2) {
                             if !dono.microfone.ligado {
                                 Image(systemName: "mic.slash")
-                                Text(tr("SEM SOM ·"))
+                                Text(tr("SEM SOM"))
                             }
-                            Text(espaco)
                         }
                         .font(.caption2)
                     }
@@ -200,10 +201,7 @@ struct BotaoDeGravar: View {
         }
     }
 
-    private var espaco: String {
-        guard let l = gravador.espacoLivre else { return "" }
-        return String(format: "%.1f GB", Double(l) / 1_000_000_000)
-    }
+
 
     private var fundo: Color {
         gravador.estado.gravando ? Estilo.noAr.opacity(0.85) : Color.white.opacity(0.14)

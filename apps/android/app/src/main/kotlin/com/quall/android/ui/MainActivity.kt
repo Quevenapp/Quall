@@ -63,7 +63,7 @@ import kotlin.concurrent.thread
  *
  * Do lado do emissor — que é o que este marco entrega — o fluxo é: escolher a origem (tela ou uma
  * câmera) → tocar em "Espelhar" → consentimento do sistema (só para a tela) ou permissão de
- * câmera (só na primeira vez) → tela de espera. Ela é a peça central: PIN, nome na rede, IP para
+ * câmera (só na primeira vez) → tela de espera. Ela é a peça central: PIN, alias na rede, IP para
  * digitar, o que fazer do outro lado, e um Cancelar que funciona de verdade. Sem ela o usuário
  * concede gravação de tela (ou permite a câmera), vê o indicador do sistema, e não sabe se está
  * esperando ou travado.
@@ -251,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         binding.cardEspelhar.setOnClickListener { mostrarEspelhar(true) }
         binding.buttonVoltarDoEspelhar.setOnClickListener { mostrarEspelhar(false) }
         onBackPressedDispatcher.addCallback(this, voltarAEscolha)
-        folha = FolhaDeAjustes(this, eu).apply { aoMudarAQualidade = { desenharChipDeQualidade() } }
+        folha = FolhaDeAjustes(this, eu).apply { aoMudarAQualidade = { aplicarEstadoDoCardapio() } }
         binding.buttonAjustesInicio.setOnClickListener { folha.mostrar() }
         desenharSeletorDeIdioma()
         binding.seletorDeIdioma.setOnClickListener {
@@ -537,7 +537,12 @@ class MainActivity : AppCompatActivity() {
     @android.annotation.SuppressLint("ClickableViewAccessibility")
     private fun montarAjustesDaCamera() {
         marcasDoToque = MarcasDoToque(this).apply {
-            fonteDaPilula = { MarcasDoToque.pilulaDaCamera(context, daTelaR5 = false) }
+            // A da pouca luz espera o cartão do PIN sair: ela cairia sobre ele, e o painel já a diz.
+            fonteDaPilula = {
+                MarcasDoToque.pilulaDaCamera(context, daTelaR5 = false,
+                    comPoucaLuz = !binding.pinGroup.isShown && !binding.blocoParConhecido.isShown)
+            }
+            ficarAbaixoDaLinhaDoAlto()
         }
         painelDaCamera = PainelDaCamera(this, daTelaR5 = false) { abrirPainelDaCamera(false) }.apply { visibility = View.GONE }
         val cheio = android.widget.FrameLayout.LayoutParams(
@@ -616,9 +621,9 @@ class MainActivity : AppCompatActivity() {
 
     /** O chip da qualidade em Espelhar: "{resolução} · {fps}", ou "tamanho da fonte", apagado (§6.2). */
     private fun desenharChipDeQualidade() {
-        val e = com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada())
+        val e = estadoDoCardapio()
         val texto = if (e.ativo) {
-            "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${com.quall.android.core.Resolucao.quadros(this)}"
+            "${e.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${e.quadrosPara(com.quall.android.core.Resolucao.quadros(this))}"
         } else {
             getString(R.string.in_tamanho_da_fonte)
         }
@@ -802,10 +807,24 @@ class MainActivity : AppCompatActivity() {
      * (`SeletorDeResolucao`); o chip de Espelhar diz "tamanho da fonte".
      */
     private fun aplicarEstadoDoCardapio() {
-        val e = com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada())
-        folha.aplicarCardapio(e)
+        folha.aplicarCardapio(estadoDoCardapio())
         desenharChipDeQualidade()
     }
+
+    /**
+     * O estado do cardápio pela fonte escolhida: o vídeo USB o desativa; uma câmera do aparelho apaga o
+     * que ela não faz (o A07 não faz 60 fps, 06/10). Os tetos são características da câmera, lidos uma
+     * vez por câmera e guardados.
+     */
+    private fun estadoDoCardapio(): com.quall.android.core.SeletorDeResolucao.Estado {
+        val opcao = fonteCameraSelecionada()?.takeIf { !it.id.startsWith(UsbDv.PREFIXO_DO_ID) }
+        val tetos = opcao?.let { o -> tetosPorCamera.getOrPut(o.id) { com.quall.android.capture.CameraXSource.tetosPorResolucao(this, o.id) } }
+        return com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada(),
+            tetos = tetos.orEmpty(), escolhida = com.quall.android.core.Resolucao.escolhida(this),
+            fps = com.quall.android.core.Resolucao.quadros(this))
+    }
+
+    private val tetosPorCamera = HashMap<String, Map<com.quall.android.core.Resolucao, Int?>>()
 
     private var toquesNoTitulo = 0
     private var primeiroToqueNoTituloEm = 0L
@@ -1610,8 +1629,10 @@ class MainActivity : AppCompatActivity() {
         // espera da câmera, o pedido. O motivo de a entrega não ser a pedida vira Aviso de informação.
         val entregue = when {
             e.entregue.isNotBlank() -> e.entregueCurto
-            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO ->
-                "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${com.quall.android.core.Resolucao.quadros(this)} fps"
+            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO -> {
+                val cardapio = estadoDoCardapio()
+                "${cardapio.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${cardapio.quadrosPara(com.quall.android.core.Resolucao.quadros(this))} fps"
+            }
             else -> ""
         }
         binding.textEntrega.text = entregue
@@ -1636,7 +1657,9 @@ class MainActivity : AppCompatActivity() {
 
         // O bloco da espera.
         binding.textMirrorInstructions.visibility = if (espera) View.VISIBLE else View.GONE
-        binding.textMirrorInstructions.text = instrucaoDaEspera(if (anunciaNaRede) eu.displayName else null)
+        binding.textMirrorInstructions.text = instrucaoDaEspera(
+            e.aliasNaRede.takeIf { anunciaNaRede && it.isNotBlank() }
+        )
         binding.blocoParConhecido.visibility = if (espera && pares) View.VISIBLE else View.GONE
         val vEspera = if (espera) View.VISIBLE else View.GONE
         binding.pinGroup.visibility = vEspera
@@ -1721,7 +1744,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * A instrução da espera (§6.4): com anúncio na rede, "No outro aparelho, abra o Quall em **Exibir** e
-     * escolha **{nome}** na lista, ou digite o endereço abaixo."; sem, "… e digite o endereço abaixo.".
+     * escolha **{alias}** na lista, ou digite o endereço abaixo."; sem, "… e digite o endereço abaixo.".
      */
     private fun instrucaoDaEspera(nome: String?): CharSequence {
         val exibir = getString(R.string.in_exibir)

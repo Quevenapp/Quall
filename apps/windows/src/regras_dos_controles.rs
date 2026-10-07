@@ -479,13 +479,28 @@ pub fn registro_de(m: &Mapa, link: &str) -> Registro {
     m.iter().find(|(k, _)| k.eq_ignore_ascii_case(link)).map(|(_, r)| r.clone()).unwrap_or_default()
 }
 
-/// Guarda o registro de uma câmera, trocando a entrada que já houver (sem caixa). O registro no
-/// padrão **sai** do mapa: "Restaurar automático" zera o registro daquela câmera, e só dela.
+/// Guarda o registro de uma câmera, trocando a entrada que já houver (sem caixa). **O registro no
+/// padrão não é gravado** (07/10, "abrir no automático e lembrar o último manual"): a entrada guarda
+/// "meus ajustes", e voltar ao automático não a apaga.
 pub fn guardar_em(m: &mut Mapa, link: &str, r: &Registro) {
-    m.retain(|k, _| !k.eq_ignore_ascii_case(link));
-    if !r.e_padrao() {
-        m.insert(link.to_string(), r.clone());
+    if r.e_padrao() {
+        return;
     }
+    m.retain(|k, _| !k.eq_ignore_ascii_case(link));
+    m.insert(link.to_string(), r.clone());
+}
+
+/// **Abrir no automático e lembrar o último manual** (decisão de produto, 07/10). Antes, o registro
+/// guardado era reaplicado a cada abertura, e uma câmera deixada em manual abria escura no dia
+/// seguinte. A abertura usa o padrão; o guardado vira "meus ajustes", oferecido no painel enquanto
+/// for diferente do que vale.
+pub fn meus_ajustes(guardado: Registro) -> Option<Registro> {
+    (!guardado.e_padrao()).then_some(guardado)
+}
+
+/// O painel mostra "Usar meus ajustes"?
+pub fn oferece_meus_ajustes(meus: Option<&Registro>, corrente: &Registro) -> bool {
+    meus.is_some_and(|m| !m.e_padrao() && m != corrente)
 }
 
 // =============================================================================================
@@ -574,6 +589,45 @@ pub fn plano(r: &Registro, caps: &Capacidades, fps: f64, originais: &Lidos, toca
     v
 }
 
+/// **A abertura em automático de verdade** (§2.2, achado de 06/10): o que o registro quer em Auto e o
+/// driver **não** está em Auto vai com `Flags_Auto` (com o valor lido, que o driver aceita); o brilho
+/// e o ganho sem Auto, fora do padrão do driver, voltam ao padrão. A anti-cintilação fica como está.
+///
+/// Sem isto, o plano só devolvia o que o próprio Quall tinha mudado (`tocados`). Se outro app ou uma
+/// sessão interrompida deixava a webcam em manual no mínimo, o Quall mostrava "Auto", não mandava nada
+/// e a imagem saía escura (registro padrão + driver manual no mínimo = zero `Set`).
+pub fn normalizacao_da_abertura(r: &Registro, caps: &Capacidades, fps: f64, originais: &Lidos) -> Vec<Envio> {
+    let d = desejado(r, caps, fps);
+    let mut v = Vec::new();
+    for p in Propriedade::TODAS {
+        if d.contains_key(&p) || p == Propriedade::AntiCintilacao {
+            continue;
+        }
+        let Some(f) = caps.get(&p) else { continue };
+        let o = originais.get(&p);
+        if f.tem_auto() {
+            if o.is_none_or(|o| o.bandeiras & FLAGS_AUTO == 0) {
+                v.push(Envio { prop: p, valor: o.map(|o| o.valor).unwrap_or(f.padrao), bandeiras: FLAGS_AUTO });
+            }
+        } else if matches!(p, Propriedade::Brilho | Propriedade::Ganho) && o.is_some_and(|o| o.valor != f.padrao) {
+            // O ganho sem Auto também (a webcam do Dell, 07/10): no mínimo, a imagem seguia escura com
+            // o obturador já em Auto.
+            v.push(Envio { prop: p, valor: f.padrao, bandeiras: FLAGS_MANUAL });
+        }
+    }
+    v
+}
+
+/// O "como a câmera abriu" depois da [`normalizacao_da_abertura`]: é a ele que a devolução volta
+/// (§2.2). Devolver a câmera ao manual escuro que outro app deixou seria refazer o defeito no fechar.
+pub fn originais_depois_da_normalizacao(originais: &Lidos, n: &[Envio]) -> Lidos {
+    let mut o = originais.clone();
+    for e in n {
+        o.insert(e.prop, Lido { valor: e.valor, bandeiras: e.bandeiras });
+    }
+    o
+}
+
 /// **Tudo o que a soltura devolve**: cada propriedade que o Quall mudou nesta abertura.
 pub fn devolver_tudo(caps: &Capacidades, originais: &Lidos, tocados: &BTreeSet<Propriedade>) -> Vec<Envio> {
     Propriedade::TODAS.into_iter().filter(|p| tocados.contains(p)).filter_map(|p| devolucao(p, caps, originais)).collect()
@@ -612,6 +666,9 @@ pub enum Acao {
     /// 0,0 a 1,0, de 0,01 em 0,01.
     FocoPosicao(f64),
     Restaurar,
+    /// "Usar meus ajustes" (07/10): a thread troca o registro pelo guardado; [`aplicar_acao`] não o
+    /// conhece.
+    UsarMeusAjustes,
 }
 
 /// O foco na escala do registro: de 0,01 em 0,01.
@@ -693,6 +750,7 @@ pub fn aplicar_acao(r: &mut Registro, a: Acao, caps: &Capacidades, lidos: &Lidos
         }
         Acao::FocoPosicao(f) => r.foco_posicao = Some(em_centesimos(f)),
         Acao::Restaurar => *r = Registro::default(),
+        Acao::UsarMeusAjustes => {}
     }
     *r != antes
 }
@@ -730,6 +788,12 @@ pub struct PainelDosAjustes {
     /// **R9b**: o aparelho que mexeu nesta câmera de longe, nos 4 s depois (o `controlado_por` do
     /// filmador do núcleo). A janela dos ajustes, a principal e a tela R5 o mostram.
     pub controlado_por: Option<String>,
+    /// **Pouca luz** (§3.1): o automático baixou o fps para clarear, pelo vigia do fps que chega.
+    /// Guardado como números, e não como frase: quem mostra a monta no idioma da hora, inteira (a
+    /// janela dos ajustes e a tela R5) ou curta (a linha da gravação da janela principal).
+    pub pouca_luz: Option<PoucaLuz>,
+    /// "Meus ajustes" desta câmera (07/10): o último manual guardado, oferecido no painel.
+    pub meus_ajustes: Option<Registro>,
 }
 
 // =============================================================================================
@@ -823,6 +887,150 @@ pub fn frase_da_divergencia(p: Propriedade, lido: i32, pedido: i32) -> String {
 }
 
 // =============================================================================================
+// Pouca luz (§3.1)
+// =============================================================================================
+//
+// Com a exposição em Auto, o automático da webcam alonga o quadro para clarear a imagem, e o fps
+// cai (o mesmo que o app de câmera nativo faz). As outras plataformas avisam; o Windows avisa pela
+// regra do Mac (`PoucaLuz.Vigia`): nada garante que o `Get` da exposição em Auto diga o obturador
+// que o driver está usando de fato (não medido em webcam nenhuma), e o fps baixo é o que a pessoa
+// vê. Então o sinal é o **fps que chega**, contado pela captura (`chegados`), e não o obturador
+// lido.
+
+/// Abaixo desta fração do fps pedido, o quadro está lento (o Mac usa o mesmo: 87 %, isto é, o
+/// quadro passou de 1/fps em ~15 %).
+pub const FRACAO_LENTA: f64 = 0.87;
+/// Quanto tempo seguido lento para acender, e de volta para apagar (a histerese do Mac: acende
+/// rápido, apaga devagar, para o aviso não piscar numa luz no limite).
+pub const ACENDE_A_POUCA_LUZ: Duration = Duration::from_secs(1);
+pub const APAGA_A_POUCA_LUZ: Duration = Duration::from_secs(2);
+/// A janela da medida do fps. O Mac mede em meio segundo, num relógio de 0,5 s; aqui a leitura é de
+/// 250 ms (a dos ajustes), e um quarto de segundo a 30 fps são 7 ou 8 quadros: 7 / 0,25 = 28 e
+/// 6 / 0,25 = 24 já cruzaria os 87 %. Um segundo deslizante tira esse serrilhado.
+pub const JANELA_DO_FPS: Duration = Duration::from_secs(1);
+
+/// **O fps medido**, pela contagem de quadros da captura (`chegados`), numa janela deslizante de
+/// [`JANELA_DO_FPS`]. O tempo vem de fora (duração desde um zero qualquer), como na divergência.
+#[derive(Clone, Debug, Default)]
+pub struct MedidorDeFps {
+    amostras: std::collections::VecDeque<(Duration, u64)>,
+}
+
+impl MedidorDeFps {
+    /// Uma leitura do contador; devolve o fps da última janela, ou `None` enquanto não há um
+    /// segundo inteiro de história.
+    pub fn observar(&mut self, chegados: u64, agora: Duration) -> Option<f64> {
+        // Um contador que voltou (outra captura, outro zero) não é uma queda de fps: recomeça.
+        if self.amostras.back().is_some_and(|&(t, n)| chegados < n || agora < t) {
+            self.amostras.clear();
+        }
+        self.amostras.push_back((agora, chegados));
+        // Larga a mais velha só quando a seguinte já cobre a janela: a de trás fica sempre com
+        // pelo menos [`JANELA_DO_FPS`] de idade.
+        while self.amostras.len() > 2 && agora.saturating_sub(self.amostras[1].0) >= JANELA_DO_FPS {
+            self.amostras.pop_front();
+        }
+        let &(t0, n0) = self.amostras.front()?;
+        let dt = agora.saturating_sub(t0);
+        if dt < JANELA_DO_FPS {
+            return None;
+        }
+        Some((chegados - n0) as f64 / dt.as_secs_f64())
+    }
+}
+
+/// **O vigia da pouca luz**, a regra do Mac (`PoucaLuz.Vigia`): acende depois de
+/// [`ACENDE_A_POUCA_LUZ`] seguido com o fps medido abaixo de [`FRACAO_LENTA`] do pedido, e apaga
+/// depois de [`APAGA_A_POUCA_LUZ`] seguidos de volta. Fps medido zero (a câmera parada, que tem a
+/// frase dela) não acende.
+#[derive(Clone, Debug, Default)]
+pub struct VigiaDaPoucaLuz {
+    acesa: bool,
+    desde: Option<Duration>,
+}
+
+impl VigiaDaPoucaLuz {
+    /// Devolve o fps medido (arredondado, entre 1 e o pedido) enquanto aceso, ou `None`.
+    pub fn observar(&mut self, fps_medido: f64, fps: f64, agora: Duration) -> Option<u32> {
+        let lento = fps > 0.0 && fps_medido > 0.0 && fps_medido < fps * FRACAO_LENTA;
+        if lento != self.acesa {
+            let desde = *self.desde.get_or_insert(agora);
+            if agora.saturating_sub(desde) >= if lento { ACENDE_A_POUCA_LUZ } else { APAGA_A_POUCA_LUZ } {
+                self.acesa = lento;
+                self.desde = None;
+            }
+        } else {
+            self.desde = None;
+        }
+        if !self.acesa {
+            return None;
+        }
+        let teto = fps.round().max(1.0) as u32;
+        Some((fps_medido.round().max(1.0) as u32).min(teto))
+    }
+
+    /// Apaga na hora, sem a histerese: a exposição passou a Manual, e o fps baixo deixou de ser
+    /// coisa do automático.
+    pub fn apagar(&mut self) {
+        self.acesa = false;
+        self.desde = None;
+    }
+}
+
+/// **O vigia vale agora?** Só com o automático no comando da exposição: com o obturador manual o
+/// teto é 1/fps (§3.1), e um fps baixo ali não é o automático clareando, nem se resolve pela
+/// exposição manual. No modo compartilhado o registro do Quall não manda, e vale o que o driver diz
+/// (sem leitura da exposição, vale: é o caso comum da webcam sem `CameraControl_Exposure`).
+pub fn vigia_da_pouca_luz_vale(r: &Registro, lidos: &Lidos, compartilhada: bool) -> bool {
+    if compartilhada {
+        lidos.get(&Propriedade::Exposicao).is_none_or(|l| l.em_auto())
+    } else {
+        r.exposicao == ModoDeExposicao::Auto
+    }
+}
+
+/// **O aviso aceso**: o fps de agora, o pedido, e se o conselho é a exposição manual (a câmera
+/// declara obturador manual e o Quall pode mexer nela) ou a luz do ambiente.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PoucaLuz {
+    pub fps_agora: u32,
+    pub fps: u32,
+    pub com_manual: bool,
+}
+
+impl PoucaLuz {
+    /// O aviso a partir do vigia: `com_manual` só quando a câmera declara obturador manual e não está
+    /// no modo compartilhado (aí os controles ficam apagados, e o conselho seria inútil).
+    pub fn de(fps_agora: u32, fps: f64, caps: &Capacidades, compartilhada: bool) -> PoucaLuz {
+        let com_manual = !compartilhada && caps.get(&Propriedade::Exposicao).is_some_and(|f| f.tem_manual());
+        PoucaLuz { fps_agora, fps: fps.round().max(1.0) as u32, com_manual }
+    }
+
+    /// A frase inteira, no idioma de agora (a do Android, com "nos ajustes da câmera" no lugar da
+    /// engrenagem: no Windows a janela se chama "Ajustes da câmera").
+    pub fn texto(&self) -> String {
+        if self.com_manual {
+            crate::idioma::tf("Pouca luz: {} fps para clarear a imagem. Para {} fps, use a exposição manual nos ajustes da câmera.", &[&self.fps_agora, &self.fps])
+        } else {
+            crate::idioma::tf("Pouca luz: {} fps para clarear a imagem. Mais luz no ambiente devolve os {} fps.", &[&self.fps_agora, &self.fps])
+        }
+    }
+
+    /// A primeira frase só, para a linha da gravação da janela principal quando ela está vazia: a
+    /// inteira passa dos ~86 caracteres que cabem nos 582 px do painel (a conta de
+    /// `estilo::altura_do_aviso`) e terminaria em reticências; o conselho fica na janela dos ajustes.
+    pub fn sem_conselho(&self) -> String {
+        crate::idioma::tf("Pouca luz: {} fps para clarear a imagem.", &[&self.fps_agora])
+    }
+
+    /// A forma curta, para dividir a linha da gravação da janela principal com a gravação ou o
+    /// "Controlado por".
+    pub fn curto(&self) -> String {
+        crate::idioma::tf("Pouca luz: {} fps", &[&self.fps_agora])
+    }
+}
+
+// =============================================================================================
 // Os textos (§3.5, §4)
 // =============================================================================================
 //
@@ -833,6 +1041,7 @@ pub const TITULO_DA_JANELA: &str = "Ajustes da câmera"; // i18n: chave
 /// O rótulo de acessibilidade do ícone (§4.1). Quem o usa passa por `idioma::t(ROTULO_DO_ICONE)`.
 pub const ROTULO_DO_ICONE: &str = "Ajustes da câmera"; // i18n: chave
 pub const RESTAURAR_AUTOMATICO: &str = "Restaurar automático"; // i18n: chave
+pub const USAR_MEUS_AJUSTES: &str = "Usar meus ajustes"; // i18n: chave
 pub const PASSAR_PARA_MANUAL: &str = "Passar para Manual"; // i18n: chave
 pub const FRASE_DESTRAVE: &str = "Destrave a exposição para compensar."; // i18n: chave
 pub const FRASE_FOCO_FIXO: &str = "Esta câmera tem foco fixo."; // i18n: chave
@@ -1234,6 +1443,19 @@ mod testes {
     }
 
     #[test]
+    fn abre_no_automatico_e_lembra_o_ultimo_manual() {
+        let manual = Registro { exposicao: ModoDeExposicao::Manual, iso: Some(64.0), obturador_ns: Some(ns_do_log2(-7)), ..Default::default() };
+        assert_eq!(meus_ajustes(manual.clone()), Some(manual.clone()));
+        assert_eq!(meus_ajustes(Registro::default()), None);
+        assert!(oferece_meus_ajustes(Some(&manual), &Registro::default()));
+        assert!(!oferece_meus_ajustes(Some(&manual), &manual), "já vale: some");
+        assert!(!oferece_meus_ajustes(None, &Registro::default()));
+        // "Usar meus ajustes" não é gesto que aplicar_acao conheça: a thread troca o registro.
+        let mut r = Registro::default();
+        assert!(!aplicar_acao(&mut r, Acao::UsarMeusAjustes, &Capacidades::new(), &Lidos::new()));
+    }
+
+    #[test]
     fn o_mapa_por_link_tolera_o_ilegivel() {
         let link = r"\\?\usb#vid_0c45&pid_6a09&mi_00#7&00000002&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global";
         let mut m = Mapa::new();
@@ -1243,9 +1465,9 @@ mod testes {
         let texto = mapa_em_json(&m);
         assert_eq!(ler_mapa(&texto), m);
         assert_eq!(ler_mapa(&format!("\u{FEFF}{texto}")), m, "com BOM");
-        // Restaurar automático: a entrada sai.
+        // Restaurar automático (07/10): a entrada fica, porque ela é "meus ajustes".
         guardar_em(&mut m, &link.to_uppercase(), &Registro::default());
-        assert!(m.is_empty());
+        assert_eq!(registro_de(&m, link), r);
         assert!(ler_mapa("não é json").is_empty());
         assert!(ler_mapa("[1,2]").is_empty());
         let misto = ler_mapa(r#"{"a":{"ev":3},"b":{"exposicao":"lua"},"c":7}"#);
@@ -1291,6 +1513,39 @@ mod testes {
         assert!(t.contains(&Propriedade::Exposicao));
         marcar_tocado(&mut t, &p[0], true);
         assert!(t.is_empty());
+    }
+
+    #[test]
+    fn a_abertura_poe_em_auto_o_que_outro_app_deixou_em_manual() {
+        let caps = caps_de_exemplo();
+        // Já no automático, com o brilho e o ganho no padrão: nada a mandar (§2.2).
+        let mut no_padrao = lidos_de_exemplo();
+        no_padrao.insert(Propriedade::Ganho, Lido { valor: 0, bandeiras: FLAGS_MANUAL });
+        assert!(normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &no_padrao).is_empty());
+        // Outro app deixou exposição e foco em manual e o brilho no mínimo: a "câmera escura" de 06/10.
+        let mut escura = lidos_de_exemplo();
+        escura.insert(Propriedade::Exposicao, Lido { valor: -11, bandeiras: FLAGS_MANUAL });
+        escura.insert(Propriedade::Foco, Lido { valor: 0, bandeiras: FLAGS_MANUAL });
+        escura.insert(Propriedade::Brilho, Lido { valor: -64, bandeiras: FLAGS_MANUAL });
+        let n = normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &escura);
+        assert_eq!(
+            n,
+            vec![
+                Envio { prop: Propriedade::Exposicao, valor: -11, bandeiras: FLAGS_AUTO },
+                Envio { prop: Propriedade::Ganho, valor: 0, bandeiras: FLAGS_MANUAL },
+                Envio { prop: Propriedade::Brilho, valor: 0, bandeiras: FLAGS_MANUAL },
+                Envio { prop: Propriedade::Foco, valor: 0, bandeiras: FLAGS_AUTO },
+            ]
+        );
+        // A anti-cintilação fica como está; o ganho de exemplo (32, padrão 0) volta ao padrão.
+        assert!(n.iter().all(|e| e.prop != Propriedade::AntiCintilacao));
+        // O que o registro quer em manual não é normalizado: o plano cuida dele.
+        let manual = Registro { exposicao: ModoDeExposicao::Manual, iso: Some(50.0), obturador_ns: Some(ns_do_log2(-8)), ..Default::default() };
+        assert!(normalizacao_da_abertura(&manual, &caps, 30.0, &escura).iter().all(|e| e.prop != Propriedade::Exposicao));
+        // E a devolução volta ao normalizado, não ao manual escuro.
+        let o = originais_depois_da_normalizacao(&escura, &n);
+        let tocados: BTreeSet<_> = [Propriedade::Brilho].into();
+        assert_eq!(devolver_tudo(&caps, &o, &tocados), vec![Envio { prop: Propriedade::Brilho, valor: 0, bandeiras: FLAGS_MANUAL }]);
     }
 
     #[test]
@@ -1408,6 +1663,96 @@ mod testes {
         let r = Registro { exposicao: ModoDeExposicao::Manual, balanco: Balanco::Kelvin, ..Default::default() };
         assert_eq!(vigiadas(&r), vec![Propriedade::Exposicao, Propriedade::Ganho, Propriedade::Balanco]);
         assert!(vigiadas(&Registro::default()).is_empty(), "só nos modos manuais e no Kelvin");
+    }
+
+    #[test]
+    fn o_fps_medido_na_janela_de_um_segundo() {
+        let ms = Duration::from_millis;
+        let mut m = MedidorDeFps::default();
+        // 30 fps lidos a cada 250 ms: 7 ou 8 quadros por leitura, e a janela de 1 s diz 30.
+        let mut n = 0u64;
+        let mut ultimo = None;
+        for i in 0..=8u64 {
+            if i > 0 {
+                n += if i % 2 == 0 { 8 } else { 7 };
+            }
+            ultimo = m.observar(n, ms(250 * i));
+            if i < 4 {
+                assert_eq!(ultimo, None, "menos de 1 s de história");
+            }
+        }
+        assert_eq!(ultimo, Some(30.0));
+        // O contador que volta recomeça a história, sem um fps negativo.
+        assert_eq!(m.observar(3, ms(2250)), None);
+        // A leitura atrasada (a thread acordou tarde) mede na janela que de fato passou.
+        let mut m = MedidorDeFps::default();
+        assert_eq!(m.observar(0, ms(0)), None);
+        assert_eq!(m.observar(15, ms(1000)), Some(15.0));
+        assert_eq!(m.observar(30, ms(2000)), Some(15.0));
+    }
+
+    #[test]
+    fn o_vigia_da_pouca_luz_tem_a_histerese_do_mac() {
+        let ms = Duration::from_millis;
+        let mut v = VigiaDaPoucaLuz::default();
+        assert_eq!(v.observar(30.0, 30.0, ms(0)), None);
+        assert_eq!(v.observar(26.5, 30.0, ms(250)), None, "26,5 está acima de 87 % de 30 (26,1)");
+        assert_eq!(v.observar(15.2, 30.0, ms(500)), None, "lento, mas há menos de 1 s");
+        assert_eq!(v.observar(15.2, 30.0, ms(1250)), None);
+        assert_eq!(v.observar(15.2, 30.0, ms(1500)), Some(15), "1 s seguido lento: acende");
+        // Uma volta curta não apaga: são 2 s seguidos.
+        assert_eq!(v.observar(30.0, 30.0, ms(1750)), Some(30));
+        assert_eq!(v.observar(14.6, 30.0, ms(2000)), Some(15), "voltou a ficar lento: a contagem recomeça");
+        assert_eq!(v.observar(30.0, 30.0, ms(2250)), Some(30));
+        assert_eq!(v.observar(30.0, 30.0, ms(4000)), Some(30), "menos de 2 s de volta");
+        assert_eq!(v.observar(30.0, 30.0, ms(4250)), None, "2 s de volta: apaga");
+        // Câmera parada (0 fps) não acende; fps pedido desconhecido também não.
+        let mut v = VigiaDaPoucaLuz::default();
+        assert_eq!(v.observar(0.0, 30.0, ms(0)), None);
+        assert_eq!(v.observar(0.0, 30.0, ms(5000)), None);
+        assert_eq!(v.observar(10.0, 0.0, ms(6000)), None);
+        assert_eq!(v.observar(10.0, 0.0, ms(9000)), None);
+        // O fps devolvido fica entre 1 e o pedido; apagar não espera a histerese.
+        let mut v = VigiaDaPoucaLuz::default();
+        v.observar(0.4, 30.0, ms(0));
+        assert_eq!(v.observar(0.4, 30.0, ms(1000)), Some(1));
+        v.apagar();
+        assert_eq!(v.observar(0.4, 30.0, ms(1100)), None, "apagado, conta de novo");
+    }
+
+    #[test]
+    fn quando_o_vigia_vale_e_a_frase_da_pouca_luz() {
+        let auto = Registro::default();
+        let manual = Registro { exposicao: ModoDeExposicao::Manual, ..Default::default() };
+        let lidos = lidos_de_exemplo();
+        assert!(vigia_da_pouca_luz_vale(&auto, &lidos, false));
+        assert!(!vigia_da_pouca_luz_vale(&manual, &lidos, false), "com o obturador manual o fps não é coisa do automático");
+        // Compartilhada: vale o que o driver diz, e o registro não manda.
+        assert!(vigia_da_pouca_luz_vale(&manual, &lidos, true), "o driver lê Auto");
+        let mut em_manual = lidos.clone();
+        em_manual.insert(Propriedade::Exposicao, Lido { valor: -4, bandeiras: FLAGS_MANUAL });
+        assert!(!vigia_da_pouca_luz_vale(&auto, &em_manual, true));
+        assert!(vigia_da_pouca_luz_vale(&auto, &Lidos::new(), true), "sem exposição lida, vale");
+        // A frase: com obturador manual, o conselho é a exposição manual; sem ele, a luz.
+        let caps = caps_de_exemplo();
+        let p = PoucaLuz::de(15, 30.0, &caps, false);
+        assert_eq!(p, PoucaLuz { fps_agora: 15, fps: 30, com_manual: true });
+        assert_eq!(p.texto(), "Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual nos ajustes da câmera.");
+        assert_eq!(p.curto(), "Pouca luz: 15 fps");
+        assert_eq!(p.sem_conselho(), "Pouca luz: 15 fps para clarear a imagem.");
+        let sem = PoucaLuz::de(15, 30.0, &Capacidades::new(), false);
+        assert_eq!(sem.texto(), "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.");
+        assert!(!PoucaLuz::de(15, 30.0, &caps, true).com_manual, "compartilhada: os controles ficam apagados");
+        let mut so_auto = caps.clone();
+        so_auto.insert(Propriedade::Exposicao, f(-11, -1, 1, -6, FLAGS_AUTO));
+        assert!(!PoucaLuz::de(15, 30.0, &so_auto, false).com_manual);
+        assert_eq!(PoucaLuz::de(25, 29.97, &caps, false).fps, 30);
+        crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
+            assert_eq!(p.texto(), "Low light: 15 fps to brighten the picture. For 30 fps, use manual exposure in Camera settings.");
+            assert_eq!(sem.texto(), "Low light: 15 fps to brighten the picture. More light in the room brings back 30 fps.");
+            assert_eq!(p.curto(), "Low light: 15 fps");
+            assert_eq!(p.sem_conselho(), "Low light: 15 fps to brighten the picture.");
+        });
     }
 
     #[test]

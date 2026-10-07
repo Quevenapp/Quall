@@ -31,7 +31,7 @@ import com.quall.android.teleprompter.Replicas
  * **A folha de Ajustes** (`docs/telas-estudio.md` §6.3), a mesma nas três engrenagens (Início, Espelhar,
  * Exibir): "Ajustes" e "Pronto"; QUALIDADE DO ESPELHAMENTO (os dois cardápios e a nota de custo, que
  * saíram de Espelhar), PAREAMENTO ("Aparelhos pareados" com a contagem e "Esquecer aparelhos pareados",
- * com confirmação) e SOBRE (este aparelho, o nome na lista, a versão, o núcleo e "Licenças de terceiros").
+ * com confirmação) e SOBRE (este aparelho, o nome após conectar, a versão, o núcleo e "Licenças de terceiros").
  *
  * Criada **uma vez só** no `onCreate` de quem a abre (§11.3): a vista vive com a tela, e o
  * `BottomSheetDialog` só a mostra. Os cardápios de qualidade continuam como eram em Espelhar — um
@@ -51,6 +51,8 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
 
     /** O último estado do cardápio pela fonte ([aplicarCardapio]); ativo até a tela dizer o contrário. */
     private var cardapio = SeletorDeResolucao.estado(false)
+    /** Indicação derivada (24/45, por exemplo), sem tag Int e sem ação que grave preferência. */
+    private lateinit var taxaEfetiva: RadioButton
 
     init {
         b.buttonProntoAjustes.setOnClickListener { folha?.dismiss() }
@@ -175,6 +177,16 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
             segmento(rb)
             b.radioGroupQuadros.addView(rb)
         }
+        taxaEfetiva = RadioButton(c).apply {
+            id = View.generateViewId()
+            tag = "taxa_efetiva_somente_leitura"
+            visibility = View.GONE
+            isClickable = false
+            isFocusable = false
+            layoutParams = RadioGroup.LayoutParams(0, RadioGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        segmento(taxaEfetiva)
+        b.radioGroupQuadros.addView(taxaEfetiva)
         b.radioGroupQuadros.setOnCheckedChangeListener { grupo, id ->
             if (sincronizando) return@setOnCheckedChangeListener
             val fps = grupo.findViewById<View>(id)?.tag as? Int ?: return@setOnCheckedChangeListener
@@ -187,14 +199,40 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
 
     /**
      * O estado do cardápio pela fonte escolhida ([SeletorDeResolucao]): com o vídeo USB ele fica
-     * desativado e a nota diz quem define o tamanho. Só `isEnabled` muda: nenhum botão é marcado nem
-     * desmarcado, então os ouvintes não disparam e a escolha salva fica como estava.
+     * desativado e a nota diz quem define o tamanho. O tamanho/taxa efetivo é marcado com os ouvintes
+     * suspensos, sem gravar a escolha salva. Uma taxa fora dos presets recebe indicação só de leitura.
      */
     fun aplicarCardapio(e: SeletorDeResolucao.Estado) {
         cardapio = e
         for (g in listOf(b.radioGroupResolucao, b.radioGroupQuadros)) {
             g.isEnabled = e.ativo
-            for (i in 0 until g.childCount) g.getChildAt(i).isEnabled = e.ativo
+            for (i in 0 until g.childCount) {
+                val v = g.getChildAt(i)
+                // O que a câmera escolhida não faz fica apagado (06/10), sem mexer na escolha salva.
+                val fora = v.tag in e.resolucoesFora || v.tag in e.taxasFora
+                v.isEnabled = e.ativo && !fora
+            }
+        }
+        // Marca o fps que vai de fato, sem gravar: o salvo (60) apagado e marcado parecia o escolhido. Numa
+        // câmera que faz o salvo, ele volta a aparecer marcado.
+        val resolucaoNaTela = e.resolucaoPara(Resolucao.escolhida(activity))
+        val fpsNaTela = e.quadrosPara(Resolucao.quadros(activity))
+        val somenteLeitura = e.taxaSomenteLeitura(Resolucao.quadros(activity))
+        sincronizando = true
+        try {
+            taxaEfetiva.visibility = if (somenteLeitura != null) View.VISIBLE else View.GONE
+            taxaEfetiva.isEnabled = false
+            if (somenteLeitura != null) {
+                taxaEfetiva.text = activity.getString(R.string.in_fps, somenteLeitura)
+                taxaEfetiva.contentDescription = activity.getString(R.string.in_taxa_efetiva, somenteLeitura)
+            }
+            for ((grupo, marcado) in listOf(b.radioGroupResolucao to resolucaoNaTela, b.radioGroupQuadros to fpsNaTela)) {
+                val id = if (grupo == b.radioGroupQuadros && somenteLeitura != null) taxaEfetiva.id else
+                    (0 until grupo.childCount).map { grupo.getChildAt(it) }.firstOrNull { it.tag == marcado }?.id
+                if (id == null) grupo.clearCheck() else grupo.check(id)
+            }
+        } finally {
+            sincronizando = false
         }
         if (e.nota != null) b.textResolucaoNota.text = activity.getString(e.nota)
         else desenharCustoDaResolucao(Resolucao.escolhida(activity))
@@ -229,19 +267,40 @@ class FolhaDeAjustes(private val activity: Activity, private val eu: DeviceIdent
         // O alvo entra aqui pela mesma razão do `MirrorService`: sem ele, esta nota mostraria a taxa de
         // 1080p para as quatro linhas — a nota de custo mentindo sobre o custo. Sem o núcleo carregado a
         // chamada nativa não existe: sem nota, e a tela abre (o Aviso vermelho do Início diz o porquê).
-        val fps = Resolucao.quadros(activity)
+        // O fps que vai de fato: o salvo, ou o teto da câmera escolhida quando ele passa dela.
+        val efetiva = cardapio.resolucaoPara(r)
+        val fps = cardapio.quadrosPara(Resolucao.quadros(activity))
         val bps = if (!QuallNative.carregado) 0 else {
-            runCatching { QuallNative.tetoDeTaxaBps(r.pedido.width, r.pedido.height, fps, r.maxFs) }.getOrDefault(0)
+            runCatching { QuallNative.tetoDeTaxaBps(efetiva.pedido.width, efetiva.pedido.height, fps, efetiva.maxFs) }.getOrDefault(0)
         }
         if (bps <= 0) {
-            b.textResolucaoNota.text = ""
+            b.textResolucaoNota.text = limiteDaCamera(r).trim()
             return
         }
         val mbps = String.format(activity.resources.configuration.locales[0], "%.0f", bps / 1_000_000.0)
         // O limiar é o joelho agregado do rádio da bancada (§8.10, 32–47 Mbps). Acima dele a frase muda
         // de tom, porque aí o transporte deixa de ser detalhe.
         val chave = if (bps >= 30_000_000) R.string.resolucao_custo_alto else R.string.resolucao_custo
-        b.textResolucaoNota.text = activity.getString(chave, activity.getString(R.string.esp_ent_pedido, r.rotulo, fps), mbps)
+        b.textResolucaoNota.text = activity.getString(chave, activity.getString(R.string.esp_ent_pedido, efetiva.rotulo, fps), mbps) +
+            limiteDaCamera(r)
+    }
+
+    /** " Esta câmera vai até 30 fps em 1080p." / " Esta câmera não oferece 4K.", ou nada sem limite. */
+    private fun limiteDaCamera(r: Resolucao): String {
+        val partes = ArrayList<String>(2)
+        val semTamanho = Resolucao.entries.filter { it in cardapio.resolucoesFora }
+        if (semTamanho.isNotEmpty()) {
+            partes.add(activity.getString(R.string.in_camera_nao_oferece, semTamanho.joinToString(", ") { it.rotulo }))
+        }
+        cardapio.resolucaoEfetiva?.let {
+            partes.add(activity.getString(R.string.in_camera_tamanho_efetivo, it.rotulo))
+        }
+        if (cardapio.taxasFora.isNotEmpty()) {
+            cardapio.tetoDeQuadros?.let { teto ->
+                partes.add(activity.getString(R.string.in_teto_da_camera, teto, cardapio.resolucaoPara(r).rotulo))
+            }
+        }
+        return if (partes.isEmpty()) "" else " " + partes.joinToString(" ")
     }
 
     // --- o pareamento ------------------------------------------------------------------------------

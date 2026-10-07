@@ -65,7 +65,7 @@ struct TelaDeEspera: View {
         return DadosDaEspera(
             transmitindo: transmitindo,
             encerrando: encerrando,
-            nome: emissor.nome,
+            nome: emissor.nomeNaDescoberta ?? "Quall",
             origem: fonte?.nome ?? "",
             origemEhTela: fonte?.ehTela ?? true,
             comSom: emissor.comSom,
@@ -440,8 +440,7 @@ private struct CameraDaEspera: View {
                 gravacao: DadosDaCamera.gravacao(gravador.estado),
                 avisos: avisosDaCamera,
                 // O espaço que sobra no disco, gravando — estava no botão Gravar de antes.
-                espacoLivre: gravador.estado.gravando
-                    ? gravador.espacoLivre.map { String(format: T("%.1f GB livres"), Double($0) / 1_000_000_000) } : nil,
+                espacoLivre: nil,
                 pilula: dono.pilulaSobreAPrevia?.texto,
                 iconeDaPilula: dono.pilulaSobreAPrevia?.icone ?? "lock.fill"),
             previa: AnyView(PreviaDaCamera(dono: dono, espelhar: emissor.espelharPrevia, escondida: false)),

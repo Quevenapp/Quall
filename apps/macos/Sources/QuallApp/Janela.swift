@@ -159,6 +159,12 @@ enum Janela {
                                          + "\(Int(janela.frame.minY))) — volta no meio da tela principal")
             janela.setFrame(novo, display: false)
         }
+        if Argumentos.lidos().janelaDeBancada {
+            var moldura = janela.frame
+            moldura.size = CGSize(width: 1280, height: 800)
+            janela.setFrame(moldura, display: true)
+            janela.center()
+        }
         janela.makeKeyAndOrderFront(nil)
         return true
     }

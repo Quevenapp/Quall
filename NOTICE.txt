@@ -19,6 +19,19 @@ Antes da distribuição de qualquer release, é necessário disponibilizar seus
 fontes cobertos correspondentes, incluindo modificações e patches, e informar
 ao destinatário o meio acessível de obtê-los. O destino confirmado é
 https://github.com/Quevenapp/Quall, repositório público da organização Quevenapp.
-A seleção de fontes foi autorizada para publicação; isso não comprova upload,
-release binária, build, teste em aparelho ou correspondência a artefatos antigos.
-Os placeholders deste snapshot são desenhos novos MPL, não a marca antiga.
+A base pública desta preparação é o commit 3172b188c29a010cd161c56bbeeb2cbcefbb220a.
+Os fontes cobertos desta versão Windows 1.0.0 incluem modificações posteriores;
+a base sozinha não corresponde ao executável. Antes de distribuir publicamente,
+disponibilizar também esses fontes/patches no destino confirmado acima.
+
+A base pública contém placeholders próprios MPL. Esta preparação Windows usa
+o ícone e as cores originais do produto solicitados pelo usuário; os PNGs da
+embalagem também vêm da marca original do checkout. Esta inclusão não concede
+novos direitos sobre marcas, imagens ou recursos e não lhes aplica a MPL do código.
+A origem e os hashes de fonte/binários/assets acompanham os artefatos de preparo.
+
+Distribuição pela App Store: a EULA padrão da Apple se aplica ao executável de
+loja, sem substituir os direitos e obrigações de componentes de código aberto.
+O código coberto próprio conserva a MPL-2.0 e os fontes correspondentes estão
+no destino acima. Terceiros conservam os termos em THIRD_PARTY_NOTICES.txt.
+A EULA padrão Apple ressalva expressamente os termos dos componentes abertos.

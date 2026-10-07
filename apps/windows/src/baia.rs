@@ -35,7 +35,9 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
+#[cfg(not(feature = "loja"))]
 use windows::core::HSTRING;
+#[cfg(not(feature = "loja"))]
 use windows::Win32::Media::MediaFoundation::{
     IMFVirtualCamera, MFCreateVirtualCamera, MFVirtualCameraAccess_CurrentUser,
     MFVirtualCameraLifetime_Session, MFVirtualCameraType_SoftwareCameraSource,
@@ -290,12 +292,123 @@ pub fn subir_placa(
 // A câmera virtual
 // ---------------------------------------------------------------------------------------------
 
+/// Handle Rust: o objeto COM vive integralmente numa thread MTA de trabalho.
+/// A thread da janela nunca chama MFCreateVirtualCamera nem espera consentimento.
 pub struct CameraVirtual {
-    cam: IMFVirtualCamera,
+    encerrar: std::sync::mpsc::Sender<()>,
+    falhou: Arc<AtomicBool>,
     pub nome: String,
 }
 
 impl CameraVirtual {
+    pub(crate) fn falhou(&self) -> bool { self.falhou.load(Ordering::Acquire) }
+
+    #[cfg(feature = "loja")]
+    pub fn criar(_nome: &str) -> Result<Self> {
+        anyhow::bail!("A edição Microsoft Store não inclui câmera virtual para outros apps.")
+    }
+
+    #[cfg(not(feature = "loja"))]
+    pub fn criar(nome: &str) -> Result<Self> {
+        let nome_do_worker = nome.to_owned();
+        let (encerrar, falhou) = iniciar_vida_de_worker(move || {
+            let contexto = ContextoDaCamera::novo()?;
+            let camera = CameraNoWorker::criar(&nome_do_worker)?;
+            // Destruição de tupla na ordem dos campos: objeto COM antes do apartamento.
+            Ok((camera, contexto))
+        })?;
+        Ok(Self { encerrar, falhou, nome: nome.to_owned() })
+    }
+}
+
+impl Drop for CameraVirtual {
+    fn drop(&mut self) {
+        // Sem join na UI: uma consulta de consentimento pendente não bloqueia fechar o app.
+        // Se o pedido já terminou, recv acorda e a thread destrói o objeto de sessão.
+        let _ = self.encerrar.send(());
+    }
+}
+
+// C não precisa ser Send: nasce, permanece e é destruído no worker.
+fn iniciar_vida_de_worker<F, C>(criar: F) -> Result<(std::sync::mpsc::Sender<()>, Arc<AtomicBool>)>
+where F: FnOnce() -> Result<C> + Send + 'static, C: 'static {
+    let (encerrar, encerramento) = std::sync::mpsc::channel();
+    let falhou = Arc::new(AtomicBool::new(false));
+    let estado = Arc::clone(&falhou);
+    std::thread::Builder::new().name("quall-camera-virtual".into()).spawn(move || {
+        match criar() {
+            Ok(camera) => {
+                crate::registro::linha("camera virtual: nó criado na thread de trabalho");
+                let _ = encerramento.recv();
+                drop(camera);
+            }
+            Err(e) => {
+                estado.store(true, Ordering::Release);
+                crate::registro::linha(format!("camera virtual: nó não subiu (código={})",
+                    e.downcast_ref::<windows::core::Error>().map(|e| e.code().0).unwrap_or(0)));
+            }
+        }
+    }).context("iniciar thread da câmera virtual")?;
+    Ok((encerrar, falhou))
+}
+
+#[cfg(not(feature = "loja"))]
+struct ContextoDaCamera;
+#[cfg(not(feature = "loja"))]
+impl ContextoDaCamera {
+    fn novo() -> Result<Self> {
+        use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
+        use windows::Win32::Media::MediaFoundation::{MFStartup, MF_VERSION, MFSTARTUP_FULL};
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok()?;
+            if let Err(e) = MFStartup(MF_VERSION, MFSTARTUP_FULL) {
+                CoUninitialize();
+                return Err(e.into());
+            }
+        }
+        Ok(Self)
+    }
+}
+#[cfg(not(feature = "loja"))]
+impl Drop for ContextoDaCamera {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = windows::Win32::Media::MediaFoundation::MFShutdown();
+            windows::Win32::System::Com::CoUninitialize();
+        }
+    }
+}
+
+#[cfg(test)]
+mod testes_da_thread_da_camera {
+    use super::*;
+    use std::sync::mpsc;
+    #[test]
+    fn objeto_nao_send_nasce_e_morre_fora_da_ui() {
+        let ui = std::thread::current().id();
+        let (eventos, rx) = mpsc::channel();
+        struct Objeto { _nao_send: std::rc::Rc<()>, eventos: mpsc::Sender<std::thread::ThreadId> }
+        impl Drop for Objeto { fn drop(&mut self) { self.eventos.send(std::thread::current().id()).unwrap(); } }
+        let (parar, falhou) = iniciar_vida_de_worker(move || {
+            eventos.send(std::thread::current().id()).unwrap();
+            Ok(Objeto { _nao_send: std::rc::Rc::new(()), eventos })
+        }).unwrap();
+        let nasceu = rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_ne!(nasceu, ui);
+        assert!(!falhou.load(Ordering::Acquire));
+        assert!(rx.try_recv().is_err());
+        drop(parar);
+        assert_eq!(rx.recv_timeout(Duration::from_secs(5)).unwrap(), nasceu);
+    }
+}
+
+#[cfg(not(feature = "loja"))]
+struct CameraNoWorker {
+    cam: IMFVirtualCamera,
+}
+
+#[cfg(not(feature = "loja"))]
+impl CameraNoWorker {
     /// Cria o nó e o liga, **com uma segunda tentativa quando um nó do mesmo nome ficou para
     /// trás**.
     ///
@@ -368,11 +481,12 @@ impl CameraVirtual {
             )
         }?;
         unsafe { cam.Start(None) }?;
-        Ok(CameraVirtual { cam, nome: nome.to_string() })
+        Ok(CameraNoWorker { cam })
     }
 }
 
-impl Drop for CameraVirtual {
+#[cfg(not(feature = "loja"))]
+impl Drop for CameraNoWorker {
     fn drop(&mut self) {
         // `Stop` e `Shutdown`, nesta ordem, e **sem `Remove`**. Ver o cabeçalho do módulo.
         unsafe {
@@ -407,11 +521,19 @@ pub struct Baia {
 // atravessar thread — afirmação que ninguém aqui mediu e que depende do apartamento em que o
 // objeto nasceu.
 //
-// Então o objeto da câmera fica com **quem a criou** (a thread principal, em `bin/quall_app.rs`),
-// e a `Baia` — cano, placa e distribuidor, tudo Rust puro — é a parte que viaja.
+// Então o objeto COM fica com **quem o criou**, o worker MTA da `CameraVirtual`.
+// A UI conserva só o handle de encerramento; a `Baia` — cano, placa e distribuidor, tudo
+// Rust puro — é a parte compartilhada com as sessões.
 
 impl Baia {
+    /// A edição da loja não abre o IPC da fonte externa nem ativa seu objeto COM.
+    #[cfg(feature = "loja")]
+    pub fn abrir(_nome: &str) -> Result<Self> {
+        anyhow::bail!("A edição Microsoft Store não inclui câmera virtual para outros apps.")
+    }
+
     /// Sobe o cano e a placa desta câmera. **Não cria a câmera** — ver a nota acima.
+    #[cfg(not(feature = "loja"))]
     pub fn abrir(nome: &str) -> Result<Self> {
         let cano_servido = cano::cano_do_nome(nome);
         let dist = Distribuidor::novo();

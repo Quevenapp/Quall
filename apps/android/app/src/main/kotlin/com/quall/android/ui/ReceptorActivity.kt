@@ -11,6 +11,7 @@ import com.quall.android.core.LogSeguro as Log
 import android.view.SurfaceHolder
 import android.view.View
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -318,6 +319,10 @@ class ReceptorActivity : AppCompatActivity() {
             }
         }
 
+        // A entrada já foi validada; o teclado do formulário não deve cobrir o vídeo.
+        getSystemService(InputMethodManager::class.java)
+            ?.hideSoftInputFromWindow(binding.root.windowToken, 0)
+        currentFocus?.clearFocus()
         binding.escolhaScroll.visibility = View.GONE
         binding.videoContainer.visibility = View.VISIBLE
         // "Conectando em…" na linha de estado, e não no painel de números (que só tem números, §11.3).

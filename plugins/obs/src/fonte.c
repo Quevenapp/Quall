@@ -280,7 +280,7 @@ static obs_properties_t *propriedades(void *dados)
 			obs_data_release(cfg);
 		}
 	}
-	obs_properties_add_text(props, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_DEFAULT);
+	obs_properties_add_text(props, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_PASSWORD);
 
 	// **O botão vem colado no PIN, e a linha de estado vai DEPOIS dele.**
 	//

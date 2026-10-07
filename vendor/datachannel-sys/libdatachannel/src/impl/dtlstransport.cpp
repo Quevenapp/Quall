@@ -754,7 +754,10 @@ DtlsTransport::DtlsTransport(shared_ptr<IceTransport> lower, certificate_ptr cer
 		SSL_CTX_set_options(mCtx, SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION | SSL_OP_NO_QUERY_MTU |
 		                              SSL_OP_NO_RENEGOTIATION);
 
-		SSL_CTX_set_min_proto_version(mCtx, DTLS1_VERSION);
+		// WebRTC sessions require DTLS 1.2 (RFC 8827, section 6.5).
+		// Never negotiate legacy DTLS 1.0 with a peer.
+		openssl::check(SSL_CTX_set_min_proto_version(mCtx, DTLS1_2_VERSION),
+		               "Failed to enforce DTLS 1.2 minimum");
 		SSL_CTX_set_read_ahead(mCtx, 1);
 		SSL_CTX_set_quiet_shutdown(mCtx, 0); // send the close_notify alert
 		SSL_CTX_set_info_callback(mCtx, InfoCallback);

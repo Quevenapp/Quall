@@ -1111,6 +1111,17 @@
       "textos": [
         "docs/distribuicao/licencas/textos/picohash-public-domain.txt"
       ]
+    },
+    {
+      "componente": "Xcode compiler-rt: os_version_check.c.o",
+      "versao": "Xcode 26.5 (17F42), Apple clang 21.0.0 (clang-2100.1.1.101)",
+      "tipo": "apple-runtime",
+      "licenca_declarada": "Apache-2.0 WITH LLVM-exception; legado compiler-rt MIT OR NCSA",
+      "fonte": "Runtime fornecido pelo Xcode; licença upstream https://github.com/llvm/llvm-project/blob/llvmorg-21.1.0/compiler-rt/LICENSE.TXT",
+      "nota": "Objeto os_version_check.c.o extraído de libclang_rt.ios.a/iossim.a/osx.a da toolchain inventariada; favorece a API oficial de versão do sistema sobre fallback Rust. Não afirma correspondência de fonte/versão inteira do Clang Apple com upstream 21.1.0.",
+      "textos": [
+        "docs/distribuicao/licencas/textos/apple/LLVM-compiler-rt-LICENSE.txt"
+      ]
     }
   ],
   "avisos_crates": [

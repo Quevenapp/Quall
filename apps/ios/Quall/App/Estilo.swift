@@ -172,7 +172,7 @@ fileprivate extension Color {
 // MARK: - A marca
 // =================================================================================================
 
-/// Placeholder geométrico original do snapshot público; mantém o nome e o espaço do cabeçalho.
+/// Marca aprovada do produto; geometria pertence ao overlay privado de marca.
 struct MarcaDoQuall: View {
     var comNome = true
     @ScaledMetric(relativeTo: .largeTitle) private var lado: CGFloat = 30
@@ -194,14 +194,14 @@ struct MarcaDoQuall: View {
     private var simbolo: some View {
         let u = lado / 32
         return ZStack(alignment: .topLeading) {
-            Rectangle()
-                .strokeBorder(Estilo.texto, lineWidth: 4 * u)
-                .frame(width: 24 * u, height: 24 * u)
-                .offset(x: 4 * u, y: 4 * u)
-            Rectangle()
+            Circle()
+                .stroke(Estilo.texto, lineWidth: 3.6 * u)
+                .frame(width: 21 * u, height: 21 * u)
+                .offset(x: 4.5 * u, y: 4.5 * u)
+            Circle()
                 .fill(Estilo.noAr)
-                .frame(width: 4 * u, height: 4 * u)
-                .offset(x: 14 * u, y: 14 * u)
+                .frame(width: 9.2 * u, height: 9.2 * u)
+                .offset(x: 20.6 * u, y: 20.6 * u)
         }
         .frame(width: lado, height: lado, alignment: .topLeading)
     }

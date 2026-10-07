@@ -217,6 +217,10 @@ struct Argumentos {
     /// de exemplo, por `ImageRenderer`, a 880 × 580 e 2x. Não cria janela, não abre sessão, não lê a
     /// identidade deste Mac nem pede permissão nenhuma — é para provar a tela sem tocar na bancada.
     var retratosDeBancada: String?
+    /// Captura de loja da janela real com dados sintéticos, sem alterar o nome do sistema.
+    var nomeDeBancada: String?
+    /// Moldura real 1280×800 pontos (2560×1600 pixels em tela Retina), sem redimensionar pixels.
+    var janelaDeBancada = false
 
     /// Verdadeiro quando qualquer argumento de bancada foi passado. PIN e chaves nunca entram
     /// no diário, inclusive na bancada; só presença, estados e métricas são registrados.
@@ -231,6 +235,7 @@ struct Argumentos {
             || tomNoDispositivo != nil || gravarApos != nil || gravarPor != nil || matarGravandoApos != nil
             || esconderPreviaApos != nil || pastaDeGravacoes != nil || ladoDoTexto != nil || controleEmJanela
             || lumaMedia || cameraAjustes != nil || cameraPonto != nil || cameraAjustesLimpos
+            || nomeDeBancada != nil || janelaDeBancada
     }
 
     /// Algum `--argumento` veio na linha de comando (qualquer um, conhecido ou não).
@@ -346,6 +351,8 @@ struct Argumentos {
             case "--camera-ponto-travar": a.cameraPontoTravar = true
             case "--camera-ajustes-limpos": a.cameraAjustesLimpos = true
             case "--retratos-de-bancada": i += 1; if i < args.count { a.retratosDeBancada = args[i] }
+            case "--nome-de-bancada": i += 1; if i < args.count { a.nomeDeBancada = args[i] }
+            case "--janela-de-bancada": a.janelaDeBancada = true
             default: break
             }
             i += 1

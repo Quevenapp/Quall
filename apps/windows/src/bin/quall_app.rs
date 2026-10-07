@@ -149,6 +149,8 @@ fn rodar() -> windows::core::Result<()> {
     registro::linha("quall-distribuicao: desenvolvimento-tela-estendida-v1");
     #[cfg(not(feature = "tela-estendida-futura"))]
     registro::linha("quall-distribuicao: release-sem-monitor-v2");
+    #[cfg(feature = "loja")]
+    registro::linha("quall-distribuicao: store-sem-camera-virtual-v3");
     if caminho.is_none() && regras_da_bandeja::abertura_de_produto(std::env::args_os().skip(1)) {
         mostrar_mensagem(&quall_capture_probe::idioma::t("O diário de diagnóstico não pôde ser aberto. As falhas de inicialização serão mostradas nesta janela."), true);
     }

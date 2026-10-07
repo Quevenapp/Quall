@@ -23,6 +23,7 @@ class NsdDeviceDiscovery(context: Context) {
     companion object {
         private const val TAG = "QuallNsd"
         const val SERVICE_TYPE = "_quall._tcp."
+        private val DISCOVERY_TOKEN = Regex("[0-9a-f]{32}")
     }
 
     data class DiscoveredDevice(
@@ -173,8 +174,18 @@ class NsdDeviceDiscovery(context: Context) {
     }
 
     private fun addResolved(info: NsdServiceInfo) {
+        // A descoberta v3 identifica somente esta publicação efêmera. O nome real do
+        // aparelho vem do anúncio autenticado/cifrado do núcleo, depois do PAKE.
+        // Anúncios antigos com nome/ID público não participam desta lista.
+        val attributes = info.attributes
+        val version = attributes["v"]?.toString(Charsets.US_ASCII)
+        val token = attributes["t"]?.toString(Charsets.US_ASCII) ?: return
+        if (version != "3" || !DISCOVERY_TOKEN.matches(token) ||
+            attributes.containsKey("id") || attributes.containsKey("n") ||
+            info.port !in 1..65535
+        ) return
         val host = runCatching { info.host?.hostAddress }.getOrNull()
-        found[info.serviceName] = DiscoveredDevice(info.serviceName, host, info.port)
+        found[info.serviceName] = DiscoveredDevice("Quall ${token.take(8)}", host, info.port)
         publish()
     }
 
