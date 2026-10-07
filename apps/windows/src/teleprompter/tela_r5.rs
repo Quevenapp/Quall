@@ -824,6 +824,11 @@ impl Tela {
         if let Some(n) = r.dono.ajustes().and_then(|p| p.painel_controlado_por()) {
             avisos.push((idioma::tf("Controlado por {}", &[&n]), LARANJA));
         }
+        // Pouca luz (§3.1 dos controles): o automático baixou o fps para clarear. A frase inteira,
+        // no tom fraco: é informação, e não falha (a faixa é larga o bastante para ela).
+        if let Some(l) = r.dono.ajustes().and_then(|p| p.painel_pouca_luz()) {
+            avisos.push((l.texto(), TINTA_CLARA_FRACA));
+        }
         if self.avisos.atualize_o_app {
             avisos.push((idioma::t("O controle fala outra versão: atualize o app").into(), LARANJA));
         }
@@ -1216,8 +1221,10 @@ impl Tela {
         });
         // R9b: "Controlado por <aparelho>" entra e sai da faixa (4 s depois de um pedido remoto).
         let controlada = r.dono.ajustes().and_then(|p| p.painel_controlado_por());
+        // Pouca luz (§3.1 dos controles): entra e sai da faixa pelo vigia do fps.
+        let pouca_luz = r.dono.ajustes().and_then(|p| p.painel_pouca_luz());
         let chave = format!(
-            "{:?}|{v}|{}|{}|{}|{:?}|{g:?}|{}|{:?}|{}|{controlada:?}",
+            "{:?}|{v}|{}|{}|{}|{:?}|{g:?}|{}|{:?}|{}|{controlada:?}|{pouca_luz:?}",
             r.dono.fase(),
             m.ligado,
             m.aberto,

@@ -23,6 +23,8 @@
 //!   (`--ajustes-camera`) parte do padrão e **não grava**.
 //!
 //! **Nenhum quadro é lido aqui.** A luma de bancada é de `luma_de_bancada.rs`, na thread do dono.
+//! Só o **contador** de quadros que chegaram (`chegados`, da captura) é lido, na leitura de 4 vezes
+//! por segundo, para o vigia da pouca luz (§3.1, `regras::VigiaDaPoucaLuz`).
 
 #![cfg(windows)]
 
@@ -45,7 +47,7 @@ use crate::captura_de_camera::Modo;
 use crate::registro;
 use crate::regras_dos_controles::{
     self as regras, Acao, Capacidades, Divergencia, Envio, Faixa, FaseDosAjustes, Interface as Onde, Lido, Lidos,
-    PainelDosAjustes, PassoDeBancada, Propriedade, Registro,
+    MedidorDeFps, PainelDosAjustes, PassoDeBancada, PoucaLuz, Propriedade, Registro, VigiaDaPoucaLuz,
 };
 
 // =============================================================================================
@@ -123,6 +125,11 @@ impl PontaDosAjustes {
         self.0.painel.lock().unwrap_or_else(|e| e.into_inner()).controlado_por.clone()
     }
 
+    /// **Pouca luz** (§3.1): o automático baixou o fps para clarear (barato: sem copiar as faixas).
+    pub fn painel_pouca_luz(&self) -> Option<PoucaLuz> {
+        self.0.painel.lock().unwrap_or_else(|e| e.into_inner()).pouca_luz
+    }
+
     /// Muda a cada publicação: a tela redesenha quando ela mudou.
     pub fn versao(&self) -> u64 {
         self.0.versao.load(Ordering::SeqCst)
@@ -164,9 +171,10 @@ struct FonteEnviavel(IMFMediaSource);
 unsafe impl Send for FonteEnviavel {}
 
 impl AjustesDaCamera {
-    /// Sobe a thread dos ajustes da câmera `link`, aberta no `modo`, com o fps do tipo nativo. Volta
-    /// na hora: a leitura das faixas e a reaplicação correm na thread.
-    pub fn iniciar(fonte: &IMFMediaSource, link: &str, modo: Modo, fps: f64) -> Option<AjustesDaCamera> {
+    /// Sobe a thread dos ajustes da câmera `link`, aberta no `modo`, com o fps do tipo nativo e o
+    /// contador de quadros que chegam da captura (o vigia da pouca luz). Volta na hora: a leitura
+    /// das faixas e a reaplicação correm na thread.
+    pub fn iniciar(fonte: &IMFMediaSource, link: &str, modo: Modo, fps: f64, chegados: Arc<AtomicU64>) -> Option<AjustesDaCamera> {
         let comum = Arc::new(Comum {
             painel: Mutex::new(PainelDosAjustes { fps, ..Default::default() }),
             versao: AtomicU64::new(0),
@@ -183,7 +191,7 @@ impl AjustesDaCamera {
         let prefixo = registro::prefixo_desta_thread();
         let h = std::thread::Builder::new().name("quall.camera.ajustes".into()).spawn(move || {
             registro::prefixar_esta_thread(&prefixo);
-            correr(c, f, link, modo, fps);
+            correr(c, f, link, modo, fps, chegados);
         });
         match h {
             Ok(h) => Some(AjustesDaCamera { ponta: PontaDosAjustes(comum), thread: Some(h) }),
@@ -575,7 +583,7 @@ impl Envios {
     }
 }
 
-fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f64) {
+fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f64, chegados: Arc<AtomicU64>) {
     let com = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
     let t0 = Instant::now();
     // **Pelo tipo da fonte** (§2.2): a câmera virtual do próprio Quall não tem controles. O dono é
@@ -676,6 +684,10 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
     // A gravação adiada (§6, achado I4): quando gravar o registro no disco.
     let mut gravar_em: Option<Instant> = None;
     let mut controlado: Option<String> = None;
+    // A pouca luz (§3.1): o fps que chega, medido na leitura de 4 vezes por segundo.
+    let mut medidor = MedidorDeFps::default();
+    let mut vigia = VigiaDaPoucaLuz::default();
+    let mut pouca_luz: Option<PoucaLuz> = None;
     loop {
         {
             let g = c.pedidos.lock().unwrap_or_else(|e| e.into_inner());
@@ -833,12 +845,30 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
                     registro::linha(format!("ajustes: {no_diario}"));
                 }
             }
+            // **Pouca luz** (§3.1): o vigia do Mac sobre o fps que chega, só com o automático no
+            // comando da exposição; no manual apaga na hora.
+            let medido = medidor.observar(chegados.load(Ordering::Relaxed), agora);
+            let agora_pouca_luz = if regras::vigia_da_pouca_luz_vale(&reg, &lidos, compartilhada) {
+                medido.and_then(|m| vigia.observar(m, fps, agora)).map(|f| PoucaLuz::de(f, fps, &caps, compartilhada))
+            } else {
+                vigia.apagar();
+                None
+            };
+            // O diário diz quando acende e apaga (e não a cada fps novo), com o fps medido.
+            if agora_pouca_luz.is_some() != pouca_luz.is_some() {
+                match agora_pouca_luz {
+                    Some(_) => registro::linha(format!("ajustes: pouca luz acesa: {:.1} fps de {fps:.2}", medido.unwrap_or(0.0))),
+                    None => registro::linha("ajustes: pouca luz apagada"),
+                }
+            }
+            pouca_luz = agora_pouca_luz;
             let linha = regras::linha_lida(&lidos);
             c.publicar(|p| {
                 p.lidos = lidos.clone();
                 p.linha_lida = linha;
                 p.divergencia = frase;
                 p.controlado_por = controlado.clone();
+                p.pouca_luz = pouca_luz;
             });
         }
         if banc.leitura && ultima_linha_de_bancada.elapsed() >= Duration::from_secs(1) {

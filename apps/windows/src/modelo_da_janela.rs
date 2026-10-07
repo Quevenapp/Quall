@@ -405,6 +405,9 @@ pub struct ControlesDaCamera {
     pub ajustes: bool,
     /// **R9b**: "Controlado por <aparelho>" (o nome; vazio fora dos 4 s depois de um pedido remoto).
     pub controlado_por: String,
+    /// **Pouca luz** (§3.1 dos controles): o automático baixou o fps para clarear. Na linha da
+    /// gravação: a primeira frase sozinha, a curta ao lado da gravação ou do "Controlado por".
+    pub pouca_luz: Option<crate::regras_dos_controles::PoucaLuz>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -1024,11 +1027,17 @@ fn cena_esperando(q: &mut Quadro, e: &EstadoDaTela) {
 fn controles_da_camera(q: &mut Quadro, c: &ControlesDaCamera) {
     // R9b: "Controlado por <aparelho>" divide a linha da gravação (a gravação primeiro).
     let controlado = if c.controlado_por.is_empty() { String::new() } else { tf("Controlado por {}", &[&c.controlado_por]) };
-    let linha = match (c.linha_da_gravacao.is_empty(), controlado.is_empty()) {
+    let mut linha = match (c.linha_da_gravacao.is_empty(), controlado.is_empty()) {
         (false, false) => format!("{} · {controlado}", c.linha_da_gravacao),
         (false, true) => c.linha_da_gravacao.clone(),
         (true, _) => controlado,
     };
+    // Pouca luz (§3.1) por último. A frase inteira (com o conselho) não cabe numa linha do painel:
+    // sozinha vai a primeira frase, ao lado de outra coisa a curta ("Pouca luz: 15 fps"), e a
+    // inteira fica na janela dos ajustes e na faixa da R5.
+    if let Some(p) = &c.pouca_luz {
+        linha = if linha.is_empty() { p.sem_conselho() } else { format!("{linha} · {}", p.curto()) };
+    }
     if !linha.is_empty() {
         let cor = if c.gravando {
             PERIGO_TEXTO
@@ -1586,6 +1595,7 @@ fn camera_de_exemplo(gravando: bool) -> ControlesDaCamera {
         esquecer: false,
         ajustes: true,
         controlado_por: String::new(),
+        pouca_luz: None,
     }
 }
 
@@ -1941,6 +1951,19 @@ mod testes {
             c.controlado_por = "Pixel do Pessoa Exemplo".into(); // i18n: fora (exemplo)
         }
         assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Pessoa Exemplo"))));
+        // Pouca luz (§3.1): ao lado da gravação, a curta; sozinha, a primeira frase, em âmbar.
+        let luz = crate::regras_dos_controles::PoucaLuz { fps_agora: 15, fps: 30, com_manual: true };
+        if let Some(c) = controlada.camera.as_mut() {
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Pessoa Exemplo · Pouca luz: 15 fps"))));
+        let mut so_luz = achar("12-no-ar-camera-gravando");
+        if let Some(c) = so_luz.camera.as_mut() {
+            c.linha_da_gravacao = String::new();
+            c.gravando = false;
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&so_luz).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido() == "Pouca luz: 15 fps para clarear a imagem." && t.cor == AGUARDANDO_TEXTO)));
         let q = compor(&achar("07-ajustes"));
         assert!(q.lugar(Controle::SomComCamera).is_none(), "§11.5: saiu dos Ajustes");
         let q = compor(&achar("13-varios"));
