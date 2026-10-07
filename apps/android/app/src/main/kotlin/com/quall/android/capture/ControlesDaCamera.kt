@@ -109,7 +109,7 @@ class ControlesDaCamera(
         /** O denominador das frações da matriz de correção (`ColorSpaceTransform` é de racionais). */
         private const val DENOMINADOR = 10_000
 
-        /** Lê o registro de [cameraId], ou o padrão. */
+        /** Lê o registro guardado de [cameraId] ("meus ajustes"), ou o padrão. */
         fun lerRegistro(c: Context, cameraId: String): AjusteDaCamera =
             AjusteDaCamera.deJson(prefs(c).getString(cameraId, null)) ?: AjusteDaCamera()
 
@@ -179,9 +179,25 @@ class ControlesDaCamera(
 
     val capacidades: CapacidadesDaCamera = lerCapacidades(camera, caracteristicas)
 
-    /** O registro desta câmera, o guardado (a tela mostra o aplicado, em [planoAtual]). */
-    @Volatile var ajuste: AjusteDaCamera = lerRegistro(app, cameraId)
+    /**
+     * O registro que vale agora (a tela mostra o aplicado, em [planoAtual]). **Abre no automático**
+     * ([RegrasDosControles.MeusAjustes]): o guardado não é reaplicado, fica em [meusAjustes].
+     */
+    @Volatile var ajuste: AjusteDaCamera = RegrasDosControles.MeusAjustes.naAbertura()
         private set
+
+    /** O último manual guardado desta câmera ("Usar meus ajustes"), ou `null`. */
+    @Volatile var meusAjustes: AjusteDaCamera? = lerRegistro(app, cameraId).takeUnless { it.ehPadrao }
+        private set
+
+    /** O painel oferece "Usar meus ajustes"? */
+    val ofereceMeusAjustes: Boolean get() = RegrasDosControles.MeusAjustes.ofereceMeusAjustes(meusAjustes, ajuste)
+
+    /** "Usar meus ajustes": o último manual volta pelo mesmo caminho de um gesto do painel. */
+    fun usarMeusAjustes() {
+        val lembrado = meusAjustes ?: return
+        editar("usar meus ajustes") { lembrado } // i18n-fora: motivo do diário
+    }
 
     /** O último plano enviado: o que de fato foi à câmera, já cortado. */
     @Volatile var planoAtual: RegrasDosControles.Plano? = null
@@ -232,7 +248,8 @@ class ControlesDaCamera(
     private val vigiaKelvin = RegrasDosControles.VigiaDaDivergencia()
 
     init {
-        Log.i(TAG, "r9: câmera $cameraId: ${resumoDasCapacidades()}; registro ${ajuste.paraJson()}")
+        Log.i(TAG, "r9: câmera $cameraId: ${resumoDasCapacidades()}; abre no automático; " +
+            "meus ajustes ${meusAjustes?.paraJson() ?: "nenhum"}") // i18n-fora: diário
     }
 
     fun resumoDasCapacidades(): String = with(capacidades) {
@@ -617,8 +634,11 @@ class ControlesDaCamera(
 
     // --- o envio -----------------------------------------------------------------------------------
 
+    /** Grava só um registro diferente do padrão: voltar ao automático não apaga "meus ajustes". */
     private fun guardar() {
-        prefs(app).edit().putString(cameraId, ajuste.paraJson()).apply()
+        val a = RegrasDosControles.MeusAjustes.aGravar(ajuste) ?: return
+        meusAjustes = a
+        prefs(app).edit().putString(cameraId, a.paraJson()).apply()
     }
 
     private fun pedirEnvio(motivo: String) {

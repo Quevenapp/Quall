@@ -55,9 +55,9 @@ if [ -z "$BINARIO" ]; then
     RUNTIME_DIR="$RAIZ/target/compiler-runtime/macos"
     PLATFORM_NAME=macosx ARCHS="$RUNTIME_ARQS" DERIVED_FILE_DIR="$RUNTIME_DIR" \
         bash "$RAIZ/apps/ios/Quall/Ferramentas/preparar-runtime-xcode.sh"
-    (cd "$MACOS" && xcrun swift build -c release --jobs "$JOBS" "${ARQS[@]}" \
+    (cd "$MACOS" && xcrun swift build -c release --jobs "$JOBS" ${ARQS[@]+"${ARQS[@]}"} \
         -Xlinker "$RUNTIME_DIR/QuallAvailability.o" --product quall-app)
-    PASTA_BIN="$(cd "$MACOS" && xcrun swift build -c release "${ARQS[@]}" --show-bin-path)"
+    PASTA_BIN="$(cd "$MACOS" && xcrun swift build -c release ${ARQS[@]+"${ARQS[@]}"} --show-bin-path)"
     BINARIO="$PASTA_BIN/quall-app"
 fi
 [ -x "$BINARIO" ] || { echo "ERRO: executável ausente: $BINARIO" >&2; exit 1; }

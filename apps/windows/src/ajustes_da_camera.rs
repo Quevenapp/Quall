@@ -613,17 +613,22 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
         originais.iter().map(|(p, l)| format!("{}={} (bandeiras {})", p.chave(), regras::texto_do_valor(*p, l.valor), l.bandeiras)).collect::<Vec<_>>().join(" ")
     ));
     let banc = bancada();
-    let mut reg = if banc.roteiro.is_some() {
+    // **Abre no automático** (07/10): o guardado não é reaplicado; vira "meus ajustes", oferecido no
+    // painel. A bancada parte do padrão e não grava nada.
+    let mut meus = if banc.roteiro.is_some() {
         registro::linha("ajustes: bancada (--ajustes-camera): o registro parte do padrão, e nada é gravado no disco");
-        Registro::default()
+        None
     } else {
-        carregar(&link)
+        regras::meus_ajustes(carregar(&link))
     };
+    let mut reg = Registro::default();
+    registro::linha(format!("ajustes: abre no automático; meus ajustes {}", if meus.is_some() { "guardados" } else { "nenhum" }));
     c.publicar(|p| {
         p.fase = if compartilhada { FaseDosAjustes::Compartilhada } else { FaseDosAjustes::Pronto };
         p.caps = caps.clone();
         p.lidos = originais.clone();
         p.registro = reg.clone();
+        p.meus_ajustes = meus.clone();
         p.fps = fps;
         p.linha_lida = regras::linha_lida(&originais);
     });
@@ -709,6 +714,14 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
             } else {
                 let mut mudou = false;
                 for a in gestos {
+                    if a == Acao::UsarMeusAjustes {
+                        if let Some(m) = meus.as_ref().filter(|m| **m != reg) {
+                            reg = m.clone();
+                            mudou = true;
+                            registro::linha("ajustes: usar meus ajustes");
+                        }
+                        continue;
+                    }
                     mudou |= regras::aplicar_acao(&mut reg, a, &caps, &lidos);
                 }
                 if mudou {
@@ -739,6 +752,10 @@ fn correr(c: Arc<Comum>, fonte: FonteEnviavel, link: String, modo: Modo, fps: f6
             gravar_em = None;
             if banc.roteiro.is_none() {
                 guardar(&link, &reg);
+                if let Some(m) = regras::meus_ajustes(reg.clone()) {
+                    meus = Some(m);
+                    c.publicar(|p| p.meus_ajustes = meus.clone());
+                }
             }
         }
         if pendente && regras::pode_enviar(ultimo_envio, zero.elapsed()) {

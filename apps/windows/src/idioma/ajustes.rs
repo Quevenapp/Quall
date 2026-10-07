@@ -5,6 +5,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     // regras_dos_controles.rs: o título, os botões e as frases do §3.5 e do §4.3
     ("Ajustes da câmera", "Camera settings"),
     ("Restaurar automático", "Reset to auto"),
+    ("Usar meus ajustes", "Use my settings"),
     ("Passar para Manual", "Switch to Manual"),
     ("Destrave a exposição para compensar.", "Unlock exposure to compensate."),
     ("Esta câmera tem foco fixo.", "This camera has fixed focus."),

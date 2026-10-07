@@ -251,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         binding.cardEspelhar.setOnClickListener { mostrarEspelhar(true) }
         binding.buttonVoltarDoEspelhar.setOnClickListener { mostrarEspelhar(false) }
         onBackPressedDispatcher.addCallback(this, voltarAEscolha)
-        folha = FolhaDeAjustes(this, eu).apply { aoMudarAQualidade = { desenharChipDeQualidade() } }
+        folha = FolhaDeAjustes(this, eu).apply { aoMudarAQualidade = { aplicarEstadoDoCardapio() } }
         binding.buttonAjustesInicio.setOnClickListener { folha.mostrar() }
         desenharSeletorDeIdioma()
         binding.seletorDeIdioma.setOnClickListener {
@@ -621,9 +621,9 @@ class MainActivity : AppCompatActivity() {
 
     /** O chip da qualidade em Espelhar: "{resolução} · {fps}", ou "tamanho da fonte", apagado (§6.2). */
     private fun desenharChipDeQualidade() {
-        val e = com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada())
+        val e = estadoDoCardapio()
         val texto = if (e.ativo) {
-            "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${com.quall.android.core.Resolucao.quadros(this)}"
+            "${e.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${e.quadrosPara(com.quall.android.core.Resolucao.quadros(this))}"
         } else {
             getString(R.string.in_tamanho_da_fonte)
         }
@@ -807,10 +807,24 @@ class MainActivity : AppCompatActivity() {
      * (`SeletorDeResolucao`); o chip de Espelhar diz "tamanho da fonte".
      */
     private fun aplicarEstadoDoCardapio() {
-        val e = com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada())
-        folha.aplicarCardapio(e)
+        folha.aplicarCardapio(estadoDoCardapio())
         desenharChipDeQualidade()
     }
+
+    /**
+     * O estado do cardápio pela fonte escolhida: o vídeo USB o desativa; uma câmera do aparelho apaga o
+     * que ela não faz (o A07 não faz 60 fps, 06/10). Os tetos são características da câmera, lidos uma
+     * vez por câmera e guardados.
+     */
+    private fun estadoDoCardapio(): com.quall.android.core.SeletorDeResolucao.Estado {
+        val opcao = fonteCameraSelecionada()?.takeIf { !it.id.startsWith(UsbDv.PREFIXO_DO_ID) }
+        val tetos = opcao?.let { o -> tetosPorCamera.getOrPut(o.id) { com.quall.android.capture.CameraXSource.tetosPorResolucao(this, o.id) } }
+        return com.quall.android.core.SeletorDeResolucao.estado(opcaoDvMarcada() != null, daPlaca = placaDeCapturaMarcada(),
+            tetos = tetos.orEmpty(), escolhida = com.quall.android.core.Resolucao.escolhida(this),
+            fps = com.quall.android.core.Resolucao.quadros(this))
+    }
+
+    private val tetosPorCamera = HashMap<String, Map<com.quall.android.core.Resolucao, Int?>>()
 
     private var toquesNoTitulo = 0
     private var primeiroToqueNoTituloEm = 0L
@@ -1615,8 +1629,10 @@ class MainActivity : AppCompatActivity() {
         // espera da câmera, o pedido. O motivo de a entrega não ser a pedida vira Aviso de informação.
         val entregue = when {
             e.entregue.isNotBlank() -> e.entregueCurto
-            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO ->
-                "${com.quall.android.core.Resolucao.escolhida(this).rotulo} · ${com.quall.android.core.Resolucao.quadros(this)} fps"
+            camera && !daDv && e.fase == MirrorBus.Fase.ESPERANDO -> {
+                val cardapio = estadoDoCardapio()
+                "${cardapio.resolucaoPara(com.quall.android.core.Resolucao.escolhida(this)).rotulo} · ${cardapio.quadrosPara(com.quall.android.core.Resolucao.quadros(this))} fps"
+            }
             else -> ""
         }
         binding.textEntrega.text = entregue

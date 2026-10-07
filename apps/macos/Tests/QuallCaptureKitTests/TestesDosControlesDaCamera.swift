@@ -59,7 +59,7 @@ final class TestesDosControlesDaCamera: XCTestCase {
         XCTAssertNil(AjustesDaCamera.doJSON("não é json"))
     }
 
-    func testeAGuardaUsaAChaveDaEspecificacaoEORestaurarApagaSoAquelaCamera() throws {
+    func testeAGuardaUsaAChaveDaEspecificacaoEORestaurarNaoApagaOGuardado() throws {
         let dominio = "quall.testes.ajustes.\(UUID().uuidString)"
         let d = try XCTUnwrap(UserDefaults(suiteName: dominio))
         defer { d.removePersistentDomain(forName: dominio) }
@@ -71,14 +71,83 @@ final class TestesDosControlesDaCamera: XCTestCase {
         g.gravar(AjustesDaCamera(travaBalanco: true), "B")
         XCTAssertEqual(d.string(forKey: "camera.ajustes.A"), travada.json)
         XCTAssertEqual(g.ler("A"), travada)
-        // "Restaurar automático" zera o registro daquela câmera, e só dela.
+        // "Restaurar automático" (gravar o padrão) não apaga o guardado (07/10): ele é "meus ajustes".
         g.gravar(.padrao, "A")
-        XCTAssertNil(d.object(forKey: "camera.ajustes.A"))
-        XCTAssertEqual(g.ler("A"), .padrao)
+        XCTAssertEqual(d.string(forKey: "camera.ajustes.A"), travada.json)
+        XCTAssertEqual(g.ler("A"), travada)
+        XCTAssertEqual(g.ler("B"), AjustesDaCamera(travaBalanco: true))
+        // Um manual novo substitui o guardado, só daquela câmera.
+        g.gravar(AjustesDaCamera(foco: .travado), "A")
+        XCTAssertEqual(g.ler("A"), AjustesDaCamera(foco: .travado))
         XCTAssertEqual(g.ler("B"), AjustesDaCamera(travaBalanco: true))
         // Um valor estragado volta ao padrão, sem derrubar nada.
         d.set("{", forKey: "camera.ajustes.C")
         XCTAssertEqual(g.ler("C"), .padrao)
+    }
+
+    // MARK: abrir no automático e lembrar o último manual (07/10)
+
+    func testeAbrirEhSempreNoAutomatico() {
+        XCTAssertEqual(MeusAjustes.aoAbrir(guardado: .padrao), .padrao)
+        XCTAssertEqual(MeusAjustes.aoAbrir(guardado: AjustesDaCamera(travaExposicao: true, travaBalanco: true,
+                                                                      foco: .travado)), .padrao)
+    }
+
+    func testeSoOManualEhGravado() {
+        XCTAssertNil(MeusAjustes.paraGravar(.padrao))
+        XCTAssertEqual(MeusAjustes.paraGravar(AjustesDaCamera(travaBalanco: true)), AjustesDaCamera(travaBalanco: true))
+    }
+
+    func testeUsarMeusAjustesSoQuandoTrazAlgoNovo() {
+        let tudo = CapacidadesDaCamera(exposicaoContinua: true, exposicaoTravada: true, balancoContinuo: true,
+                                       balancoTravado: true, focoContinuo: true, focoTravado: true)
+        let semFoco = CapacidadesDaCamera(exposicaoContinua: true, exposicaoTravada: true, balancoContinuo: true,
+                                          balancoTravado: true)
+        let meus = AjustesDaCamera(travaExposicao: true, foco: .travado)
+        // Abriu no automático com um guardado: oferece, e recuperar traz o guardado inteiro.
+        XCTAssertTrue(MeusAjustes.oferecer(guardado: meus, corrente: .padrao, tudo))
+        XCTAssertEqual(MeusAjustes.recuperar(meus, tudo), meus)
+        // Já está valendo: não oferece.
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: meus, corrente: meus, tudo))
+        // Sem guardado: não oferece.
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: .padrao, corrente: .padrao, tudo))
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: .padrao, corrente: AjustesDaCamera(travaBalanco: true), tudo))
+        // Corrente diferente do guardado (outra trava): oferece.
+        XCTAssertTrue(MeusAjustes.oferecer(guardado: meus, corrente: AjustesDaCamera(travaBalanco: true), tudo))
+        // A câmera não trava mais o foco: o guardado vem cortado, e o que sobra é o que conta.
+        XCTAssertEqual(MeusAjustes.recuperar(meus, semFoco), AjustesDaCamera(travaExposicao: true))
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: meus, corrente: AjustesDaCamera(travaExposicao: true), semFoco))
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: AjustesDaCamera(foco: .travado), corrente: .padrao, semFoco))
+    }
+
+    func testeOCicloAbrirTravarRestaurarReabrirRecuperar() throws {
+        let dominio = "quall.testes.ajustes.\(UUID().uuidString)"
+        let d = try XCTUnwrap(UserDefaults(suiteName: dominio))
+        defer { d.removePersistentDomain(forName: dominio) }
+        let g = GuardaDosAjustes(d)
+        let c = CapacidadesDaCamera(exposicaoContinua: true, exposicaoTravada: true, balancoContinuo: true,
+                                    balancoTravado: true)
+        // Primeira abertura: automático, nada guardado, nada a oferecer.
+        var corrente = MeusAjustes.aoAbrir(guardado: g.ler("A"))
+        XCTAssertEqual(corrente, .padrao)
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: g.ler("A"), corrente: corrente, c))
+        // A pessoa trava a exposição: grava.
+        corrente = AjustesDaCamera(travaExposicao: true)
+        g.gravar(corrente, "A")
+        // Restaurar automático: o corrente volta, o guardado fica e passa a ser oferecido.
+        corrente = .padrao
+        g.gravar(corrente, "A")
+        XCTAssertEqual(g.ler("A"), AjustesDaCamera(travaExposicao: true))
+        XCTAssertTrue(MeusAjustes.oferecer(guardado: g.ler("A"), corrente: corrente, c))
+        // Fechar e reabrir: automático de novo, com o guardado oferecido.
+        corrente = MeusAjustes.aoAbrir(guardado: g.ler("A"))
+        XCTAssertEqual(corrente, .padrao)
+        XCTAssertTrue(MeusAjustes.oferecer(guardado: g.ler("A"), corrente: corrente, c))
+        // Usar meus ajustes: volta a trava, e o botão some.
+        corrente = MeusAjustes.recuperar(g.ler("A"), c)
+        g.gravar(corrente, "A")
+        XCTAssertEqual(corrente, AjustesDaCamera(travaExposicao: true))
+        XCTAssertFalse(MeusAjustes.oferecer(guardado: g.ler("A"), corrente: corrente, c))
     }
 
     func testeOPedidoEhCortadoPeloQueACameraFaz() {

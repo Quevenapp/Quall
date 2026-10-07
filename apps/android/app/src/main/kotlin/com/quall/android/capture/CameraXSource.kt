@@ -411,6 +411,27 @@ class CameraXSource private constructor(
             return com.quall.android.core.Entrega.Camera(true, fps)
         }
 
+        /**
+         * **O fps máximo de cada resolução do cardápio nesta câmera** (`SeletorDeResolucao`): o menor
+         * entre o teto do tamanho ([capacidadeNoTamanho]) e o maior teto das faixas de AE ([faixasDeQuadros]);
+         * `null` quando a câmera não oferece o tamanho. Uma resolução sem nada legível fica de fora do
+         * mapa, que quer dizer "não se sabe" e mantém o botão disponível.
+         */
+        fun tetosPorResolucao(context: Context, cameraId: String): Map<com.quall.android.core.Resolucao, Int?> {
+            val maiorFaixa = faixasDeQuadros(context, cameraId).maxOfOrNull { it.upper }
+            val tetos = LinkedHashMap<com.quall.android.core.Resolucao, Int?>()
+            for (r in com.quall.android.core.Resolucao.entries) {
+                val c = capacidadeNoTamanho(context, cameraId, r.pedido)
+                if (!c.ofereceOTamanhoPedido) {
+                    tetos[r] = null
+                    continue
+                }
+                val teto = listOfNotNull(c.quadrosNoTamanhoPedido, maiorFaixa).minOrNull() ?: continue
+                tetos[r] = teto
+            }
+            return tetos
+        }
+
         // **As duas APIs internas do CameraX que o Quall usa de propósito** (`@RestrictTo`, do grupo
         // `androidx.camera`). Não há equivalente público no 1.4.2 (fixado no `build.gradle.kts`):
         //  - `VideoCapture.Builder.setResolutionSelector`: o `VideoCapture` público só aceita o
@@ -535,11 +556,14 @@ class CameraXSource private constructor(
             timeoutMs: Long = TIMEOUT_PADRAO_MS,
         ): CameraXSource {
             val base = preparar(context, cameraId, timeoutMs)
-            // **A geometria é a que o usuário escolheu**, e não mais um literal. Ver
-            // `core/Resolucao.kt` e `docs/fluxo-de-uso.md`. Sem escolha vale 1080p, que é o que
-            // esta linha pedia antes do cardápio.
-            val escolhida = com.quall.android.core.Resolucao.escolhida(context)
-            val fps = com.quall.android.core.Resolucao.quadros(context)
+            // A mesma decisão do cardápio e do dono normal: tamanho oferecido/teto da câmera,
+            // sem mudar o salvo. Prévia e codificador conservam juntos esse pedido efetivo.
+            val salva = com.quall.android.core.Resolucao.escolhida(context)
+            val fpsSalvo = com.quall.android.core.Resolucao.quadros(context)
+            val cardapio = com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = tetosPorResolucao(context, cameraId), escolhida = salva, fps = fpsSalvo)
+            val escolhida = cardapio.resolucaoPara(salva)
+            val fps = cardapio.quadrosPara(fpsSalvo)
             val faixas = faixasDeQuadros(context, cameraId)
             Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} (${escolhida.pedido}) a $fps fps; " +
                 "faixas anunciadas: $faixas")

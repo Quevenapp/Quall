@@ -30,7 +30,9 @@ struct JanelaDosAjustesDaCamera: View {
                     aba: $aba,
                     aoMudar: { d.mudarAjustes($0, origem: "painel") },
                     aoRestaurar: { d.restaurarAutomatico(origem: "painel") },
-                    aoEfeitos: { DonoDaCamera.mostrarEfeitosDeVideoDoSistema() })
+                    aoEfeitos: { DonoDaCamera.mostrarEfeitosDeVideoDoSistema() },
+                    oferecerMeus: MeusAjustes.oferecer(guardado: d.meusAjustes, corrente: d.ajustes, caps),
+                    aoUsarMeus: { d.usarMeusAjustes(origem: "painel") })
             } else {
                 VStack(spacing: 10) {
                     Text(TextosDosAjustes.titulo).font(Estilo.titulo(20)).foregroundColor(Estilo.texto)
@@ -90,6 +92,10 @@ struct PainelDosAjustesDaCamera: View {
     let aoMudar: (AjustesDaCamera) -> Void
     let aoRestaurar: () -> Void
     let aoEfeitos: () -> Void
+    /// "Usar meus ajustes" (decisão de 07/10, `MeusAjustes.oferecer`): a câmera abre no automático, e o
+    /// botão traz de volta o último ajuste guardado dela. Desligado por padrão (os retratos antigos).
+    var oferecerMeus = false
+    var aoUsarMeus: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -133,6 +139,10 @@ struct PainelDosAjustesDaCamera: View {
                 Button(TextosDosAjustes.restaurar, action: aoRestaurar)
                     .buttonStyle(.quall(.secundario, altura: 32))
                     .disabled(ajustes.ehPadrao && pilula == nil)
+                if oferecerMeus {
+                    Button(TextosDosAjustes.usarMeus, action: aoUsarMeus)
+                        .buttonStyle(.quall(.secundario, altura: 32))
+                }
                 Spacer(minLength: 0)
                 Button(T("Efeitos de vídeo do sistema…"), action: aoEfeitos)
                     .buttonStyle(.plain)

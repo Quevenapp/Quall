@@ -29,7 +29,7 @@ enum RetratosDeBancada {
     static let telas = [
         "inicio", "inicio-pares",
         "espelhar", "espelhar-cabo", "espelhar-sem-rede", "espelhar-conselho",
-        "ajustes", "permissao",
+        "ajustes", "ajustes-limite", "permissao",
         "espera", "espera-pares", "espera-conselho", "espera-socorro", "no-ar", "encerrando",
         "exibir", "exibir-conectando", "exibir-erro",
         "controlar", "controlar-erro",
@@ -93,6 +93,13 @@ struct TelaDeRetrato: View {
         case "ajustes":
             inicio(pares: false)
                 .sheet(isPresented: $folha) { FolhaDaEngrenagem(fechar: {}, somenteLeitura: true) }
+        case "ajustes-limite":
+            // Uma câmera até 1080p30, sem 2K nem 4K (06/10): o cardápio apagado e a nota do limite.
+            inicio(pares: false)
+                .sheet(isPresented: $folha) {
+                    FolhaDaEngrenagem(fechar: {}, somenteLeitura: true,
+                                      tetosDeExemplo: [3_600: Optional(30), 8_160: Optional(30), 14_400: Optional<Int>.none, 32_400: Optional<Int>.none])
+                }
         case "espelhar", "espelhar-cabo", "espelhar-sem-rede", "espelhar-conselho":
             espelhar
         case "permissao":

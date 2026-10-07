@@ -354,6 +354,10 @@ enum Retratos {
             retrato("40-camera-remota-nao-permitido", cameraRemota(.exposicao, Retratos.estadoDoIphone(situacao: "nao_permitido",
                                                                                                          auto: true)),
                     tamanho: tamanhoDosAjustesDaCamera),
+            // 07/10: a câmera abriu no automático e há um ajuste guardado — "Usar meus ajustes" ao lado do
+            // "Restaurar automático".
+            retrato("41-ajustes-da-camera-meus-ajustes", ajustesDaCamera(.exposicao, .padrao, oferecerMeus: true),
+                    tamanho: tamanhoDosAjustesDaCamera),
         ]
     }
 
@@ -446,7 +450,7 @@ enum Retratos {
     }
 
     private static func ajustesDaCamera(_ aba: AbaDosAjustes, _ a: AjustesDaCamera, completa: Bool = false,
-                                        pilula: String? = nil) -> AnyView {
+                                        pilula: String? = nil, oferecerMeus: Bool = false) -> AnyView {
         let caps = completa
             ? CapacidadesDaCamera(exposicaoContinua: true, exposicaoUmaVez: true, exposicaoTravada: true, pontoDeExposicao: true,
                                   balancoContinuo: true, balancoUmaVez: true, balancoTravado: true, focoContinuo: true,
@@ -455,7 +459,7 @@ enum Retratos {
                                   balancoContinuo: true, balancoTravado: true)
         return AnyView(PainelDosAjustesDaCamera(nome: "Câmera integrada", plano: PlanoDoPainel.doMac(caps), ajustes: a,
                                                 pilula: pilula, recado: nil, aba: .constant(aba), aoMudar: { _ in },
-                                                aoRestaurar: {}, aoEfeitos: {})
+                                                aoRestaurar: {}, aoEfeitos: {}, oferecerMeus: oferecerMeus)
             .background(Estilo.fundo))
     }
 }

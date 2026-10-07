@@ -77,6 +77,7 @@ swiftc -O \
   "$COMUM/Enderecos.swift" \
   "$COMUM/RemendoDeSPS.swift" \
   "$COMUM/NomeDaInstancia.swift" \
+  "$COMUM/TetosDoCardapio.swift" \
   "$RECEBER/Medidas.swift" \
   "$RECEBER/Fluidez.swift" \
   "$TELEPROMPTER/LinkDePareamento.swift" \

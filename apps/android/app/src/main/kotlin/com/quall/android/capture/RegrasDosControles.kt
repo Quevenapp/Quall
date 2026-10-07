@@ -411,6 +411,24 @@ object RegrasDosControles {
     }
 
     /**
+     * **Abrir no automático e lembrar o último manual** (decisão de produto, 07/10). Antes, o registro
+     * guardado era reaplicado a cada abertura, e uma câmera deixada em manual (ISO e obturador fixos,
+     * Kelvin, foco travado) abria escura no dia seguinte: o S24 das provas do R9, medido em 07/10.
+     *
+     * - [naAbertura]: a câmera abre sempre no padrão (tudo automático), seja qual for o guardado.
+     * - [aGravar]: só um registro diferente do padrão vira "meus ajustes"; voltar ao automático não
+     *   apaga a lembrança.
+     * - [ofereceMeusAjustes]: o painel mostra "Usar meus ajustes" quando há lembrança diferente do que
+     *   está valendo.
+     */
+    object MeusAjustes {
+        fun naAbertura(): AjusteDaCamera = AjusteDaCamera()
+        fun aGravar(corrente: AjusteDaCamera): AjusteDaCamera? = corrente.takeUnless { it.ehPadrao }
+        fun ofereceMeusAjustes(lembrado: AjusteDaCamera?, corrente: AjusteDaCamera): Boolean =
+            lembrado != null && !lembrado.ehPadrao && lembrado != corrente
+    }
+
+    /**
      * **O piso da faixa de fps do automático** (§3.1, "pouca luz"): o menor `lower` das faixas que a
      * câmera anuncia com `upper == fps`, preferindo os que não descem da metade do fps (nem de
      * [PISO_MINIMO_FPS]). Sem faixa

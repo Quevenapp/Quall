@@ -18,6 +18,12 @@ struct FolhaDaEngrenagem: View {
     var aoEsquecerPares: () -> Void = {}
     /// Só para ver (o retrato de bancada): nenhum toque grava preferência nem esquece pares.
     var somenteLeitura = false
+    /// A câmera escolhida no Espelhar (`uniqueID`): o cardápio apaga o que ela não faz. Sem câmera (a
+    /// tela, o Início, o Exibir), tudo fica disponível.
+    var cameraID: String? = nil
+    /// Só o retrato de bancada: tetos de exemplo no lugar dos da câmera.
+    var tetosDeExemplo: [Int: Int?]? = nil
+    @State private var tetos: [Int: Int?] = [:]
 
     /// O cardápio, lido da preferência na abertura e devolvido a ela a cada troca.
     @State private var resolucao: Resolucao = Resolucao.escolhida
@@ -81,6 +87,7 @@ struct FolhaDaEngrenagem: View {
         .onAppear {
             pares = FolhaDaEngrenagem.contarPares()
             contou = true
+            tetos = tetosDeExemplo ?? TetosDaCamera.tetos(cameraID: cameraID)
         }
         .onChange(of: resolucao) { if !somenteLeitura { Resolucao.escolhida = $0 } }
         .onChange(of: quadros) { if !somenteLeitura { Resolucao.quadros = $0 } }
@@ -102,18 +109,42 @@ struct FolhaDaEngrenagem: View {
     /// *combinação testada*, e não *capacidade abstrata* — "suporta 4K" é verdade num cabo e mentira
     /// num Wi-Fi compartilhado. Oferecer a linha sem dizer o preço é oferecer em silêncio, que é o
     /// pior modo de falha deste projeto.
+    /// O que a câmera escolhida não faz (06/10): apagado, e a escolha salva fica.
+    private var limite: TetosDoCardapio.Estado {
+        TetosDoCardapio.estado(tetos: tetos, escolhida: resolucao.rawValue, fps: quadros, taxas: Resolucao.taxas)
+    }
+
     private var qualidade: some View {
-        grupo(tr("Qualidade do espelhamento")) {
+        let l = limite
+        let efetiva = TetosDaCamera.resolucao(para: l, preferida: resolucao)
+        // Os getters mostram o recuo sem gravá-lo; apenas um toque muda a preferência. Taxas
+        // efetivas fora de 30/60 têm indicador selecionado somente leitura, sem setter.
+        let resolucaoNaTela = Binding<Resolucao>(get: { efetiva }, set: { resolucao = $0 })
+        let fpsEfetivo = l.fpsEfetivo ?? quadros
+        let quadrosNaTela = Binding<Int>(get: { fpsEfetivo }, set: { quadros = $0 })
+        return grupo(tr("Qualidade do espelhamento")) {
             VStack(alignment: .leading, spacing: 8) {
-                Picker(tr("Resolução"), selection: $resolucao) {
-                    ForEach(Resolucao.allCases, id: \.self) { r in Text(r.rotulo).tag(r) }
+                Segmentos(titulo: tr("Resolução"),
+                          opcoes: Resolucao.allCases.map { ($0, $0.rotulo, !l.resolucoesFora.contains($0.rawValue)) },
+                          escolhida: resolucaoNaTela)
+                HStack(spacing: 6) {
+                    Segmentos(titulo: tr("Quadros"),
+                              opcoes: Resolucao.taxas.map { ($0, "\($0) fps", !l.taxasFora.contains($0)) },
+                              escolhida: quadrosNaTela)
+                    if l.tetoFPS != nil && !Resolucao.taxas.contains(fpsEfetivo) {
+                        Text(verbatim: "\(fpsEfetivo) fps")
+                            .font(Estilo.corpo(.subheadline, .semibold))
+                            .foregroundColor(Estilo.texto)
+                            .frame(minHeight: 32)
+                            .padding(.horizontal, 12)
+                            .background(Capsule().fill(Estilo.acento))
+                            .accessibilityAddTraits(.isSelected)
+                            .accessibilityLabel(tr("Quadros: %ld fps", fpsEfetivo))
+                            .accessibilityHint(tr("Taxa limitada por esta câmera. A preferência salva foi mantida."))
+                    }
                 }
-                .pickerStyle(.segmented)
-                Picker(tr("Quadros"), selection: $quadros) {
-                    ForEach(Resolucao.taxas, id: \.self) { f in Text(verbatim: "\(f) fps").tag(f) }
-                }
-                .pickerStyle(.segmented)
-                Text(FolhaDaEngrenagem.custo(resolucao: resolucao, quadros: quadros))
+                Text(FolhaDaEngrenagem.custo(resolucao: efetiva, quadros: l.fpsEfetivo ?? quadros)
+                     + FolhaDaEngrenagem.textoDoLimite(l, resolucao: resolucao))
                     .font(Estilo.corpo(.footnote))
                     .foregroundColor(Estilo.texto2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -311,6 +342,21 @@ struct FolhaDaEngrenagem: View {
     /// por `PedidoDeEspelhamento.tetoDeTaxa`, e não de uma tabela escrita aqui: num binário que
     /// anunciasse um nível menor, 4K viraria 1080p e a nota diria isso em vez de mentir. (Era
     /// `TelaInicial.custoDaEscolha` até 30/09.)
+    /// " Esta câmera não oferece 4K. Esta câmera vai até 30 fps em 1080p.", ou nada sem limite.
+    static func textoDoLimite(_ l: TetosDoCardapio.Estado, resolucao: Resolucao) -> String {
+        var partes: [String] = []
+        let sem = Resolucao.allCases.filter { l.resolucoesFora.contains($0.rawValue) }
+        if !sem.isEmpty { partes.append(tr("Esta câmera não oferece %@.", sem.map(\.rotulo).joined(separator: ", "))) }
+        let efetiva = TetosDaCamera.resolucao(para: l, preferida: resolucao)
+        if !l.taxasFora.isEmpty, let teto = l.tetoFPS {
+            partes.append(tr("Esta câmera vai até %ld fps em %@.", teto, efetiva.rotulo))
+        }
+        if l.resolucaoEfetiva != nil {
+            partes.append(tr("Para esta câmera, usando %@. A resolução salva foi mantida.", efetiva.rotulo))
+        }
+        return partes.isEmpty ? "" : " " + partes.joined(separator: " ")
+    }
+
     static func custo(resolucao: Resolucao, quadros: Int) -> String {
         let teto = resolucao.teto
         let bps = PedidoDeEspelhamento.tetoDeTaxa(maior: teto.maior, menor: teto.menor,
@@ -341,5 +387,36 @@ struct FolhaDaEngrenagem: View {
         let curta = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
         return "\(curta) (\(build))"
+    }
+}
+
+/// **O segmentado do cardápio**, com segmento apagado: o `Picker(.segmented)` do SwiftUI não apaga um
+/// segmento só. Mesma cara: cápsula com o escolhido em destaque.
+private struct Segmentos<Valor: Hashable>: View {
+    /// O nome do grupo para o VoiceOver ("Resolução", "Quadros"), como o `Picker` dizia.
+    let titulo: String
+    let opcoes: [(Valor, String, Bool)]
+    @Binding var escolhida: Valor
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(opcoes.indices, id: \.self) { i in
+                let (valor, rotulo, ativo) = opcoes[i]
+                Button { escolhida = valor } label: {
+                    Text(verbatim: rotulo)
+                        .font(Estilo.corpo(.subheadline, valor == escolhida ? .semibold : .regular))
+                        .foregroundColor(!ativo ? Estilo.texto2.opacity(0.4) : valor == escolhida ? Estilo.texto : Estilo.texto2)
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .background(Capsule().fill(valor == escolhida ? Estilo.acento.opacity(ativo ? 1 : 0.3) : Color.clear))
+                }
+                .buttonStyle(.plain)
+                .disabled(!ativo)
+                .accessibilityAddTraits(valor == escolhida ? .isSelected : [])
+            }
+        }
+        .padding(2)
+        .background(Capsule().fill(Color.white.opacity(0.08)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(titulo)
     }
 }

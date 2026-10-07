@@ -113,8 +113,12 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
 
     /// O que a câmera declara (`isXModeSupported`, ponto de interesse). `nil` antes de montar.
     public private(set) var capacidades: CapacidadesDaCamera?
-    /// O registro desta câmera (§2): o guardado, e o que a pessoa muda.
+    /// O registro corrente desta câmera (§2): o padrão ao montar (`MeusAjustes.aoAbrir`, decisão de
+    /// 07/10), e o que a pessoa (ou um receptor) muda.
     public private(set) var ajustes: AjustesDaCamera = .padrao
+    /// "Meus ajustes": o último registro diferente do padrão guardado para esta câmera (§2). Lido ao montar
+    /// e acompanhado a cada gravação; **não** é aplicado sozinho — o painel o oferece ("Usar meus ajustes").
+    public private(set) var meusAjustes: AjustesDaCamera = .padrao
     /// A pílula do ⌥-clique (§4.4): "Exposição e foco travados", "Exposição travada" ou "Foco travado".
     public private(set) var pilula: String?
     /// O recado de 3 s depois de reaplicar uma trava (§2.1): "Travado de novo depois de medir a cena."
@@ -288,12 +292,17 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
         observar(escolhido)
         subirSupervisao()
         // **Os ajustes (R9)**: as capacidades e o registro desta câmera; a aplicação vai para a `fila`,
-        // depois do formato (§2.2: "o fim do `montar`").
+        // depois do formato (§2.2: "o fim do `montar`"). **Abre no automático** (decisão de 07/10,
+        // `MeusAjustes`): o guardado só é lido para o painel oferecê-lo. Aplicar o padrão ainda vale a
+        // pena — devolve os modos contínuos que outro app (ou o dono anterior) tenha deixado travados.
         let caps = DonoDaCamera.capacidades(de: escolhido)
         capacidades = caps
-        ajustes = guardaDosAjustes.ler(escolhido.uniqueID)
+        meusAjustes = guardaDosAjustes.ler(escolhido.uniqueID)
+        ajustes = MeusAjustes.aoAbrir(guardado: meusAjustes)
         pilula = nil
-        registrar("APP CAMERA ajustes: capacidades atualizadas; ajuste=\(ajustes.resumo)")
+        // A linha que `Bancada/provar-ajustes-da-camera.sh` lê: as capacidades (`exp=… bal=… foco=…`), o
+        // registro corrente (o padrão) e o guardado, os dois em JSON sem espaço (um campo só).
+        registrar("APP CAMERA ajustes: capacidades \(caps.resumo) ajuste=\(ajustes.json) guardado=\(meusAjustes.json)")
         let registro = ajustes
         fila.async { [weak self] in self?.aplicarAjustes(registro, reaplicando: true, origem: "montar") }
         DonoDaCamera.vigente = self
@@ -1119,7 +1128,9 @@ extension DonoDaCamera: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureA
 /// - **Toda mudança na `fila`**, com `lockForConfiguration` curto e uma guarda `isXModeSupported` (ou
 ///   `is…PointOfInterestSupported`) antes de cada escrita: sem a guarda, o AVFoundation levanta
 ///   exceção do Objective-C, que derruba o app.
-/// - **Reaplicar** (§2.1, caso "sem manual"): no fim do `montar` e no `ligar`, depois do formato. Uma
+/// - **Reaplicar** (§2.1, caso "sem manual"): no fim do `montar` e no `ligar`, depois do formato. Desde
+///   07/10 o `montar` aplica sempre o padrão (`MeusAjustes.aoAbrir`): a trava só chega aqui reaplicada
+///   quando foi ligada na sessão, antes de um `ligar`. Uma
 ///   trava não é "trave no que estiver agora": vai como `.autoExpose`/`.autoWhiteBalance`/`.autoFocus`,
 ///   que medem e travam sozinhos ao convergir; onde a câmera trava mas não tem o modo "uma vez", espera
 ///   parar de ajustar (de 0,5 s a 3 s) e trava.
@@ -1148,8 +1159,16 @@ extension DonoDaCamera {
         fila.async { [weak self] in self?.aplicarAjustes(novo, reaplicando: false, origem: origem) }
     }
 
-    /// "Restaurar automático": zera o registro desta câmera (e só dela), tira a pílula, volta os modos
-    /// contínuos e o ponto ao centro.
+    /// **"Usar meus ajustes"**: o guardado desta câmera, cortado pelo que ela faz agora, pelo mesmo
+    /// caminho de um gesto do painel (grava, apaga a pílula que não vale mais, aplica na hora).
+    public func usarMeusAjustes(origem: String) {
+        guard montado, let c = capacidades else { return }
+        mudarAjustes(MeusAjustes.recuperar(meusAjustes, c), origem: origem + " (meus ajustes)")
+    }
+
+    /// "Restaurar automático": a câmera volta ao automático, tira a pílula, volta os modos contínuos e o
+    /// ponto ao centro. O guardado fica (`GuardaDosAjustes.gravar` não grava o padrão): o painel passa a
+    /// oferecer "Usar meus ajustes".
     public func restaurarAutomatico(origem: String) {
         guard montado else { return }
         let antes = ajustes
@@ -1257,6 +1276,7 @@ extension DonoDaCamera {
         gravacaoAdiada?.cancel()
         gravacaoAdiada = nil
         guardaDosAjustes.gravar(a, uniqueID)
+        if let g = MeusAjustes.paraGravar(a) { meusAjustes = g }
     }
 
     /// Grava 500 ms depois da última mudança remota (contrato §6.3).
@@ -1267,8 +1287,11 @@ extension DonoDaCamera {
         // O vigente **no disparo** (`a` só se o dono já se foi): uma mudança local no meio já gravou e
         // cancelou esta, mas a guarda não custa nada.
         let item = DispatchWorkItem { [weak self] in
-            guarda.gravar(self?.ajustes ?? a, id)
+            let vigente = self?.ajustes ?? a
+            guarda.gravar(vigente, id)
+            if let g = MeusAjustes.paraGravar(vigente) { self?.meusAjustes = g }
             self?.gravacaoAdiada = nil
+            self?.avisarAjustes()
         }
         gravacaoAdiada = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)

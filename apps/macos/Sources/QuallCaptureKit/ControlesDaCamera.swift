@@ -133,14 +133,51 @@ public struct GuardaDosAjustes {
         return a
     }
 
-    /// Grava; o padrão **apaga a chave** ("Restaurar automático" zera o registro daquela câmera, e só
-    /// dela).
+    /// Grava pela regra de "meus ajustes" (`MeusAjustes.paraGravar`): só um registro diferente do padrão
+    /// entra. O padrão **não apaga a chave** (decisão de 07/10): "Restaurar automático" volta a câmera ao
+    /// automático e deixa o guardado onde está, para o "Usar meus ajustes" trazê-lo de volta. Até 07/10 o
+    /// padrão removia a chave — com a câmera abrindo sempre no automático, isso jogaria fora o único ajuste
+    /// que a pessoa tinha.
     public func gravar(_ a: AjustesDaCamera, _ uniqueID: String) {
-        if a.ehPadrao {
-            defaults.removeObject(forKey: GuardaDosAjustes.chave(uniqueID))
-        } else {
-            defaults.set(a.json, forKey: GuardaDosAjustes.chave(uniqueID))
-        }
+        guard let g = MeusAjustes.paraGravar(a) else { return }
+        defaults.set(g.json, forKey: GuardaDosAjustes.chave(uniqueID))
+    }
+}
+
+/// **"Abrir no automático e lembrar o último manual"** (decisão de produto, 07/10), a parte pura. Até ali o
+/// Mac reaplicava o guardado ao montar, e uma câmera que ficou travada abria travada no dia seguinte —
+/// numa cena e numa luz que não eram mais as da trava. Agora:
+///
+/// - **Abrir** (`aoAbrir`): a câmera monta sempre no padrão (tudo automático), na câmera comum e na R5. O
+///   guardado não entra sozinho.
+/// - **Gravar** (`paraGravar`): só o registro diferente do padrão vira "meus ajustes", na mesma chave
+///   `camera.ajustes.<uniqueID>` de sempre. Voltar ao automático não apaga nada.
+/// - **Recuperar** (`oferecer`, `recuperar`): o painel mostra "Usar meus ajustes" quando o guardado
+///   (cortado pelo que a câmera faz agora) traz algo e não é o que já está valendo; tocar aplica pelo
+///   caminho do painel.
+public enum MeusAjustes {
+    /// O registro com que a câmera monta. O guardado é recebido só para deixar explícito que ele **não**
+    /// decide: abrir é sempre no automático.
+    public static func aoAbrir(guardado _: AjustesDaCamera) -> AjustesDaCamera { .padrao }
+
+    /// O que gravar depois de uma mudança do registro corrente: ele mesmo, se diferente do padrão; `nil`
+    /// (não grava, e o guardado fica) quando é o padrão.
+    public static func paraGravar(_ corrente: AjustesDaCamera) -> AjustesDaCamera? {
+        corrente.ehPadrao ? nil : corrente
+    }
+
+    /// O guardado como ele valeria nesta câmera agora: cortado pelas capacidades (uma trava que a câmera
+    /// não aceita mais não entra), como qualquer pedido do painel.
+    public static func recuperar(_ guardado: AjustesDaCamera, _ c: CapacidadesDaCamera) -> AjustesDaCamera {
+        guardado.cortado(por: c)
+    }
+
+    /// Mostrar "Usar meus ajustes": o guardado, cortado pela câmera de agora, é diferente do padrão (tem o
+    /// que trazer) e diferente do corrente (o botão mudaria algo). O corte vale aqui também: um guardado
+    /// cuja única trava a câmera não aceita mais viraria o padrão, e o botão não faria nada.
+    public static func oferecer(guardado: AjustesDaCamera, corrente: AjustesDaCamera, _ c: CapacidadesDaCamera) -> Bool {
+        let r = recuperar(guardado, c)
+        return !r.ehPadrao && r != corrente
     }
 }
 
@@ -251,6 +288,7 @@ public enum TextosDosAjustes {
     public static var travarExposicao: String { T("Travar exposição") }
     public static var travarBalanco: String { T("Travar balanço") }
     public static var restaurar: String { T("Restaurar automático") }
+    public static var usarMeus: String { T("Usar meus ajustes") }
     public static var notaDoToque: String { T("Toque na imagem para focar e medir naquele ponto.") }
     public static var travadoDeNovo: String { T("Travado de novo depois de medir a cena.") }
     public static var pilulaDasDuas: String { T("Exposição e foco travados") }
