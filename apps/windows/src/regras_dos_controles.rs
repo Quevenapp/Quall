@@ -591,7 +591,7 @@ pub fn plano(r: &Registro, caps: &Capacidades, fps: f64, originais: &Lidos, toca
 
 /// **A abertura em automático de verdade** (§2.2, achado de 06/10): o que o registro quer em Auto e o
 /// driver **não** está em Auto vai com `Flags_Auto` (com o valor lido, que o driver aceita); o brilho
-/// fora do padrão do driver, com EV 0, volta ao padrão. A anti-cintilação fica como está.
+/// e o ganho sem Auto, fora do padrão do driver, voltam ao padrão. A anti-cintilação fica como está.
 ///
 /// Sem isto, o plano só devolvia o que o próprio Quall tinha mudado (`tocados`). Se outro app ou uma
 /// sessão interrompida deixava a webcam em manual no mínimo, o Quall mostrava "Auto", não mandava nada
@@ -609,7 +609,9 @@ pub fn normalizacao_da_abertura(r: &Registro, caps: &Capacidades, fps: f64, orig
             if o.is_none_or(|o| o.bandeiras & FLAGS_AUTO == 0) {
                 v.push(Envio { prop: p, valor: o.map(|o| o.valor).unwrap_or(f.padrao), bandeiras: FLAGS_AUTO });
             }
-        } else if p == Propriedade::Brilho && o.is_some_and(|o| o.valor != f.padrao) {
+        } else if matches!(p, Propriedade::Brilho | Propriedade::Ganho) && o.is_some_and(|o| o.valor != f.padrao) {
+            // O ganho sem Auto também (a webcam do Dell, 07/10): no mínimo, a imagem seguia escura com
+            // o obturador já em Auto.
             v.push(Envio { prop: p, valor: f.padrao, bandeiras: FLAGS_MANUAL });
         }
     }
@@ -1368,8 +1370,10 @@ mod testes {
     #[test]
     fn a_abertura_poe_em_auto_o_que_outro_app_deixou_em_manual() {
         let caps = caps_de_exemplo();
-        // Já no automático, com o brilho no padrão: nada a mandar (§2.2).
-        assert!(normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &lidos_de_exemplo()).is_empty());
+        // Já no automático, com o brilho e o ganho no padrão: nada a mandar (§2.2).
+        let mut no_padrao = lidos_de_exemplo();
+        no_padrao.insert(Propriedade::Ganho, Lido { valor: 0, bandeiras: FLAGS_MANUAL });
+        assert!(normalizacao_da_abertura(&Registro::default(), &caps, 30.0, &no_padrao).is_empty());
         // Outro app deixou exposição e foco em manual e o brilho no mínimo: a "câmera escura" de 06/10.
         let mut escura = lidos_de_exemplo();
         escura.insert(Propriedade::Exposicao, Lido { valor: -11, bandeiras: FLAGS_MANUAL });
@@ -1380,12 +1384,13 @@ mod testes {
             n,
             vec![
                 Envio { prop: Propriedade::Exposicao, valor: -11, bandeiras: FLAGS_AUTO },
+                Envio { prop: Propriedade::Ganho, valor: 0, bandeiras: FLAGS_MANUAL },
                 Envio { prop: Propriedade::Brilho, valor: 0, bandeiras: FLAGS_MANUAL },
                 Envio { prop: Propriedade::Foco, valor: 0, bandeiras: FLAGS_AUTO },
             ]
         );
-        // O ganho (sem Auto) e a anti-cintilação ficam como estão.
-        assert!(n.iter().all(|e| e.prop != Propriedade::Ganho && e.prop != Propriedade::AntiCintilacao));
+        // A anti-cintilação fica como está; o ganho de exemplo (32, padrão 0) volta ao padrão.
+        assert!(n.iter().all(|e| e.prop != Propriedade::AntiCintilacao));
         // O que o registro quer em manual não é normalizado: o plano cuida dele.
         let manual = Registro { exposicao: ModoDeExposicao::Manual, iso: Some(50.0), obturador_ns: Some(ns_do_log2(-8)), ..Default::default() };
         assert!(normalizacao_da_abertura(&manual, &caps, 30.0, &escura).iter().all(|e| e.prop != Propriedade::Exposicao));
