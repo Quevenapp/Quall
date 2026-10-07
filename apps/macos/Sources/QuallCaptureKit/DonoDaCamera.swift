@@ -300,9 +300,12 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
         meusAjustes = guardaDosAjustes.ler(escolhido.uniqueID)
         ajustes = MeusAjustes.aoAbrir(guardado: meusAjustes)
         pilula = nil
-        // A linha que `Bancada/provar-ajustes-da-camera.sh` lê: as capacidades (`exp=… bal=… foco=…`), o
-        // registro corrente (o padrão) e o guardado, os dois em JSON sem espaço (um campo só).
-        registrar("APP CAMERA ajustes: capacidades \(caps.resumo) ajuste=\(ajustes.json) guardado=\(meusAjustes.json)")
+        // A linha que `Bancada/provar-ajustes-da-camera.sh` lê: as capacidades (`exp=… bal=… foco=…`, bits do
+        // que a câmera declara), o registro corrente (o padrão) e o guardado, cada um num campo só. Os
+        // estados, e não o JSON: o registro seguro (05/10) tirou o JSON de câmera desta linha, e o
+        // `uniqueID` e o nome da câmera da "captura montada"; nada disso volta aqui.
+        registrar("APP CAMERA ajustes: capacidades \(caps.resumo) ajuste=\(ajustes.resumoDeUmCampo)"
+                  + " guardado=\(meusAjustes.resumoDeUmCampo)")
         let registro = ajustes
         fila.async { [weak self] in self?.aplicarAjustes(registro, reaplicando: true, origem: "montar") }
         DonoDaCamera.vigente = self

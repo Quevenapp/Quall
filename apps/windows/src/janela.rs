@@ -1471,6 +1471,7 @@ impl Janela {
             // R9 §4.1: só a câmera comum pelo dono, de verdade (a sintética e a do Quall ficam sem).
             ajustes: e.camera_pelo_dono && emissor.ajustes_da_camera_disponiveis(),
             controlado_por: emissor.camera_controlada_por().unwrap_or_default(),
+            pouca_luz: emissor.camera_com_pouca_luz(),
         });
         // i18n: fora (a linha do emissor, comparada em português)
         let som_indo = if camera { linha_do_microfone.as_deref() == Some("Com o som do microfone.") } else { e.som_ativo };

@@ -351,7 +351,9 @@ struct Compartilhado {
     /// acaba a captura; uma que não mude segue (M2). `None` antes: a abertura relê o tipo.
     esperado: Mutex<Option<(GUID, Geometria)>>,
     ultimo_chegado: Mutex<Option<Instant>>,
-    chegados: AtomicU64,
+    /// Num `Arc` próprio: a thread dos ajustes o lê (o vigia da pouca luz, `ajustes_da_camera.rs`)
+    /// sem segurar o estado inteiro, com o leitor e a caixa dentro.
+    chegados: Arc<AtomicU64>,
     sobrescritos: AtomicU64,
     vazios: AtomicU64,
     ticks: AtomicU64,
@@ -1261,7 +1263,7 @@ fn tentar_uma(
         tem_resposta: Condvar::new(),
         esperado: Mutex::new(None),
         ultimo_chegado: Mutex::new(None),
-        chegados: AtomicU64::new(0),
+        chegados: Arc::new(AtomicU64::new(0)),
         sobrescritos: AtomicU64::new(0),
         vazios: AtomicU64::new(0),
         ticks: AtomicU64::new(0),
@@ -1702,7 +1704,9 @@ impl CapturaDeCamera {
         // numa thread própria, sem atrasar a abertura. Só pelo link: a fonte do Quall no processo
         // fica sem controles pelo tipo.
         let ajustes = match fonte {
-            FonteDaCamera::Link(l) => crate::ajustes_da_camera::AjustesDaCamera::iniciar(&aberta.fonte, l, modo, aberta.fps),
+            FonteDaCamera::Link(l) => {
+                crate::ajustes_da_camera::AjustesDaCamera::iniciar(&aberta.fonte, l, modo, aberta.fps, Arc::clone(&aberta.estado.chegados))
+            }
             FonteDaCamera::DoQuallNoProcesso { .. } => None,
         };
         registro::linha(format!(

@@ -52,6 +52,12 @@ pub const TEXTOS: &[(&str, &str)] = &[
     // R9b, o controle remoto da câmera (`docs/controle-remoto-da-camera.md`): quem filma
     ("Permitir controle remoto da câmera", "Allow remote camera control"),
     ("Controlado por {}", "Controlled by {}"),
+    // regras_dos_controles.rs: pouca luz (§3.1), as frases do Android e do iOS com "nos ajustes da
+    // câmera" no lugar da engrenagem
+    ("Pouca luz: {} fps para clarear a imagem. Para {} fps, use a exposição manual nos ajustes da câmera.", "Low light: {} fps to brighten the picture. For {} fps, use manual exposure in Camera settings."),
+    ("Pouca luz: {} fps para clarear a imagem. Mais luz no ambiente devolve os {} fps.", "Low light: {} fps to brighten the picture. More light in the room brings back {} fps."),
+    ("Pouca luz: {} fps para clarear a imagem.", "Low light: {} fps to brighten the picture."),
+    ("Pouca luz: {} fps", "Low light: {} fps"),
     // R9b: quem recebe (`modelo_dos_ajustes_remotos.rs`)
     ("Ajustes da câmera — {}", "Camera settings — {}"),
     ("O aparelho não permite controle remoto da câmera", "This device doesn't allow remote camera control"),

@@ -277,9 +277,11 @@ pub fn compor(e: &EstadoDosAjustes) -> QuadroDosAjustes {
     if !linha.is_empty() {
         q.itens.push(texto(linha_r, linha, F_MONO_12, TEXTO2).meio().item());
     }
+    // Uma linha de aviso só: o modo compartilhado, depois a divergência (o pedido da pessoa não
+    // vingou), e por último a pouca luz (§3.1), que é informação e não falha: vai no tom neutro.
     let aviso_ = match p.fase {
         FaseDosAjustes::Compartilhada => Some((Tom::Ambar, t(regras::FRASE_OUTRO_APP).to_string())),
-        _ => p.divergencia.clone().map(|d| (Tom::Ambar, d)),
+        _ => p.divergencia.clone().map(|d| (Tom::Ambar, d)).or_else(|| p.pouca_luz.map(|l| (Tom::Info, l.texto()))),
     };
     if let Some((tom, t)) = aviso_ {
         let a = altura_do_aviso(&t, aviso_r.l).min(aviso_r.a);
@@ -820,6 +822,47 @@ mod testes {
         crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
             assert_eq!(texto_acessivel(C::PermitirRemoto, &e), "Allow remote camera control");
             assert!(textos(&compor(&achar("r5-1-manual"))).contains(&"Controlled by Pixel do Pessoa Exemplo".to_string()));
+        });
+    }
+
+    #[test]
+    fn a_pouca_luz_na_linha_de_aviso() {
+        use crate::regras_dos_controles::PoucaLuz;
+        let luz = PoucaLuz { fps_agora: 15, fps: 30, com_manual: true };
+        let mut e = achar("comum-0-auto");
+        assert!(!textos(&compor(&e)).iter().any(|t| t.starts_with("Pouca luz")), "sem pouca luz, sem aviso");
+        e.painel.pouca_luz = Some(luz);
+        let q = compor(&e);
+        assert!(textos(&q).contains(&"Pouca luz: 15 fps para clarear a imagem. Para 30 fps, use a exposição manual nos ajustes da câmera.".to_string()));
+        assert!(q.itens.iter().any(|i| matches!(i, Item::Icone { icone: Icone::Info, .. })), "informação, no tom neutro");
+        // Na R5 (sem prévia) também, e sem obturador manual o conselho é a luz.
+        let mut r5 = achar("r5-0-pobre");
+        r5.painel.pouca_luz = Some(PoucaLuz { com_manual: false, ..luz });
+        assert!(textos(&compor(&r5)).contains(&"Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps.".to_string()));
+        // A divergência e o modo compartilhado vêm antes: uma linha de aviso só.
+        let mut manual = achar("comum-1-manual");
+        manual.painel.pouca_luz = Some(luz);
+        let t_ = textos(&compor(&manual));
+        assert!(t_.iter().any(|t| t.starts_with("A câmera usou")) && !t_.iter().any(|t| t.starts_with("Pouca luz")));
+        let mut compartilhada = achar("comum-0-compartilhada");
+        compartilhada.painel.pouca_luz = Some(PoucaLuz { com_manual: false, ..luz });
+        let t_ = textos(&compor(&compartilhada));
+        assert!(t_.iter().any(|t| t == regras::FRASE_OUTRO_APP) && !t_.iter().any(|t| t.starts_with("Pouca luz")));
+        // O aviso não cobre controle nenhum, com e sem prévia.
+        for e in [e, r5] {
+            let q = compor(&e);
+            for item in &q.itens {
+                if let Item::Texto(t) = item {
+                    for x in &q.controles {
+                        assert!(!t.ret.cruza(&x.ret), "o texto {:?} fica debaixo de {:?}", t.texto_corrido(), x.c);
+                    }
+                }
+            }
+        }
+        crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
+            let mut e = achar("comum-0-auto");
+            e.painel.pouca_luz = Some(luz);
+            assert!(textos(&compor(&e)).contains(&"Low light: 15 fps to brighten the picture. For 30 fps, use manual exposure in Camera settings.".to_string()));
         });
     }
 

@@ -34,9 +34,11 @@ import com.quall.android.receive.CameraRemotaBus
  * adb -s <serial> shell am broadcast -n $R --es ajuste '{"exposicao":"manual","iso":400,"obturadorNs":16666667}'
  * # "Restaurar automático"
  * adb ... am broadcast -n $R --ez restaurar true
+ * # "Usar meus ajustes" (§2.3, 07/10: a câmera abre no automático e lembra o último manual)
+ * adb ... am broadcast -n $R --ez usar_meus_ajustes true
  * # um toque no buffer da câmera (0..1, origem em cima à esquerda), simples ou longo
  * adb ... am broadcast -n $R --es toque 0.5,0.5 --ez longo true
- * # só a leitura de volta e as capacidades, no diário
+ * # só a leitura de volta, as capacidades e o botão "Usar meus ajustes" (`meus_ajustes=sim|nao`), no diário
  * adb ... am broadcast -n $R --ez ler true
  * # a da R5, em vez da câmera comum
  * adb ... am broadcast -n $R --ez r5 true --es ajuste '...'
@@ -96,7 +98,7 @@ class BancadaDosControlesReceiver : BroadcastReceiver() {
             CameraRemotaBus.reler()
             Log.i(TAG, "r9: bancada: receptor ${CameraRemotaBus.estado}")
         }
-        val local = listOf("ajuste", "restaurar", "toque", "ler").any { intent.hasExtra(it) }
+        val local = listOf("ajuste", "restaurar", "usar_meus_ajustes", "toque", "ler").any { intent.hasExtra(it) }
         if (!local) return
 
         val r5 = intent.getBooleanExtra("r5", false)
@@ -118,6 +120,11 @@ class BancadaDosControlesReceiver : BroadcastReceiver() {
             Log.i(TAG, "r9: bancada: restaurar automático")
             c.restaurar()
         }
+        if (intent.getBooleanExtra("usar_meus_ajustes", false)) {
+            // O mesmo `usarMeusAjustes` do botão do painel; sem guardado, não faz nada (e o diário diz).
+            Log.i(TAG, "r9: bancada: usar meus ajustes ${c.meusAjustes?.paraJson() ?: "nenhum"}")
+            c.usarMeusAjustes()
+        }
         intent.getStringExtra("toque")?.split(",")?.mapNotNull { it.trim().toDoubleOrNull() }?.takeIf { it.size == 2 }?.let { (x, y) ->
             val longo = intent.getBooleanExtra("longo", false)
             val mediu = c.tocar(x.coerceIn(0.0, 1.0), y.coerceIn(0.0, 1.0), longo)
@@ -126,6 +133,9 @@ class BancadaDosControlesReceiver : BroadcastReceiver() {
         if (intent.getBooleanExtra("ler", false)) {
             Log.i(TAG, "r9: bancada: capacidades ${c.resumoDasCapacidades()}")
             Log.i(TAG, "r9: bancada: leitura ${c.descreverLeitura()} | ${c.leitura().linha} | registro ${c.ajuste.paraJson()}")
+            // O botão "Usar meus ajustes" é oferecido? A mesma regra que o painel usa para mostrá-lo.
+            Log.i(TAG, "r9: bancada: meus_ajustes=${if (c.ofereceMeusAjustes) "sim" else "nao"} " +
+                "guardado ${c.meusAjustes?.paraJson() ?: "nenhum"}")
         }
     }
 
