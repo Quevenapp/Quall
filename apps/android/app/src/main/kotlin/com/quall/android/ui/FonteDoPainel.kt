@@ -51,6 +51,10 @@ interface FonteDoPainel {
     fun focoPosicao(p: Double)
     fun restaurar()
 
+    /** "Usar meus ajustes" (07/10): só a câmera deste aparelho lembra; o receptor não oferece. */
+    val ofereceMeusAjustes: Boolean get() = false
+    fun usarMeusAjustes() {}
+
     /** A câmera deste aparelho: tudo como o painel do R9 sempre fez. */
     class Local(val c: ControlesDaCamera) : FonteDoPainel {
         override fun oferta(t: Textos) = OfertaDoPainel.deLocal(c.capacidades, c.fpsAgora(), t)
@@ -78,6 +82,8 @@ interface FonteDoPainel {
         override fun focar(f: AjusteDaCamera.Foco) = c.focar(f)
         override fun focoPosicao(p: Double) = c.editar("foco manual") { it.copy(focoPosicao = p) }
         override fun restaurar() = c.restaurar()
+        override val ofereceMeusAjustes: Boolean get() = c.ofereceMeusAjustes
+        override fun usarMeusAjustes() = c.usarMeusAjustes()
     }
 
     /**

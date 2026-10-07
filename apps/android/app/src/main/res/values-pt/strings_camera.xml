@@ -36,6 +36,7 @@
     <string name="cam_aba_foco">Foco</string>
     <string name="cam_aba_escolhida">%1$s, aba escolhida</string>
     <string name="cam_restaurar_automatico">Restaurar automático</string>
+    <string name="cam_usar_meus_ajustes">Usar meus ajustes</string>
     <string name="cam_pronto">Pronto</string>
     <string name="cam_ainda_nao_abriu">A câmera ainda não abriu.</string>
     <string name="cam_auto">Auto</string>

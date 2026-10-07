@@ -95,8 +95,9 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
         }
     }
 
-    /// O `uniqueID` da câmera aberta: a chave do registro.
-    private(set) var idDaCamera: String?
+    /// O `uniqueID` da câmera aberta: a chave do registro. Sob `travaDaGravacao` (escrito na
+    /// abertura, lido por `guardar` de qualquer thread).
+    private var idDaCamera: String?
 
     // --- o registro, também para a `fila` ------------------------------------------------------
 
@@ -120,29 +121,64 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
         return _registro
     }
 
-    // --- carregar e guardar ---------------------------------------------------------------------
+    // --- abrir e guardar (§2: abrir no automático, lembrar o último manual) -------------------
 
-    /// O registro desta câmera, do `UserDefaults.standard` (§2). Chamado na montagem, antes da
-    /// primeira aplicação; de qualquer thread.
-    func carregar(uniqueID: String) {
+    /// **Os ajustes guardados desta câmera** ("meus ajustes", `camera.ajustes.<uniqueID>`), como estão
+    /// no disco: o que o botão "Usar meus ajustes" recupera. Na principal; `nil` sem guardado.
+    @Published private(set) var guardado: AjustesDaCamera?
+    /// A cópia de `guardado` para qualquer thread, sob `travaDaGravacao` (e não sob `trava`: quem
+    /// grava já saiu da trava do registro, e o "Usar meus ajustes" a lê antes de entrar nela).
+    private var guardadoDoDisco: AjustesDaCamera?
+
+    /// O botão "Usar meus ajustes" aparece (`RegrasDosControles.meusAjustes`): há guardado diferente
+    /// do padrão e do registro de agora. Lido pelo painel, na principal.
+    var meusAjustesDisponiveis: Bool { RegrasDosControles.meusAjustes(guardado: guardado, registro: ajustes) != nil }
+
+    /// **A abertura desta câmera** (§2, decisão de 07/10): o registro começa **no padrão, tudo
+    /// automático** (ou no da bancada, `--camera-ajustes`, só em memória), e o guardado é só lido,
+    /// para o botão "Usar meus ajustes". Chamado na montagem, antes da primeira aplicação; de qualquer
+    /// thread.
+    ///
+    /// Até 07/10 a abertura reaplicava o guardado: a câmera que ficou em manual numa noite abria
+    /// escura na manhã seguinte. Os ganchos de reaplicação do §2.2 (degrau, recuo da melhor imagem,
+    /// interrupção, segundo plano) seguem reaplicando o **registro da sessão**: ali a câmera é a
+    /// mesma e a luz também, e a trava que a pessoa pôs há um minuto tem de sobreviver.
+    func carregar(uniqueID: String, bancada: AjustesDaCamera? = nil) {
         // Um registro remoto que esperava a gravação adiada vai ao disco da câmera **anterior** antes.
         descarregarGravacaoAdiada()
-        let a = AjustesDaCamera.de(json: UserDefaults.standard.data(forKey: AjustesDaCamera.chave(uniqueID)))
+        let disco = UserDefaults.standard.data(forKey: AjustesDaCamera.chave(uniqueID))
+        let g = disco.map { AjustesDaCamera.de(json: $0) }
+        let a = RegrasDosControles.registroAoAbrir(bancada: bancada)
         trava.lock(); _registro = a; _cameraAnunciada = false; _capacidadesAnunciadas = nil; trava.unlock()
-        idDaCamera = uniqueID
-        naPrincipal { [weak self] in self?.ajustes = a }
+        travaDaGravacao.lock(); guardadoDoDisco = g; idDaCamera = uniqueID; travaDaGravacao.unlock()
+        naPrincipal { [weak self] in
+            self?.ajustes = a
+            self?.guardado = g
+        }
         Diagnostico.nota("APP CAMERA controles: registro carregado"
-            + " (tela=\(tela)) registro_bytes=\(a.json()?.count ?? 0)")
+            + (bancada != nil ? " da bancada (--camera-ajustes, só nesta sessão)" : " no automático")
+            + " (tela=\(tela)) registro_bytes=\(a.json()?.count ?? 0)"
+            + " meus_ajustes=\(RegrasDosControles.meusAjustes(guardado: g, registro: a) != nil ? "sim" : "não")")
     }
 
+    /// Grava o registro como "meus ajustes" desta câmera **só se ele não for o padrão**
+    /// (`RegrasDosControles.aGravar`): voltar ao automático não apaga o guardado (§2, 07/10). Até
+    /// 07/10 o "Restaurar automático" removia a chave; com a abertura no automático, isso apagaria a
+    /// única forma de recuperar o ajuste.
     private func guardar(_ a: AjustesDaCamera) {
-        guard let id = idDaCamera else { return }
-        if a == .padrao {
-            // "Restaurar automático" zera o registro daquela câmera, e só dela (§2.2).
-            UserDefaults.standard.removeObject(forKey: AjustesDaCamera.chave(id))
-        } else if let j = a.json() {
-            UserDefaults.standard.set(j, forKey: AjustesDaCamera.chave(id))
-        }
+        guard let novo = RegrasDosControles.aGravar(a) else { return }
+        travaDaGravacao.lock()
+        guard let id = idDaCamera, guardadoDoDisco != novo, let j = novo.json() else { travaDaGravacao.unlock(); return }
+        guardadoDoDisco = novo
+        UserDefaults.standard.set(j, forKey: AjustesDaCamera.chave(id))
+        travaDaGravacao.unlock()
+        naPrincipal { [weak self] in self?.guardado = novo }
+    }
+
+    /// O guardado de agora, de qualquer thread.
+    private var guardadoAgora: AjustesDaCamera? {
+        travaDaGravacao.lock(); defer { travaDaGravacao.unlock() }
+        return guardadoDoDisco
     }
 
     /// De onde vem uma escrita do registro, para o núcleo (contrato §4): uma mudança feita aqui (o
@@ -428,7 +464,7 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
     }
 
     /// "Restaurar automático": o registro volta ao padrão da tabela (só desta câmera), e o ponto de
-    /// toque volta ao centro.
+    /// toque volta ao centro. **O guardado fica** (§2, 07/10): "Usar meus ajustes" o traz de volta.
     func restaurar() {
         pilula = nil
         // O ponto ao centro **fora** da trava do registro (ele pede a trava da câmera), e antes da
@@ -438,6 +474,31 @@ final class ControlesDaCamera: ObservableObject, ModeloDoPainelDaCamera {
             self.alterar(.local) { a in a = .padrao; return true }
             AjustesNaCamera.pontoAoCentro(ap)
             self.dono?.aplicarAjustesNaFila(Set(Grupo.allCases), reaplicando: false, motivo: "restaurar automático")
+        }
+    }
+
+    /// **"Usar meus ajustes"** (§2, 07/10): o registro passa a ser o guardado desta câmera, pelo mesmo
+    /// caminho de um gesto (`alterar(.local)`, que anuncia aos receptores e grava), e é aplicado em
+    /// todos os grupos **como reaplicação**: o guardado foi feito noutro formato, noutro fps, talvez
+    /// noutra tela, e o plano o corta pelas capacidades e faixas **de agora** (o que a abertura fazia
+    /// até 07/10). Uma trava sem manual mede de novo, e a tela diz "Travado de novo depois de medir a
+    /// cena." — é o que de fato aconteceu. Na `fila`, como toda escrita na câmera.
+    func usarMeusAjustes() {
+        pilula = nil
+        dono?.fila.async { [weak self] in
+            guard let self, self.dono?.entrada?.device != nil else { return }
+            // O guardado lido **antes** da trava do registro (são travas diferentes, e não reentrantes).
+            let g = self.guardadoAgora
+            let usado = self.alterar(.local) { a in
+                guard let m = RegrasDosControles.meusAjustes(guardado: g, registro: a) else { return false }
+                a = m
+                return true
+            }
+            guard usado != nil else {
+                Diagnostico.nota("APP CAMERA controles: usar meus ajustes — nada a recuperar (sem guardado, ou já em uso)")
+                return
+            }
+            self.dono?.aplicarAjustesNaFila(Set(Grupo.allCases), reaplicando: true, motivo: "usar meus ajustes")
         }
     }
 
@@ -1013,8 +1074,9 @@ extension DonoDaCaptura {
 /// - `--degrau-forcado S` (§5.3): S segundos depois de a câmera montar, chama `reduzirCaptura(true)`,
 ///   e `--degrau-forcado-por D` segundos depois (padrão 20) a volta. O degrau de calor só nasce de
 ///   calor de verdade; este é o jeito de provar que a trava sobrevive a ele;
-/// - `--camera-ajustes '<json>'`: grava o registro desta câmera antes da primeira aplicação
-///   (`'{}'` é o "Restaurar automático");
+/// - `--camera-ajustes '<json>'`: o registro com que a câmera abre, **só em memória** (§2, 07/10: a
+///   abertura é no automático e o guardado não muda; `'{}'` é o próprio automático). Um gesto depois
+///   grava pela regra de sempre (`RegrasDosControles.aGravar`);
 /// - `--roteiro-dos-controles completo|reabertura`: o roteiro de prova, sem toque (`RoteiroDosControles`).
 struct BancadaDosControles {
     var lumaMedia = false

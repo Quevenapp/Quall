@@ -653,15 +653,11 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         }
         sessao.addInput(nova)
         entrada = nova
-        // R9: o registro desta câmera (`camera.ajustes.<uniqueID>`), antes da primeira aplicação. A
-        // bancada pode trocá-lo (`--camera-ajustes`).
-        if let j = BancadaDosControles.opcoes.ajustes {
-            let a = AjustesDaCamera.de(json: Data(j.utf8))
-            if a == .padrao { UserDefaults.standard.removeObject(forKey: AjustesDaCamera.chave(id)) }
-            else if let d = a.json() { UserDefaults.standard.set(d, forKey: AjustesDaCamera.chave(id)) }
-            Diagnostico.nota("APP CAMERA controles bancada: --camera-ajustes gravou o registro")
-        }
-        controles.carregar(uniqueID: id)
+        // R9: a câmera abre **no automático** (§2, decisão de 07/10), e o guardado desta câmera
+        // (`camera.ajustes.<uniqueID>`) só é lido, para o "Usar meus ajustes". A bancada pode abrir
+        // com outro registro (`--camera-ajustes`), em memória, sem tocar no guardado.
+        let daBancada = BancadaDosControles.opcoes.ajustes.map { AjustesDaCamera.de(json: Data($0.utf8)) }
+        controles.carregar(uniqueID: id, bancada: daBancada)
 
         // **A melhor imagem (tela R5, que grava)**: o maior formato 16:9 que **esta** câmera
         // oferece à taxa do cardápio, aplicado por `activeFormat` + `.inputPriority` — nunca um

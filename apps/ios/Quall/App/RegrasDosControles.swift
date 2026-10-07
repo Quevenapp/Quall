@@ -327,6 +327,34 @@ enum RegrasDosControles {
         return max(0, min(1, ((1 - l) * 100).rounded() / 100))
     }
 
+    // MARK: Abrir no automático, lembrar o último manual (§2, decisão de 07/10)
+
+    /// **O registro de cada abertura** (a câmera comum e a R5): sempre o padrão da tabela, tudo
+    /// automático, **nunca o guardado**. Antes de 07/10 a abertura reaplicava o guardado, e uma câmera
+    /// que ficou com ISO e obturador fixos, Kelvin ou foco travado de uma noite abria escura (ou
+    /// laranja, ou fora de foco) na manhã seguinte, sem a pessoa entender por quê: a luz mudou e o
+    /// ajuste não. O guardado continua no disco, e volta só quando a pessoa pede ("Usar meus
+    /// ajustes", `meusAjustes`).
+    ///
+    /// `bancada`: o registro de `--camera-ajustes`, que vale **em memória**, para aquela sessão. Ele
+    /// não vai ao disco: a bancada não pode trocar os ajustes que a pessoa guardou.
+    static func registroAoAbrir(bancada: AjustesDaCamera?) -> AjustesDaCamera { bancada ?? .padrao }
+
+    /// **O que gravar** depois de uma escrita no registro (um gesto, um pedido remoto, a trava que
+    /// guarda o lido): o registro, se ele for diferente do padrão; `nil` se for o padrão, e aí **o
+    /// guardado fica como está**. Voltar ao automático ("Restaurar automático", ou um gesto que deixe
+    /// o registro igual ao padrão) não apaga os ajustes da pessoa: é justamente o automático da
+    /// abertura que os tornaria inalcançáveis se apagasse.
+    static func aGravar(_ registro: AjustesDaCamera) -> AjustesDaCamera? { registro == .padrao ? nil : registro }
+
+    /// **"Usar meus ajustes"**: o guardado a oferecer, ou `nil` para não mostrar o botão. Só aparece
+    /// quando há um guardado diferente do padrão (um guardado igual ao padrão é o próprio "Restaurar
+    /// automático") **e** diferente do registro de agora (nada a recuperar: já está em uso).
+    static func meusAjustes(guardado: AjustesDaCamera?, registro: AjustesDaCamera) -> AjustesDaCamera? {
+        guard let g = guardado, g != .padrao, g != registro else { return nil }
+        return g
+    }
+
     // MARK: O plano de aplicação (§2.1, §2.2)
 
     enum PlanoDeExposicao: Equatable {

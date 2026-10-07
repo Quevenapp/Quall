@@ -40,6 +40,8 @@ pub enum ControleDosAjustes {
     Foco(usize),
     FocoPosicao,
     Restaurar,
+    /// "Usar meus ajustes" (07/10): a câmera abre no automático e lembra o último manual.
+    UsarMeusAjustes,
     /// "Permitir controle remoto da câmera" (R9b), só no aparelho que filma.
     PermitirRemoto,
 }
@@ -74,6 +76,7 @@ impl ControleDosAjustes {
             ControleDosAjustes::Foco(i) => 370 + i,
             ControleDosAjustes::FocoPosicao => 380,
             ControleDosAjustes::Restaurar => 390,
+            ControleDosAjustes::UsarMeusAjustes => 391,
             ControleDosAjustes::PermitirRemoto => 395,
         }
     }
@@ -94,6 +97,7 @@ impl ControleDosAjustes {
             370..=372 => ControleDosAjustes::Foco(id - 370),
             380 => ControleDosAjustes::FocoPosicao,
             390 => ControleDosAjustes::Restaurar,
+            391 => ControleDosAjustes::UsarMeusAjustes,
             395 => ControleDosAjustes::PermitirRemoto,
             _ => return None,
         })
@@ -105,7 +109,7 @@ impl ControleDosAjustes {
             C::Aba(_) | C::Exposicao(_) | C::Cintilacao(_) | C::Balanco(_) | C::Foco(_) => EspecieDosAjustes::Opcao,
             C::TravarExposicao | C::TravarBalanco | C::PermitirRemoto => EspecieDosAjustes::Alternar,
             C::Brilho | C::Ganho | C::Obturador | C::Kelvin | C::FocoPosicao => EspecieDosAjustes::Deslizante,
-            C::PassarParaManual | C::Restaurar => EspecieDosAjustes::Botao,
+            C::PassarParaManual | C::Restaurar | C::UsarMeusAjustes => EspecieDosAjustes::Botao,
         }
     }
 
@@ -129,7 +133,7 @@ impl ControleDosAjustes {
         v.extend((0..6).map(C::Balanco));
         v.extend([C::Kelvin, C::TravarBalanco]);
         v.extend((0..3).map(C::Foco));
-        v.extend([C::FocoPosicao, C::Restaurar, C::PermitirRemoto]);
+        v.extend([C::FocoPosicao, C::Restaurar, C::UsarMeusAjustes, C::PermitirRemoto]);
         v
     }
 }
@@ -426,6 +430,10 @@ pub fn compor(e: &EstadoDosAjustes) -> QuadroDosAjustes {
         },
     }
     q.controle(C::Restaurar, lugar::restaurar(e.com_previa), pronto, false);
+    // Ao lado, só quando há "meus ajustes" diferentes do que vale (07/10).
+    if regras::oferece_meus_ajustes(p.meus_ajustes.as_ref(), &p.registro) {
+        q.controle(C::UsarMeusAjustes, lugar::usar_meus_ajustes(e.com_previa), pronto, false);
+    }
     // **R9b**: a opção vale para o app (e não para esta câmera), e fica viva mesmo lendo ou no
     // modo compartilhado; embaixo, quem mexeu de longe.
     if let Some(permite) = e.permitir {
@@ -479,6 +487,7 @@ pub fn gesto(c: ControleDosAjustes, e: &EstadoDosAjustes, degrau: Option<i32>) -
         C::Foco(i) => Gesto::Acao(Acao::Foco(*Foco::TODOS.get(i)?)),
         C::FocoPosicao => Gesto::Acao(Acao::FocoPosicao(f64::from(degrau.unwrap_or(0)) / 100.0)),
         C::Restaurar => Gesto::Acao(Acao::Restaurar),
+        C::UsarMeusAjustes => Gesto::Acao(Acao::UsarMeusAjustes),
         C::PermitirRemoto => Gesto::Permitir(!e.permitir?),
     })
 }
@@ -518,6 +527,7 @@ pub fn rotulo(c: ControleDosAjustes, e: &EstadoDosAjustes) -> String {
         C::Foco(i) => Foco::TODOS.get(i).map(|f| f.rotulo()).unwrap_or_default(),
         C::FocoPosicao => "Perto ↔ Longe", // i18n: chave
         C::Restaurar => regras::RESTAURAR_AUTOMATICO,
+        C::UsarMeusAjustes => regras::USAR_MEUS_AJUSTES,
         C::PermitirRemoto => FRASE_PERMITIR,
     };
     t(s).to_string()
@@ -778,6 +788,14 @@ mod testes {
         assert!(textos(&q).contains(&"Esta câmera não oferece a anti-cintilação.".to_string()));
         assert!(textos(&q).contains(&"Esta câmera não oferece a trava de exposição.".to_string()));
         assert!(q.achar(C::Restaurar).unwrap().habilitado);
+        // "Usar meus ajustes" (07/10): só com lembrança diferente do que vale, ao lado do Restaurar.
+        assert!(q.achar(C::UsarMeusAjustes).is_none(), "sem meus ajustes, sem botão");
+        let mut com = achar("r5-0-pobre");
+        com.painel.meus_ajustes = Some(crate::regras_dos_controles::Registro { ev: 1.0, ..Default::default() });
+        let q2 = compor(&com);
+        assert!(q2.achar(C::UsarMeusAjustes).is_some());
+        com.painel.registro = com.painel.meus_ajustes.clone().unwrap();
+        assert!(compor(&com).achar(C::UsarMeusAjustes).is_none(), "já vale: some");
         assert!(!compor(&achar("r5-0-lendo")).achar(C::Restaurar).unwrap().habilitado);
     }
 

@@ -134,6 +134,15 @@ class PainelDaCamera(
         background = fundoArredondado(Cores.SUPERFICIE_ALTA, dp(10).toFloat())
     }
 
+    /** "Usar meus ajustes" (07/10): a câmera abre no automático e lembra o último manual. */
+    private val meusAjustes = texto(s(R.string.cam_usar_meus_ajustes), 14f, Cores.ACENTO_CLARO, negrito = true).apply {
+        gravity = Gravity.CENTER
+        isClickable = true
+        isFocusable = true
+        background = fundoArredondado(Cores.SUPERFICIE_ALTA, dp(10).toFloat())
+        visibility = GONE
+    }
+
     /** A rolagem do corpo (só rola onde o painel não cabe). */
     private val rolagem: android.widget.ScrollView
 
@@ -188,7 +197,12 @@ class PainelDaCamera(
         conteudo.addView(corpo, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = dp(6) })
         conteudo.addView(avisoTxt, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(16)))
         restaurar.setOnClickListener { fonteAgora()?.takeIf { it.vivo }?.restaurar(); atualizar() }
-        conteudo.addView(restaurar, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)).apply { topMargin = dp(4) })
+        meusAjustes.setOnClickListener { fonteAgora()?.takeIf { it.vivo }?.usarMeusAjustes(); atualizar() }
+        // "Restaurar automático" e "Usar meus ajustes" lado a lado; sem lembrança, o primeiro ocupa a linha.
+        val linhaDoPe = LinearLayout(contexto).apply { orientation = HORIZONTAL }
+        linhaDoPe.addView(restaurar, LayoutParams(0, dp(36), 1f))
+        linhaDoPe.addView(meusAjustes, LayoutParams(0, dp(36), 1f).apply { leftMargin = dp(8) })
+        conteudo.addView(linhaDoPe, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)).apply { topMargin = dp(4) })
         // A câmera comum tem esta opção à mão. Na R5 ela fica nos Ajustes do prompter.
         // O acréscimo fica na rolagem: a leitura, as abas e o Pronto continuam fixos no alto.
         manterTelaLigada?.let {
@@ -255,6 +269,7 @@ class PainelDaCamera(
             mudarTexto(avisoTxt, "")
             restaurar.isEnabled = false
             restaurar.alpha = 0.4f
+            meusAjustes.visibility = GONE
             if (chaveDoCorpo != listOf<Any?>("sem")) {
                 chaveDoCorpo = listOf("sem")
                 corpo.removeAllViews()
@@ -264,6 +279,7 @@ class PainelDaCamera(
         }
         restaurar.isEnabled = c.vivo
         restaurar.alpha = if (c.vivo) 1f else 0.4f
+        meusAjustes.visibility = if (c.vivo && c.ofereceMeusAjustes) VISIBLE else GONE
         val textos = t
         val (linha, aviso) = c.leitura(textos)
         mudarTexto(leituraTxt, linha)

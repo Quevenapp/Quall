@@ -1249,6 +1249,12 @@ pub mod lugar {
             Ret::new(x, ALTURA - MARGEM - 36.0, 190.0, 36.0)
         }
 
+        /// "Usar meus ajustes" (07/10), ao lado do "Restaurar automático".
+        pub fn usar_meus_ajustes(com_previa: bool) -> Ret {
+            let (x, _) = coluna(com_previa);
+            Ret::new(x + 200.0, ALTURA - MARGEM - 36.0, 190.0, 36.0)
+        }
+
         /// **A faixa do controle remoto** (R9b): "Permitir controle remoto da câmera" e, embaixo,
         /// "Controlado por …". Com a prévia, ela cabe na coluna da prévia, embaixo do aviso; sem
         /// ela (a tela R5), a janela cresce [`FAIXA_DO_REMOTO_A`] no pé.

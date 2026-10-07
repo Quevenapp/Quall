@@ -199,6 +199,52 @@ extension Testes {
         conferir(AjustesDaCamera.chave("ABC") == "camera.ajustes.ABC", "a chave é camera.ajustes.<uniqueID>")
         conferir(!texto.contains("travaIso"), "o que é nenhum não vai ao JSON")
 
+        print("RegrasDosControles — abrir no automático, lembrar o último manual (§2, 07/10)")
+        // O guardado de uma noite: ISO e obturador fixos, Kelvin, foco travado.
+        var noite = AjustesDaCamera()
+        noite.exposicao = .manual; noite.iso = 1600; noite.obturadorNs = 33_333_333
+        noite.balanco = .kelvin; noite.kelvin = 3200; noite.foco = .travado; noite.focoPosicao = 0.3
+        conferir(R.registroAoAbrir(bancada: nil) == .padrao, "abrir: o padrão, tudo automático (nunca o guardado)")
+        conferir(R.registroAoAbrir(bancada: noite) == noite, "abrir com --camera-ajustes: o da bancada, em memória")
+        conferir(R.aGravar(noite) == noite, "gravar: um registro fora do padrão vira os meus ajustes")
+        conferir(R.aGravar(.padrao) == nil, "gravar: o padrão não grava nada (Restaurar automático não apaga)")
+        var soEv = AjustesDaCamera(); soEv.ev = 0.7
+        conferir(R.aGravar(soEv) == soEv, "gravar: um EV só já é ajuste da pessoa")
+        // A sessão de um dia: abre no automático, o botão está lá.
+        let aberto = R.registroAoAbrir(bancada: nil)
+        conferir(R.meusAjustes(guardado: noite, registro: aberto) == noite, "abriu no automático: Usar meus ajustes oferece o da noite")
+        conferir(R.meusAjustes(guardado: noite, registro: noite) == nil, "já em uso: o botão some")
+        conferir(R.meusAjustes(guardado: nil, registro: aberto) == nil, "sem guardado: sem botão")
+        conferir(R.meusAjustes(guardado: .padrao, registro: soEv) == nil, "guardado igual ao padrão (de antes de 07/10): sem botão")
+        conferir(R.meusAjustes(guardado: noite, registro: soEv) == noite, "mexeu em outra coisa: o botão continua oferecendo o guardado")
+        // A sequência inteira, pelas três regras: abre, usa, restaura (o guardado fica), reabre.
+        var disco: AjustesDaCamera? = noite
+        var registro = R.registroAoAbrir(bancada: nil)
+        if let m = R.meusAjustes(guardado: disco, registro: registro) { registro = m }
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(registro == noite && disco == noite, "usar meus ajustes: o registro é o guardado, e o guardado não muda")
+        registro = .padrao
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(disco == noite && R.meusAjustes(guardado: disco, registro: registro) == noite,
+                 "restaurar automático: o guardado fica, e o botão volta")
+        registro.ev = -1
+        if let g = R.aGravar(registro) { disco = g }
+        conferir(disco == registro, "um gesto novo fora do padrão: vira o guardado (o último manual)")
+        registro = R.registroAoAbrir(bancada: nil)
+        conferir(registro == .padrao && R.meusAjustes(guardado: disco, registro: registro)?.ev == -1,
+                 "reabrir: no automático, e o botão oferece o último manual")
+        // Os meus ajustes passam pelo mesmo plano da reaplicação: cortados pelas faixas de agora.
+        var cam = CapacidadesDaCamera()
+        cam.exposicaoCustom = true; cam.exposicaoContinua = true; cam.balancoContinuo = true; cam.ganhosCustom = true
+        cam.focoContinuo = true; cam.lenteCustom = true
+        let f60r = FaixasDaCamera(isoMin: 46, isoMax: 1000, obturadorMinNs: 10_000, obturadorMaxNs: 1_000_000_000,
+                                  evMin: -8, evMax: 8, ganhoMax: 4, fps: 60)
+        conferir(R.plano(noite, cam, f60r, reaplicando: true).exposicao == .manual(iso: 1000, ns: 16_666_666),
+                 "usar meus ajustes num formato de 60 fps: ISO e obturador cortados na faixa de agora")
+        conferir(R.plano(aberto, cam, f60r, reaplicando: true)
+                 == R.Plano(exposicao: .continua(ev: 0), balanco: .continuo, foco: .continuo, travadoDeNovo: false),
+                 "a abertura aplica tudo contínuo, seja qual for o guardado")
+
         print("RegrasDosControles — o plano de aplicação, com corte e reaplicação (§2.1, §2.2)")
         var tudo = CapacidadesDaCamera()
         tudo.exposicaoCustom = true; tudo.exposicaoUmaVez = true; tudo.exposicaoContinua = true; tudo.exposicaoTravada = true

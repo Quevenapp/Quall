@@ -354,6 +354,23 @@ class RegrasDosControlesTest {
     }
 
     @Test
+    fun abre_no_automatico_e_lembra_o_ultimo_manual() {
+        val m = RegrasDosControles.MeusAjustes
+        // O S24 das provas (07/10): manual guardado. A abertura ignora e vai no automático.
+        val manual = AjusteDaCamera(exposicao = AjusteDaCamera.Exposicao.MANUAL, iso = 640, obturadorNs = 10_000_000,
+            balanco = AjusteDaCamera.Balanco.KELVIN, kelvin = 5200, foco = AjusteDaCamera.Foco.TRAVADO, focoPosicao = 0.34)
+        assertTrue(m.naAbertura().ehPadrao)
+        // Só o manual se grava; voltar ao automático não apaga a lembrança.
+        assertEquals(manual, m.aGravar(manual))
+        assertNull(m.aGravar(AjusteDaCamera()))
+        // O botão aparece com lembrança diferente do que vale, e some quando ela já vale.
+        assertTrue(m.ofereceMeusAjustes(manual, AjusteDaCamera()))
+        assertFalse(m.ofereceMeusAjustes(manual, manual))
+        assertFalse(m.ofereceMeusAjustes(null, AjusteDaCamera()))
+        assertFalse(m.ofereceMeusAjustes(AjusteDaCamera(), AjusteDaCamera()))
+    }
+
+    @Test
     fun um_fps_que_a_camera_nao_alcanca_vira_o_teto_dela() {
         // O A07 traseiro (06/10): nada chega a 60.
         val a07 = listOf(10 to 10, 15 to 15, 15 to 20, 20 to 20, 5 to 30, 10 to 30, 30 to 30)

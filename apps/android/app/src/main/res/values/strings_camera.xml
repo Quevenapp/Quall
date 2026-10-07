@@ -36,6 +36,7 @@
     <string name="cam_aba_foco">Focus</string>
     <string name="cam_aba_escolhida">%1$s, selected tab</string>
     <string name="cam_restaurar_automatico">Reset to auto</string>
+    <string name="cam_usar_meus_ajustes">Use my settings</string>
     <string name="cam_pronto">Done</string>
     <string name="cam_ainda_nao_abriu">The camera hasn’t opened yet.</string>
     <string name="cam_auto">Auto</string>

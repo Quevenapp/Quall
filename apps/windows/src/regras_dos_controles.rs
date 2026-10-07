@@ -479,13 +479,28 @@ pub fn registro_de(m: &Mapa, link: &str) -> Registro {
     m.iter().find(|(k, _)| k.eq_ignore_ascii_case(link)).map(|(_, r)| r.clone()).unwrap_or_default()
 }
 
-/// Guarda o registro de uma câmera, trocando a entrada que já houver (sem caixa). O registro no
-/// padrão **sai** do mapa: "Restaurar automático" zera o registro daquela câmera, e só dela.
+/// Guarda o registro de uma câmera, trocando a entrada que já houver (sem caixa). **O registro no
+/// padrão não é gravado** (07/10, "abrir no automático e lembrar o último manual"): a entrada guarda
+/// "meus ajustes", e voltar ao automático não a apaga.
 pub fn guardar_em(m: &mut Mapa, link: &str, r: &Registro) {
-    m.retain(|k, _| !k.eq_ignore_ascii_case(link));
-    if !r.e_padrao() {
-        m.insert(link.to_string(), r.clone());
+    if r.e_padrao() {
+        return;
     }
+    m.retain(|k, _| !k.eq_ignore_ascii_case(link));
+    m.insert(link.to_string(), r.clone());
+}
+
+/// **Abrir no automático e lembrar o último manual** (decisão de produto, 07/10). Antes, o registro
+/// guardado era reaplicado a cada abertura, e uma câmera deixada em manual abria escura no dia
+/// seguinte. A abertura usa o padrão; o guardado vira "meus ajustes", oferecido no painel enquanto
+/// for diferente do que vale.
+pub fn meus_ajustes(guardado: Registro) -> Option<Registro> {
+    (!guardado.e_padrao()).then_some(guardado)
+}
+
+/// O painel mostra "Usar meus ajustes"?
+pub fn oferece_meus_ajustes(meus: Option<&Registro>, corrente: &Registro) -> bool {
+    meus.is_some_and(|m| !m.e_padrao() && m != corrente)
 }
 
 // =============================================================================================
@@ -649,6 +664,9 @@ pub enum Acao {
     /// 0,0 a 1,0, de 0,01 em 0,01.
     FocoPosicao(f64),
     Restaurar,
+    /// "Usar meus ajustes" (07/10): a thread troca o registro pelo guardado; [`aplicar_acao`] não o
+    /// conhece.
+    UsarMeusAjustes,
 }
 
 /// O foco na escala do registro: de 0,01 em 0,01.
@@ -730,6 +748,7 @@ pub fn aplicar_acao(r: &mut Registro, a: Acao, caps: &Capacidades, lidos: &Lidos
         }
         Acao::FocoPosicao(f) => r.foco_posicao = Some(em_centesimos(f)),
         Acao::Restaurar => *r = Registro::default(),
+        Acao::UsarMeusAjustes => {}
     }
     *r != antes
 }
@@ -767,6 +786,8 @@ pub struct PainelDosAjustes {
     /// **R9b**: o aparelho que mexeu nesta câmera de longe, nos 4 s depois (o `controlado_por` do
     /// filmador do núcleo). A janela dos ajustes, a principal e a tela R5 o mostram.
     pub controlado_por: Option<String>,
+    /// "Meus ajustes" desta câmera (07/10): o último manual guardado, oferecido no painel.
+    pub meus_ajustes: Option<Registro>,
 }
 
 // =============================================================================================
@@ -870,6 +891,7 @@ pub const TITULO_DA_JANELA: &str = "Ajustes da câmera"; // i18n: chave
 /// O rótulo de acessibilidade do ícone (§4.1). Quem o usa passa por `idioma::t(ROTULO_DO_ICONE)`.
 pub const ROTULO_DO_ICONE: &str = "Ajustes da câmera"; // i18n: chave
 pub const RESTAURAR_AUTOMATICO: &str = "Restaurar automático"; // i18n: chave
+pub const USAR_MEUS_AJUSTES: &str = "Usar meus ajustes"; // i18n: chave
 pub const PASSAR_PARA_MANUAL: &str = "Passar para Manual"; // i18n: chave
 pub const FRASE_DESTRAVE: &str = "Destrave a exposição para compensar."; // i18n: chave
 pub const FRASE_FOCO_FIXO: &str = "Esta câmera tem foco fixo."; // i18n: chave
@@ -1271,6 +1293,19 @@ mod testes {
     }
 
     #[test]
+    fn abre_no_automatico_e_lembra_o_ultimo_manual() {
+        let manual = Registro { exposicao: ModoDeExposicao::Manual, iso: Some(64.0), obturador_ns: Some(ns_do_log2(-7)), ..Default::default() };
+        assert_eq!(meus_ajustes(manual.clone()), Some(manual.clone()));
+        assert_eq!(meus_ajustes(Registro::default()), None);
+        assert!(oferece_meus_ajustes(Some(&manual), &Registro::default()));
+        assert!(!oferece_meus_ajustes(Some(&manual), &manual), "já vale: some");
+        assert!(!oferece_meus_ajustes(None, &Registro::default()));
+        // "Usar meus ajustes" não é gesto que aplicar_acao conheça: a thread troca o registro.
+        let mut r = Registro::default();
+        assert!(!aplicar_acao(&mut r, Acao::UsarMeusAjustes, &Capacidades::new(), &Lidos::new()));
+    }
+
+    #[test]
     fn o_mapa_por_link_tolera_o_ilegivel() {
         let link = r"\\?\usb#vid_0c45&pid_6a09&mi_00#7&00000002&0&0000#{e5323777-f976-4f5b-9b55-b94699c46e44}\global";
         let mut m = Mapa::new();
@@ -1280,9 +1315,9 @@ mod testes {
         let texto = mapa_em_json(&m);
         assert_eq!(ler_mapa(&texto), m);
         assert_eq!(ler_mapa(&format!("\u{FEFF}{texto}")), m, "com BOM");
-        // Restaurar automático: a entrada sai.
+        // Restaurar automático (07/10): a entrada fica, porque ela é "meus ajustes".
         guardar_em(&mut m, &link.to_uppercase(), &Registro::default());
-        assert!(m.is_empty());
+        assert_eq!(registro_de(&m, link), r);
         assert!(ler_mapa("não é json").is_empty());
         assert!(ler_mapa("[1,2]").is_empty());
         let misto = ler_mapa(r#"{"a":{"ev":3},"b":{"exposicao":"lua"},"c":7}"#);
