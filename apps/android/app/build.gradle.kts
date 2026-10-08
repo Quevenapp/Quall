@@ -161,6 +161,11 @@ android {
         }
 
         release {
+            externalNativeBuild {
+                cmake {
+                    arguments += "-DQUALL_REQUIRE_DVD=ON"
+                }
+            }
             // R8 desligado. Ligá-lo exigiria regras para o registro de métodos nativos de
             // `quall_jni.c` contra `com.quall.android.core.QuallNative` e para o viewBinding, e
             // nenhuma delas existe. Um `minifyEnabled` sem regras produz `UnsatisfiedLinkError`
@@ -203,6 +208,28 @@ android {
             pickFirsts += "**/libc++_shared.so"
         }
     }
+}
+
+// A receita de release prepara o FFmpeg antes do Gradle. O portão também vale para quem
+// chama assembleRelease/bundleRelease diretamente, evitando publicar o app sem o DVD/USB.
+val verificarDvdDaRelease by tasks.registering {
+    doLast {
+        val raiz = file("src/main/jniLibsDv")
+        val necessarios = listOf(
+            "lib/arm64-v8a/libavcodec.so",
+            "lib/arm64-v8a/libavformat.so",
+            "lib/arm64-v8a/libavutil.so",
+            "include/libavcodec/avcodec.h",
+            "include/libavformat/avformat.h",
+            "include/libavutil/avutil.h",
+        )
+        check(necessarios.all { raiz.resolve(it).let { arquivo -> arquivo.isFile && arquivo.length() > 0 } }) {
+            "Release ARM64 exige o módulo DVD/USB: rode apps/android/tools/compila-ffmpeg-dv.sh antes de empacotar"
+        }
+    }
+}
+tasks.configureEach {
+    if (name == "preReleaseBuild") dependsOn(verificarDvdDaRelease)
 }
 
 dependencies {
