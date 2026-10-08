@@ -52,6 +52,7 @@ target_link_options(qualljni PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common
 # `libqualljni` não depende dela: no A10s (armv7) ela não existe, e sem o FFmpeg construído o app
 # compila do mesmo jeito, com a DV indisponível (o Kotlin carrega sob demanda, `QuallDv`).
 set(DV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../jniLibsDv")
+option(QUALL_REQUIRE_DVD "Require the DVD/USB module in ARM64 release builds" OFF)
 if(ANDROID_ABI STREQUAL "arm64-v8a" AND EXISTS "${DV_DIR}/lib/arm64-v8a/libavformat.so")
     add_library(avcodec SHARED IMPORTED)
     set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION "${DV_DIR}/lib/arm64-v8a/libavcodec.so")
@@ -67,6 +68,10 @@ if(ANDROID_ABI STREQUAL "arm64-v8a" AND EXISTS "${DV_DIR}/lib/arm64-v8a/libavfor
     target_compile_options(qualldv PRIVATE -O2)
     target_link_libraries(qualldv avformat avcodec avutil log)
     target_link_options(qualldv PRIVATE "-Wl,-z,max-page-size=16384" "-Wl,-z,common-page-size=16384")
+elseif(QUALL_REQUIRE_DVD AND ANDROID_ABI STREQUAL "arm64-v8a")
+    message(FATAL_ERROR
+        "DVD/USB is required for this ARM64 release. "
+        "Run apps/android/tools/compila-ffmpeg-dv.sh before packaging.")
 else()
     message(STATUS "câmera DV fora deste build (ABI ${ANDROID_ABI}; FFmpeg em ${DV_DIR}: "
         "rode apps/android/tools/compila-ffmpeg-dv.sh)")
