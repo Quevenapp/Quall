@@ -17,7 +17,8 @@ use quall_capture_probe::{
 use windows::Win32::Media::MediaFoundation::{MFStartup, MFShutdown, MFSTARTUP_FULL, MF_VERSION};
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
 use windows::Win32::UI::HiDpi::{
-    SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+    AreDpiAwarenessContextsEqual, GetThreadDpiAwarenessContext, SetProcessDpiAwarenessContext,
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
 };
 
 fn main() {
@@ -137,8 +138,15 @@ fn rodar() -> windows::core::Result<()> {
     // cima (borrada), e — o que importa mais num app de captura — as coordenadas de monitor que a
     // enumeração devolve viriam em pixels virtualizados, não nos reais. Um app que captura tela
     // não pode ver a tela por uma lente que o sistema esticou.
-    let dpi_ok = unsafe { SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) }
-        .is_ok();
+    // O manifesto já configura PMV2. Consultar o contexto evita chamar o setter de novo
+    // (ERROR_ACCESS_DENIED) e registrar como falha uma configuração que já está correta.
+    let por_monitor_v2 = || unsafe {
+        AreDpiAwarenessContextsEqual(GetThreadDpiAwarenessContext(), DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+    }.as_bool();
+    if !por_monitor_v2() {
+        let _ = unsafe { SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
+    }
+    let dpi_ok = por_monitor_v2();
 
     // **MTA, não STA.** O `Direct3D11CaptureFramePool::CreateFreeThreaded` da captura exige
     // apartamento multithreaded, e o apartamento é do processo. Uma janela Win32 funciona nos dois
