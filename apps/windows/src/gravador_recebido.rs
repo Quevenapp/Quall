@@ -35,6 +35,45 @@ struct Som {
     pcm: Vec<i16>,
     carimbo: i64,
 }
+/// PCM real da fonte, recortado pelo início da parte sem fabricar silêncio.
+fn alinhar_som(q: &Som, captura: i64, zero: i64) -> Option<(i64, &[i16])> {
+    let mut pts = captura.saturating_sub(zero);
+    let quadros = q.pcm.len() / 2;
+    let mut pcm = &q.pcm[..quadros * 2];
+    if pts < 0 {
+        // Arredonda para cima: deixar -1 µs depois do corte descartava o bloco inteiro.
+        let pular = pts
+            .unsigned_abs()
+            .saturating_mul(48_000)
+            .saturating_add(999_999)
+            / 1_000_000;
+        let pular = usize::try_from(pular).unwrap_or(usize::MAX).min(quadros);
+        pcm = &pcm[pular * 2..];
+        pts = pts.saturating_add(pular as i64 * 1_000_000 / 48_000);
+    }
+    (!pcm.is_empty() && pts >= 0).then_some((pts, pcm))
+}
+fn pcm_no_zero_do_idr(q: &Som, offset: i64, zero: i64) -> bool {
+    alinhar_som(q, q.carimbo.saturating_add(offset), zero).is_some_and(|(pts, _)| pts <= 20)
+}
+fn quadros_antes_do_corte(captura: i64, corte: i64, quadros: usize) -> usize {
+    let antes = (corte.saturating_sub(captura).max(0) as u64)
+        .saturating_mul(48_000)
+        .saturating_add(999_999)
+        / 1_000_000;
+    usize::try_from(antes).unwrap_or(usize::MAX).min(quadros)
+}
+fn guardar_som(fila: &mut std::collections::VecDeque<Som>, q: Som) {
+    if fila.len() == 64 {
+        fila.pop_front();
+    }
+    fila.push_back(q);
+}
+fn drenar_som(canal: &Receiver<Som>, fila: &mut std::collections::VecDeque<Som>) {
+    while let Ok(q) = canal.try_recv() {
+        guardar_som(fila, q);
+    }
+}
 struct Entradas {
     video: Sender<Video>,
     som: Sender<Som>,
@@ -168,7 +207,7 @@ impl Gravador {
                 unsafe {
                     let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
                 }
-                let resultado = correr(&pasta, com_som, &porta_thread, &te, &tp, vrx, srx);
+                let resultado = correr(&pasta, &porta_thread, &te, &tp, vrx, srx);
                 porta_thread.ativa.store(false, Ordering::Release);
                 if let Ok(mut e) = te.lock() {
                     e.ativa = false;
@@ -284,6 +323,7 @@ struct Escritor {
     pendente: Option<Video>,
     espera_idr: bool,
     quadros: u64,
+    quadros_pcm: u64,
     ultima_duracao_100ns: i64,
     ultimo_quadro_em: Instant,
     lacuna_video: bool,
@@ -384,6 +424,7 @@ impl Escritor {
                     pendente: None,
                     espera_idr: false,
                     quadros: 0,
+                    quadros_pcm: 0,
                     ultima_duracao_100ns: 333_333,
                     ultimo_quadro_em: Instant::now(),
                     lacuna_video: false,
@@ -444,14 +485,10 @@ impl Escritor {
         let Some(indice) = self.som else {
             return Ok(());
         };
-        let mut pts = capture.saturating_sub(self.zero);
-        let mut pcm = q.pcm.as_slice();
-        if pts < 0 {
-            let pular = ((-pts as u64 * 48_000 / 1_000_000) as usize).min(pcm.len() / 2);
-            pcm = &pcm[pular * 2..];
-            pts += pular as i64 * 1_000_000 / 48_000;
-        }
-        if pcm.is_empty() || pts < 0 || pts < self.ultimo_som {
+        let Some((pts, pcm)) = alinhar_som(&q, capture, self.zero) else {
+            return Ok(());
+        };
+        if pts < self.ultimo_som {
             return Ok(());
         }
         let bytes = unsafe { std::slice::from_raw_parts(pcm.as_ptr() as *const u8, pcm.len() * 2) };
@@ -472,6 +509,7 @@ impl Escritor {
                 .WriteSample(indice, &sample)
                 .map_err(|e| e.to_string())?;
         }
+        self.quadros_pcm += (pcm.len() / 2) as u64;
         self.ultimo_som = pts + dur / 10;
         Ok(())
     }
@@ -545,6 +583,14 @@ fn salvar(w: Escritor, estado: &Mutex<Estado>) -> Result<(), String> {
         .unwrap_or_else(|e| e.into_inner())
         .parou_em
         .unwrap_or_else(Instant::now);
+    if w.som.is_some() && w.quadros_pcm == 0 {
+        // Nunca anuncia como salvo um MP4 com faixa AAC vazia. Este é apenas o
+        // arquivo temporário criado pelo escritor atual; gravações anteriores ficam intactas.
+        let arquivo = w.arquivo.clone();
+        drop(w);
+        let _ = std::fs::remove_file(arquivo);
+        return Err(t("Não deu para iniciar a gravação do som.").into());
+    }
     let arquivo = w.fechar_ate(fim)?;
     registro::linha("receptor: MP4 recebido finalizado");
     estado
@@ -554,9 +600,45 @@ fn salvar(w: Escritor, estado: &Mutex<Estado>) -> Result<(), String> {
         .push(arquivo);
     Ok(())
 }
+fn som_antes_do_corte(
+    w: &mut Escritor,
+    fila: &mut std::collections::VecDeque<Som>,
+    offset: i64,
+    corte: i64,
+) -> Result<(), String> {
+    if w.som.is_none() || offset == SEM_RELOGIO {
+        return Ok(());
+    }
+    let mut resto = std::collections::VecDeque::new();
+    while let Some(q) = fila.pop_front() {
+        let captura = q.carimbo.saturating_add(offset);
+        if captura >= corte {
+            resto.push_back(q);
+            continue;
+        }
+        let quadros = q.pcm.len() / 2;
+        let antes = quadros_antes_do_corte(captura, corte, quadros);
+        if antes > 0 {
+            w.som(
+                Som {
+                    pcm: q.pcm[..antes * 2].to_vec(),
+                    carimbo: q.carimbo,
+                },
+                captura,
+            )?;
+        }
+        if antes < quadros {
+            resto.push_back(Som {
+                pcm: q.pcm[antes * 2..quadros * 2].to_vec(),
+                carimbo: q.carimbo.saturating_add(antes as i64 * 1_000_000 / 48_000),
+            });
+        }
+    }
+    *fila = resto;
+    Ok(())
+}
 fn correr(
     pasta: &Path,
-    com_som: bool,
     porta: &Porta,
     estado: &Mutex<Estado>,
     parar: &AtomicBool,
@@ -566,25 +648,44 @@ fn correr(
     for linha in gravador_local::recuperar_pendentes(pasta) {
         registro::linha(linha);
     }
-    let mut com_som = com_som;
     let mut guarda = crate::guardia_da_gravacao::Guardia::default();
     let mut escritor: Option<Escritor> = None;
     let mut parte = 0;
     let mut som_pendente: std::collections::VecDeque<Som> = std::collections::VecDeque::new();
+    let mut idr_pedido_para_som = false;
     let mut aguardando_desde = Instant::now();
     let mut conferir = Instant::now();
     let resultado = (|| -> Result<(), String> {
         loop {
-            if !com_som && porta.som_presente.load(Ordering::Acquire) {
-                // Áudio tardio muda a configuração do mux, não a sessão/exibição. Fecha o
-                // arquivo só vídeo antes de abrir a parte AAC, sempre a partir de outro IDR.
-                com_som = true;
-                if let Some(w) = escritor.take() {
-                    salvar(w, estado)?;
+            drenar_som(&som, &mut som_pendente);
+            let off_som = porta.som_offset.load(Ordering::Acquire);
+            let pcm_pronto = porta.som_presente.load(Ordering::Acquire)
+                && off_som != SEM_RELOGIO
+                && som_pendente.iter().any(|q| q.pcm.len() >= 2);
+            if pcm_pronto && escritor.as_ref().is_some_and(|w| w.som.is_none()) {
+                // O anúncio de microfone não é PCM. Uma faixa AAC vazia faz o leitor nativo
+                // rejeitar o MP4. A parte só vídeo segue até o IDR que abre a parte com PCM.
+                if !idr_pedido_para_som {
+                    idr_pedido_para_som = true;
+                    porta.pedir_idr.store(true, Ordering::Release);
                 }
-                aguardando_desde = Instant::now();
-                guarda.romper();
-                porta.pedir_idr.store(true, Ordering::Release);
+            } else if off_som != SEM_RELOGIO {
+                if let Some(w) = escritor.as_mut().filter(|w| w.som.is_some()) {
+                    // Um bloco à frente do vídeo pode pertencer à próxima resolução/parte.
+                    // Tela estática libera a fila após 100 ms, por SendStreamTick, sem esperar
+                    // outro quadro. Stop drena o que resta, preservando a fila limitada.
+                    while som_pendente.front().is_some_and(|q| {
+                        parar.load(Ordering::Acquire)
+                            || w.ultimo_quadro_em.elapsed() >= Duration::from_millis(100)
+                            || w.pendente
+                                .as_ref()
+                                .is_some_and(|v| q.carimbo.saturating_add(off_som) <= v.carimbo)
+                    }) {
+                        let q = som_pendente.pop_front().unwrap();
+                        let captura = q.carimbo.saturating_add(off_som);
+                        w.som(q, captura)?;
+                    }
+                }
             }
             if porta.ruptura.swap(false, Ordering::AcqRel) {
                 guarda.romper();
@@ -608,24 +709,84 @@ fn correr(
                 recv(video) -> q => if let Ok(q) = q {
                     let off = porta.video_offset.load(Ordering::Acquire); if off == SEM_RELOGIO { porta.pedir_idr.store(true,Ordering::Release); continue; }
                     let captura = q.carimbo.saturating_add(off);
+                    let mut nova_parte = false;
+                    let mut primeiro_som = None;
+                    // Mesmo se select! escolheu vídeo primeiro, este IDR deve enxergar o PCM
+                    // já enfileirado. Não gasta o único IDR da chegada tardia na parte sem AAC.
+                    drenar_som(&som, &mut som_pendente);
+                    let off_som = porta.som_offset.load(Ordering::Acquire);
                     if !guarda.aceitar(&q.bytes) { porta.pedir_idr.store(true,Ordering::Release); continue; }
                     let ps = parametros(&q.bytes);
+                    let muda_formato = escritor.as_ref().zip(ps.as_ref()).is_some_and(|(w,p)|w.ps != *p);
+                    if muda_formato && !q.idr { guarda.romper(); porta.pedir_idr.store(true, Ordering::Release); continue; }
+                    let pode_ter_som = porta.som_presente.load(Ordering::Acquire) && off_som != SEM_RELOGIO;
+                    let pretende_abrir_aac = q.idr && pode_ter_som && (escritor.is_none()
+                        || muda_formato || (escritor.as_ref().is_some_and(|w|w.som.is_none())
+                            && som_pendente.iter().any(|s|s.pcm.len() >= 2)));
+                    if pretende_abrir_aac {
+                        // O tocador pode entregar PCM depois do IDR. Espera limitada nesta
+                        // thread de disco; callbacks continuam usando suas filas limitadas.
+                        let prazo = Instant::now() + Duration::from_millis(100);
+                        while !som_pendente.iter().any(|s|pcm_no_zero_do_idr(s,off_som,captura))
+                            && !parar.load(Ordering::Acquire) && Instant::now() < prazo {
+                            if let Ok(s) = som.recv_timeout(Duration::from_millis(5)) {
+                                guardar_som(&mut som_pendente, s);
+                            }
+                        }
+                    }
+                    let pcm_no_idr = pode_ter_som && som_pendente.iter().any(|s|pcm_no_zero_do_idr(s,off_som,captura));
+                    let adota_som = q.idr && pcm_no_idr && escritor.as_ref().is_some_and(|w|w.som.is_none());
                     // Só um escritor: a parte anterior termina nesta thread antes de abrir outra.
                     // Disco lento não cria uma fila de muxers/finalizações; só descarta nas filas limitadas.
-                    if let (Some(w),Some(ps)) = (escritor.as_ref(), ps.as_ref()) { if w.ps != *ps { if !q.idr { guarda.romper(); porta.pedir_idr.store(true, Ordering::Release); continue; } salvar(escritor.take().unwrap(),estado)?; } }
+                    if muda_formato || adota_som {
+                        if let Some(w) = escritor.as_mut() { som_antes_do_corte(w,&mut som_pendente,off_som,captura)?; }
+                        salvar(escritor.take().unwrap(), estado)?;
+                        aguardando_desde = Instant::now();
+                    }
+                    if q.idr && pode_ter_som && (escritor.is_none() || escritor.as_ref().is_some_and(|w|w.som.is_none())) {
+                        // PCM anterior não cabe na parte cujo vídeo começa neste IDR. Libera
+                        // outro pedido quando PCM novo chegar; não repete pelo mesmo bloco velho.
+                        som_pendente.retain(|s|alinhar_som(s,s.carimbo.saturating_add(off_som),captura).is_some());
+                        idr_pedido_para_som = false;
+                    }
                     if escritor.is_none() {
                         if !q.idr { continue; } let Some(ps) = ps else { continue }; parte += 1;
+                        if pode_ter_som {
+                            if let Some(i) = som_pendente.iter().position(|s|pcm_no_zero_do_idr(s,off_som,captura)) {
+                                primeiro_som = som_pendente.remove(i);
+                            }
+                        }
+                        let com_som = primeiro_som.is_some();
+                        // FMPEG4 rebaseia o primeiro sample de cada track. Ambas precisam
+                        // começar no IDR: PCM futuro não é adiantado artificialmente para zero.
                         escritor = Some(Escritor::abrir(pasta,ps,captura,com_som,parte)?);
+                        nova_parte = true;
+                        idr_pedido_para_som = false;
                         let mut e = estado.lock().unwrap_or_else(|e|e.into_inner()); e.desde.get_or_insert_with(Instant::now); e.linha = t("Gravando o vídeo e o som recebidos.").into();
                     }
                     let w = escritor.as_mut().unwrap(); if w.espera_idr && !q.idr { continue; } if q.idr { w.espera_idr=false; }
                     w.video(q,captura)?;
-                    let off = porta.som_offset.load(Ordering::Acquire); if off != SEM_RELOGIO { while let Some(q) = som_pendente.pop_front() { let capture=q.carimbo.saturating_add(off); w.som(q,capture)?; } }
+                    // A mesma snapshot que escolheu AAC/zero deve escrever o primeiro PCM.
+                    let off = if nova_parte { off_som } else { porta.som_offset.load(Ordering::Acquire) };
+                    if off != SEM_RELOGIO && w.som.is_some() {
+                        if let Some(s) = primeiro_som {
+                            let captura = s.carimbo.saturating_add(off);
+                            w.som(s, captura)?;
+                        }
+                        while som_pendente.front().is_some_and(|s| nova_parte
+                            || parar.load(Ordering::Acquire)
+                            || s.carimbo.saturating_add(off) <= captura) {
+                            let s = som_pendente.pop_front().unwrap();
+                            let captura = s.carimbo.saturating_add(off);
+                            w.som(s, captura)?;
+                        }
+                        if nova_parte && w.quadros_pcm == 0 {
+                            return Err(t("Não deu para iniciar a gravação do som.").into());
+                        }
+                    }
                 },
                 recv(som) -> q => if let Ok(q) = q {
-                    let off = porta.som_offset.load(Ordering::Acquire);
-                    if let (Some(w),true) = (escritor.as_mut(),off != SEM_RELOGIO) { let capture=q.carimbo.saturating_add(off); w.som(q,capture)?; }
-                    else { if som_pendente.len()==64 { som_pendente.pop_front(); } som_pendente.push_back(q); }
+                    guardar_som(&mut som_pendente, q);
                 },
                 default(Duration::from_millis(20)) => {}
             }
@@ -643,6 +804,48 @@ fn correr(
 #[cfg(test)]
 mod testes {
     use super::*;
+    #[test]
+    fn pcm_que_atravessa_o_zero_e_cortado_sem_descartar_o_bloco() {
+        let q = Som {
+            pcm: vec![1; 1920],
+            carimbo: -1,
+        };
+        let (pts, pcm) = alinhar_som(&q, q.carimbo, 0).unwrap();
+        assert_eq!(pts, 19);
+        assert_eq!(pcm.len(), 1918);
+        assert!(alinhar_som(&q, -20_001, 0).is_none());
+        assert!(alinhar_som(
+            &Som {
+                pcm: vec![1],
+                carimbo: 0
+            },
+            0,
+            0
+        )
+        .is_none());
+        assert!(pcm_no_zero_do_idr(&q, 0, 0));
+        assert!(!pcm_no_zero_do_idr(&q, 22, 0));
+        assert!(!pcm_no_zero_do_idr(&q, 0, 30_000));
+    }
+    #[test]
+    fn corte_fracionario_preserva_a_ultima_amostra_estereo() {
+        let q = Som {
+            pcm: vec![1; 641 * 2],
+            carimbo: 0,
+        };
+        let corte = 13_333;
+        let (_, original) = alinhar_som(&q, 0, corte).unwrap();
+        let antes = quadros_antes_do_corte(0, corte, 641);
+        assert_eq!(antes, 640);
+        let resto = Som {
+            pcm: q.pcm[antes * 2..].to_vec(),
+            carimbo: antes as i64 * 1_000_000 / 48_000,
+        };
+        let (pts, pcm) = alinhar_som(&resto, resto.carimbo, corte).unwrap();
+        assert_eq!(pts, 0);
+        assert_eq!(pcm.len(), original.len());
+        assert_eq!(pcm.len(), 2);
+    }
     #[test]
     fn parametros_preservam_sps_pps_e_excluem_imagem() {
         let ps = [0, 0, 0, 1, 0x67, 1, 2, 0, 0, 1, 0x68, 3, 4];
@@ -678,6 +881,216 @@ mod bancada_nativa {
             .enumerate()
             .map(|(i, &de)| &H264[de..marcas.get(i + 1).copied().unwrap_or(H264.len())])
             .collect()
+    }
+    #[test]
+    #[ignore = "Bancada MF: anúncio sem PCM, relógio ausente e blocos curtos; somente mídia sintética"]
+    fn aac_so_existe_com_pcm_real_e_partes_curtas_sao_legiveis() {
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+            MFStartup(MF_VERSION, MFSTARTUP_FULL).unwrap();
+        }
+        let pasta =
+            std::env::temp_dir().join(format!("Quall-receptor-pcm-real-{}", std::process::id()));
+        for (nome, offset, tem_pcm, pcm_us, video_us) in [
+            ("SEM_PCM", Some(0), false, 0, 0),
+            ("PCM_SEM_RELOGIO", None, true, 0, 0),
+            ("UM_PCM_E_STOP", Some(0), true, 0, 0),
+            ("PCM_ANTERIOR_AO_IDR", Some(0), true, 0, 500_000),
+            ("PCM_FUTURO_AO_IDR", Some(0), true, 500_000, 0),
+        ] {
+            let porta = Porta::nova();
+            porta.relogios(Some(0), offset);
+            let g = Gravador::iniciar_na_pasta(Arc::clone(&porta), true, pasta.join(nome)).unwrap();
+            if tem_pcm {
+                porta.som(&vec![0.125; 960 * 2], pcm_us);
+            }
+            porta.video(quadros()[0], video_us, true);
+            std::thread::sleep(Duration::from_millis(40));
+            let resultado = g.finalizar();
+            assert!(!resultado.erro, "{nome}: {}", resultado.linha);
+            assert_eq!(resultado.arquivos.len(), 1, "{nome}");
+            println!("PCM_REAL_{nome}={}", resultado.arquivos[0].display());
+        }
+        // O mesmo bloco atravessando o zero do vídeo tem PCM restante, inclusive quando
+        // o deslocamento não é um múltiplo exato de uma amostra de 48 kHz.
+        let corte = pasta.join("CORTE_PARCIAL");
+        std::fs::create_dir_all(&corte).unwrap();
+        let primeiro = quadros()[0];
+        let mut w =
+            Escritor::abrir(&corte, parametros(primeiro).unwrap(), 13_001, true, 1).unwrap();
+        w.video(
+            Video {
+                bytes: primeiro.to_vec(),
+                carimbo: 13_001,
+                idr: true,
+            },
+            13_001,
+        )
+        .unwrap();
+        w.som(
+            Som {
+                pcm: vec![4096; 960 * 2],
+                carimbo: 0,
+            },
+            0,
+        )
+        .unwrap();
+        assert!(w.quadros_pcm > 0);
+        println!("PCM_REAL_CORTE_PARCIAL={}", w.fechar().unwrap().display());
+        let minimo = pasta.join("UM_QUADRO_PCM");
+        std::fs::create_dir_all(&minimo).unwrap();
+        let mut w =
+            Escritor::abrir(&minimo, parametros(primeiro).unwrap(), 19_979, true, 1).unwrap();
+        w.video(
+            Video {
+                bytes: primeiro.to_vec(),
+                carimbo: 19_979,
+                idr: true,
+            },
+            19_979,
+        )
+        .unwrap();
+        w.som(
+            Som {
+                pcm: vec![4096; 960 * 2],
+                carimbo: 0,
+            },
+            0,
+        )
+        .unwrap();
+        assert_eq!(w.quadros_pcm, 1);
+        println!("PCM_REAL_UM_QUADRO_PCM={}", w.fechar().unwrap().display());
+        unsafe {
+            MFShutdown().unwrap();
+            CoUninitialize();
+        }
+    }
+    #[test]
+    #[ignore = "Bancada MF: IDR antes do PCM e fila fora de ordem; somente mídia sintética"]
+    fn idr_aguarda_pcm_alinhado_e_escreve_o_inicio_antes_do_futuro() {
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+            MFStartup(MF_VERSION, MFSTARTUP_FULL).unwrap();
+        }
+        let pasta = std::env::temp_dir().join(format!(
+            "Quall-receptor-pcm-apos-idr-{}",
+            std::process::id()
+        ));
+        for futuro in [false, true] {
+            let porta = Porta::nova();
+            porta.relogios(Some(0), Some(0));
+            let g = Gravador::iniciar_na_pasta(
+                Arc::clone(&porta),
+                true,
+                pasta.join(futuro.to_string()),
+            )
+            .unwrap();
+            if futuro {
+                porta.som(&vec![0.125; 960 * 2], 500_000);
+            }
+            porta.video(quadros()[0], 0, true);
+            std::thread::sleep(Duration::from_millis(30));
+            porta.som(&vec![0.125; 960 * 2], 0);
+            std::thread::sleep(Duration::from_millis(40));
+            let resultado = g.finalizar();
+            assert!(!resultado.erro, "{}", resultado.linha);
+            assert_eq!(resultado.arquivos.len(), 1);
+            println!(
+                "PCM_APOS_IDR_30MS_FUTURO_{futuro}={}",
+                resultado.arquivos[0].display()
+            );
+        }
+        unsafe {
+            MFShutdown().unwrap();
+            CoUninitialize();
+        }
+    }
+    #[test]
+    #[ignore = "Bancada MF: o relógio de áudio chega depois do PCM; somente mídia sintética"]
+    fn pcm_aguarda_relogio_e_antecede_video_sem_impedir_nova_parte() {
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+            MFStartup(MF_VERSION, MFSTARTUP_FULL).unwrap();
+        }
+        let pasta = std::env::temp_dir().join(format!(
+            "Quall-receptor-relogio-tardio-{}",
+            std::process::id()
+        ));
+        let porta = Porta::nova();
+        porta.relogios(Some(0), None);
+        let g = Gravador::iniciar_na_pasta(Arc::clone(&porta), true, pasta).unwrap();
+        porta.som(&vec![0.125; 960 * 2], 0);
+        porta.video(quadros()[0], 0, true);
+        std::thread::sleep(Duration::from_millis(40));
+        porta.relogios(Some(0), Some(0));
+        std::thread::sleep(Duration::from_millis(40));
+        let _ = porta.tirar_pedido_idr();
+        porta.video(quadros()[30], 1_000_000, true);
+        std::thread::sleep(Duration::from_millis(40));
+        // O bloco antigo não cabe no novo zero. PCM novo deve poder pedir outro IDR.
+        porta.som(&vec![0.125; 960 * 2], 1_999_999);
+        let prazo = Instant::now() + Duration::from_secs(2);
+        loop {
+            if porta.tirar_pedido_idr() {
+                break;
+            }
+            assert!(
+                Instant::now() < prazo,
+                "PCM novo deve liberar outro pedido de IDR"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        porta.video(quadros()[0], 2_000_000, true);
+        std::thread::sleep(Duration::from_millis(40));
+        let resultado = g.finalizar();
+        assert!(!resultado.erro, "{}", resultado.linha);
+        assert_eq!(resultado.arquivos.len(), 2);
+        for (i, p) in resultado.arquivos.iter().enumerate() {
+            println!("RELOGIO_TARDIO_PARTE{}={}", i + 1, p.display());
+        }
+        unsafe {
+            MFShutdown().unwrap();
+            CoUninitialize();
+        }
+    }
+    #[test]
+    #[ignore = "Bancada MF: vídeo primeiro, PCM tardio e resposta ao pedido de IDR; somente mídia sintética"]
+    fn video_primeiro_pcm_tardio_e_idr_respondido_gravam_som() {
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().unwrap();
+            MFStartup(MF_VERSION, MFSTARTUP_FULL).unwrap();
+        }
+        let pasta =
+            std::env::temp_dir().join(format!("Quall-receptor-idr-som-{}", std::process::id()));
+        let porta = Porta::nova();
+        porta.relogios(Some(0), Some(0));
+        let g = Gravador::iniciar_na_pasta(Arc::clone(&porta), true, pasta).unwrap();
+        porta.video(quadros()[0], 0, true);
+        std::thread::sleep(Duration::from_millis(40));
+        let _ = porta.tirar_pedido_idr(); // pedido inicial; agora a parte só vídeo já abriu.
+        porta.video(quadros()[1], 33_333, false);
+        porta.som(&vec![0.125; 960 * 2], 33_333);
+        let prazo = Instant::now() + Duration::from_secs(2);
+        loop {
+            if porta.tirar_pedido_idr() {
+                break;
+            }
+            assert!(Instant::now() < prazo, "PCM tardio deve pedir um IDR");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        // A fonte responde dentro do bloco PCM real; o corte conserva o fim do bloco.
+        porta.video(quadros()[30], 50_000, true);
+        std::thread::sleep(Duration::from_millis(40));
+        let resultado = g.finalizar();
+        assert!(!resultado.erro, "{}", resultado.linha);
+        assert_eq!(resultado.arquivos.len(), 2);
+        for (i, p) in resultado.arquivos.iter().enumerate() {
+            println!("IDR_SOM_RESPONDIDO_PARTE{}={}", i + 1, p.display());
+        }
+        unsafe {
+            MFShutdown().unwrap();
+            CoUninitialize();
+        }
     }
     #[test]
     fn sintaxe_da_camera_x264_e_perda_se_recuperam_no_idr() {
@@ -720,7 +1133,6 @@ mod bancada_nativa {
             .collect();
         for (i, frame) in quadros().into_iter().chain(q2).enumerate() {
             let carimbo = (i as u64 * 1_000_000 / 30) as i64;
-            porta.video(frame, carimbo as u64, i % 30 == 0);
             let pcm: Vec<f32> = (0..1600)
                 .flat_map(|j| {
                     let valor = (((i * 1600 + j) as f64 * 440.0 * std::f64::consts::TAU / 48_000.0)
@@ -730,6 +1142,7 @@ mod bancada_nativa {
                 })
                 .collect();
             porta.som(&pcm, carimbo);
+            porta.video(frame, carimbo as u64, i % 30 == 0);
             std::thread::sleep(Duration::from_millis(35));
         }
         let resultado = g.finalizar();
@@ -800,10 +1213,10 @@ mod bancada_nativa {
             if i == 29 {
                 porta.habilitar_som();
             }
-            porta.video(frame, i as u64 * 1_000_000 / 30, i % 30 == 0);
             if i >= 30 {
                 porta.som(&vec![0.125; 1600 * 2], i as i64 * 1_000_000 / 30);
             }
+            porta.video(frame, i as u64 * 1_000_000 / 30, i % 30 == 0);
             std::thread::sleep(Duration::from_millis(35));
         }
         let resultado = g.finalizar();
@@ -829,9 +1242,10 @@ mod bancada_nativa {
         let porta = Porta::nova();
         porta.relogios(Some(0), Some(0));
         let g = Gravador::iniciar_na_pasta(Arc::clone(&porta), true, pasta).unwrap();
-        porta.video(quadros()[0], 0, true);
         let pcm = vec![0.125; 960 * 2];
-        for i in 0..800 {
+        porta.som(&pcm, 0);
+        porta.video(quadros()[0], 0, true);
+        for i in 1..800 {
             porta.som(&pcm, i * 20_000);
             std::thread::sleep(Duration::from_millis(20));
         }

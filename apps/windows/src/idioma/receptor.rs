@@ -6,6 +6,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("Não deu para criar a pasta de gravações: {}", "Couldn't create the recordings folder: {}"),
     ("Não há espaço livre suficiente para gravar.", "There isn't enough free space to record."),
     ("Aguardando o primeiro quadro para gravar…", "Waiting for the first frame to record…"),
+    ("Não deu para iniciar a gravação do som.", "Couldn't start recording audio."),
     ("A gravação parou: {}", "Recording stopped: {}"),
     ("Nenhum quadro chegou para gravar.", "No frames arrived to record."),
     ("Gravação salva em {}", "Recording saved in {}"),
