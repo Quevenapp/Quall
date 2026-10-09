@@ -3,6 +3,23 @@
 //! posições de ordem; o português é o texto que está no código.
 
 pub const TEXTOS: &[(&str, &str)] = &[
+    ("Não deu para criar a pasta de gravações: {}", "Couldn't create the recordings folder: {}"),
+    ("Não há espaço livre suficiente para gravar.", "There isn't enough free space to record."),
+    ("Aguardando o primeiro quadro para gravar…", "Waiting for the first frame to record…"),
+    ("Não deu para iniciar a gravação do som.", "Couldn't start recording audio."),
+    ("A gravação parou: {}", "Recording stopped: {}"),
+    ("Nenhum quadro chegou para gravar.", "No frames arrived to record."),
+    ("Gravação salva em {}", "Recording saved in {}"),
+    ("Salvando a gravação…", "Saving the recording…"),
+    ("Gravando o vídeo e o som recebidos.", "Recording received video and audio."),
+    ("Nenhum quadro novo chegou; a gravação foi salva.", "No new frames arrived; the recording was saved."),
+    ("O relógio do vídeo voltou para trás; a gravação foi salva.", "The video clock went backwards; the recording was saved."),
+    ("Não deu para gravar: {}", "Couldn't record: {}"),
+    ("● Gravando neste computador · {}", "● Recording on this computer · {}"),
+    ("Salvando…", "Saving…"),
+    ("■ Parar a gravação", "■ Stop recording"),
+    ("Parar e salvar a gravação recebida", "Stop and save the received recording"),
+    ("Gravar o vídeo e o som recebidos neste computador", "Record received video and audio on this computer"),
     // receptor.rs — o título da janela de vídeo
     (" · {}x{} a {} fps", " · {}x{} at {} fps"),
     ("{} · {} quadros suspeitos na sessão", "{} · {} suspect frames this session"),

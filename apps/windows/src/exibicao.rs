@@ -10,11 +10,9 @@
 //! variável só, na thread da sessão — a mesma regra que `emissor.rs` segue pelo mesmo motivo (a
 //! exceção da libdatachannel sobe de dentro do `lock_guard` do mutex global sem soltá-lo).
 //!
-//! **Não escreve arquivo nenhum.** Não há `--salvar`, não há caminho para `.bmp`, não há caminho
-//! para `.h264`. A sonda `quall-receiver-probe` tem um (`--snapshot-out`) porque a origem dela é um
-//! arquivo de bancada escolhido à mão; aqui a origem é a tela de outro aparelho, e a forma mais
-//! barata de nunca vazar isso é **não ter para onde gravar**. É a mesma decisão que tirou o
-//! `--salvar` do `prova-rede.ps1` e que fez `transmissao.rs` nascer sem caminho para disco.
+//! **Não salva pixels automaticamente.** A gravação solicitada pelo receptor é um ramal de
+//! `receptor.rs` para `gravador_recebido`: H.264 de passagem, só depois do clique em Gravar. Este
+//! decodificador continua sem caminho de captura da janela ou do restante da área de trabalho.
 //!
 //! A única leitura de pixel que existe aqui é a régua de blocos (`regua.rs`), que devolve **um
 //! inteiro por quadro** e fica atrás de um sinalizador de bancada.

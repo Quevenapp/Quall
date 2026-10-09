@@ -334,11 +334,13 @@ class GravacaoDvService : Service() {
             val r5 = com.quall.android.mirror.GravacaoDaTelaBus
             // O DVD (docs/dvd-para-mp4.md §2.6): o arquivo da conversão em curso também é pendente.
             val dvd = com.quall.android.dvd.ConversaoDvdBus
-            if (pendentesFeitos || GravacaoBus.gravando || r5.atual.ocupada || dvd.arquivoNoAr) return
+            val rx = com.quall.android.receive.GravacaoRecebidaBus
+            if (pendentesFeitos || GravacaoBus.gravando || r5.atual.ocupada || dvd.arquivoNoAr || rx.atual.ocupada) return
             pendentesFeitos = true
             // **Antes** de listar as cópias (a revisão, 13d): uma gravação que começar depois disto faz
             // desistir, e a cópia dela nasce depois da lista.
             val comecosAntes = r5.comecos
+            val comecosRx = rx.comecos
             val dirDasCopias = com.quall.android.capture.CopiaCrua.diretorio(c)
             val copias = HashMap(com.quall.android.capture.CopiaCrua.listar(dirDasCopias))
             var perdidas = 0
@@ -360,7 +362,7 @@ class GravacaoDvService : Service() {
                 }
             }.onFailure { Log.w(TAG, "pendentes: ${Log.erroExterno(it.message)}") }
             for ((velho, nome) in achados) {
-                if (GravacaoBus.gravando || r5.atual.ocupada || r5.comecos != comecosAntes || dvd.arquivoNoAr) return
+                if (GravacaoBus.gravando || r5.atual.ocupada || r5.comecos != comecosAntes || dvd.arquivoNoAr || rx.atual.ocupada || rx.comecos != comecosRx) return
                 // O parcial de um DVD recusado (a proteção, §2.1 do docs/dvd-para-mp4.md) nunca é
                 // publicado: a marca persistente diz, e ele é apagado (a revisão do código, 2).
                 val idDoPendente = android.content.ContentUris.parseId(velho)
@@ -422,7 +424,7 @@ class GravacaoDvService : Service() {
             }
             // As cópias sem pendente: só se nenhuma gravação começou no meio.
             for ((_, copia) in copias) {
-                if (GravacaoBus.gravando || r5.atual.ocupada || r5.comecos != comecosAntes || dvd.arquivoNoAr) return
+                if (GravacaoBus.gravando || r5.atual.ocupada || r5.comecos != comecosAntes || dvd.arquivoNoAr || rx.atual.ocupada || rx.comecos != comecosRx) return
                 if (recuperarDaCopia(c, copia, null, null) == Recuperacao.PERDIDA) perdidas++
             }
             if (perdidas > 0) {

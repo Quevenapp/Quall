@@ -1,7 +1,7 @@
 # Quall Studio
 
 Quall Studio é um estúdio gratuito para Windows, macOS, Android e iOS/iPadOS. Compartilha tela
-ou câmera entre aparelhos, recebe vídeo, oferece teleprompter e gravação local no emissor.
+ou câmera entre aparelhos, recebe vídeo, oferece teleprompter e gravação no emissor e no receptor.
 No desktop, o vídeo recebido pode alimentar uma câmera virtual ou uma fonte nativa do OBS.
 
 Este repositório publica fontes sem o histórico anterior nem mídia, logs ou relatos privados de
@@ -20,7 +20,7 @@ representa as novas builds.
 | Espelhar e exibir | Tela existente ou câmera como origem; uma origem por sessão. |
 | Pareamento | PIN na primeira conexão e pares persistidos localmente; endereço manual quando necessário. |
 | Teleprompter | Texto local, controle remoto e composição com câmera. |
-| Gravação | No emissor; controles e formatos dependem da plataforma. O receptor não tem gravação própria. |
+| Gravação | No emissor ou no receptor. O receptor grava câmera e tela recebidas em MP4, com o áudio da transmissão. Controles e destinos dependem da plataforma; veja [gravação recebida](docs/gravar-no-receptor.md). |
 | Câmera virtual | Integrações macOS e Windows com instalação e permissões próprias; a edição Microsoft Store usa somente exibição interna e não inclui a câmera virtual externa. |
 | OBS | Plugin separado para macOS e Windows; gravação e composição são recursos do OBS. |
 | USB e DVD | Exclusivos Android: exigem Android 11+, arm64, acessórios e hardware compatíveis. |

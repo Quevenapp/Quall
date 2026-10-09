@@ -12,6 +12,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
+        <activity android:name=".bancada.GravacaoRecebidaQAActivity"
+            android:exported="true" android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
             android:name="com.quall.android.sonda.SondaDeFatiasActivity"
             android:exported="true"

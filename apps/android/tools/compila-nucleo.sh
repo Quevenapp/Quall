@@ -61,7 +61,7 @@ SIMBOLOS=(
   quall_session_next_track quall_session_next_event
   quall_session_close quall_session_path_json
   quall_track_send_frame quall_track_take_idr_request quall_track_stats_json
-  quall_track_on_frame quall_track_request_idr quall_track_kind
+  quall_track_on_frame quall_track_request_idr quall_track_kind quall_track_capture_offset_raw_us
   quall_track_label quall_track_free quall_track_frames_dropped quall_track_set_reorder_depth
   quall_protocol_version quall_service_type quall_generate_pin quall_install_panic_hook
   # Áudio. `quall_audio_decoder_*` e `quall_track_audio_codec` entraram nesta rodada; os outros

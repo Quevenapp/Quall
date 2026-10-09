@@ -30,6 +30,7 @@ import com.quall.android.R
 import com.quall.android.databinding.ActivityReceptorBinding
 import com.quall.android.discovery.MulticastLockManager
 import com.quall.android.receive.FraseDoAviso
+import com.quall.android.receive.GravacaoRecebidaBus
 import com.quall.android.receive.ReceptorBus
 import com.quall.android.receive.ReceptorSessao
 import kotlin.concurrent.thread
@@ -216,6 +217,16 @@ class ReceptorActivity : AppCompatActivity() {
             sessao?.pedirIdrAgora()
             Toast.makeText(this, getString(R.string.rx_idr_pedido), Toast.LENGTH_SHORT).show()
         }
+        val prefsGravacao = getSharedPreferences("quall-gravacao-recebida", MODE_PRIVATE)
+        ultimaGravacaoMostrada = prefsGravacao.getString("uri", null)?.let(android.net.Uri::parse)
+        binding.buttonUltimaGravacao.setOnClickListener {
+            val uri = prefsGravacao.getString("uri", null)?.let(android.net.Uri::parse)
+            if (uri != null) compartilharGravacao(uri, prefsGravacao.getString("nome", "Quall.mp4").orEmpty())
+        }
+        binding.buttonGravarRecepcao.setOnClickListener {
+            val gravacao = GravacaoRecebidaBus.atual
+            sessao?.gravarRecepcao(!gravacao.ocupada)
+        }
         binding.buttonTelaCheia.setOnClickListener { entrarEmTelaCheia(automatica = false) }
         onBackPressedDispatcher.addCallback(this, voltarDaTelaCheia)
         // Como no iOS: na tela cheia, um toque em qualquer ponto sai (o voltar também).
@@ -245,10 +256,13 @@ class ReceptorActivity : AppCompatActivity() {
         super.onStart()
         cameraRemota.comecar()
         ReceptorBus.setListener { estado -> desenhar(estado) }
+        GravacaoRecebidaBus.setListener { estado -> desenharGravacao(estado) }
     }
 
     override fun onStop() {
         cameraRemota.parar()
+        sessao?.gravarRecepcao(false)
+        GravacaoRecebidaBus.setListener(null)
         ReceptorBus.setListener(null)
         super.onStop()
     }
@@ -372,6 +386,7 @@ class ReceptorActivity : AppCompatActivity() {
             // Os pixels de verdade do painel: é por eles que a tela estendida do Mac escolhe o
             // formato do monitor que cria para este aparelho.
             telaDoAparelho = painelFisico(),
+            contextoDeGravacao = applicationContext,
         )
         sessao = s
         thread(name = "quall-receptor") {
@@ -487,7 +502,58 @@ class ReceptorActivity : AppCompatActivity() {
 
     // --- desenhar -----------------------------------------------------------------------
 
+    private var ultimaGravacaoMostrada: android.net.Uri? = null
+    private var ultimoErroGravacao: GravacaoRecebidaBus.Estado? = null
+
+    private fun compartilharGravacao(uri: android.net.Uri, nome: String) {
+        val enviar = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "video/mp4"; putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            clipData = android.content.ClipData.newRawUri(nome, uri)
+        }
+        runCatching { startActivity(android.content.Intent.createChooser(enviar, getString(R.string.rx_gravacao_compartilhar))) }
+            .onFailure { Toast.makeText(this, getString(R.string.rx_gravacao_falhou), Toast.LENGTH_LONG).show() }
+    }
+
+    private fun desenharGravacao(e: GravacaoRecebidaBus.Estado) {
+        binding.buttonUltimaGravacao.visibility = if (getSharedPreferences("quall-gravacao-recebida", MODE_PRIVATE).contains("uri")) View.VISIBLE else View.GONE
+        val pode = ReceptorBus.atual.fase == ReceptorBus.Fase.EXIBINDO && ReceptorBus.atual.largura > 0
+        binding.buttonGravarRecepcao.isEnabled = (pode || e.ocupada) && e.fase != GravacaoRecebidaBus.Fase.SALVANDO
+        val parando = e.ocupada
+        binding.buttonGravarRecepcao.text = if (parando) "■" else "●"
+        binding.buttonGravarRecepcao.contentDescription = getString(if (parando) R.string.rx_parar_gravacao else R.string.rx_gravar)
+        val texto = when (e.fase) {
+            GravacaoRecebidaBus.Fase.ESPERANDO_IDR -> getString(R.string.rx_gravacao_idr)
+            GravacaoRecebidaBus.Fase.GRAVANDO -> getString(R.string.rx_gravacao_tempo, e.segundos / 60, e.segundos % 60, e.parte)
+            GravacaoRecebidaBus.Fase.SALVANDO -> getString(R.string.rx_gravacao_salvando)
+            else -> ""
+        }
+        binding.textGravacaoRecebida.text = texto
+        binding.textGravacaoRecebida.visibility = if (texto.isBlank()) View.GONE else View.VISIBLE
+        if (!e.ocupada && (e.uri != null || e.fase == GravacaoRecebidaBus.Fase.ERRO) && !isFinishing) {
+            if (e.uri != null && e.uri != ultimaGravacaoMostrada) {
+                ultimaGravacaoMostrada = e.uri
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setMessage(getString(R.string.rx_gravacao_salva, e.nome) +
+                        (if (Build.VERSION.SDK_INT < 29) "\n" + getString(R.string.rx_gravacao_guardar_copia) else "") +
+                        if (e.fase == GravacaoRecebidaBus.Fase.ERRO) "\n" + getString(R.string.rx_gravacao_falhou) else "")
+                    .setPositiveButton(R.string.rx_gravacao_compartilhar) { _, _ ->
+                        compartilharGravacao(e.uri, e.nome)
+                    }.setNegativeButton(android.R.string.ok, null).show()
+            } else if (e.fase == GravacaoRecebidaBus.Fase.ERRO && e.uri == null && ultimoErroGravacao !== e) {
+                ultimoErroGravacao = e
+                val mensagem = when (e.detalhe) {
+                    "espaco" -> R.string.rx_gravacao_espaco
+                    "tamanho" -> R.string.rx_gravacao_limite
+                    else -> R.string.rx_gravacao_falhou
+                }
+                Toast.makeText(this, getString(mensagem), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun desenhar(e: ReceptorBus.Estado) {
+        desenharGravacao(GravacaoRecebidaBus.atual)
         when (e.fase) {
             ReceptorBus.Fase.PARADO, ReceptorBus.Fase.ERRO -> {
                 sairDaTelaCheia()

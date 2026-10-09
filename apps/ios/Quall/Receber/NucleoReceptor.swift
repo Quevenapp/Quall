@@ -191,6 +191,8 @@ final class NucleoReceptor {
         travaDoCancelador.lock()
         cancelador = novoCancelador
         travaDoCancelador.unlock()
+        // Parar pode ter acontecido antes de existir o handle. Não perde esse pedido.
+        if parou, let novoCancelador { quall_session_cancel(novoCancelador) }
 
         var opcoes = QuallSessionOptions(
             me: QuallDeviceDesc(device_id: idC,
@@ -471,6 +473,17 @@ final class NucleoReceptor {
         travaDoUso.unlock()
         guard let t else { return QUALL_STATUS_CLOSED }
         return quall_track_request_idr(t)
+    }
+
+    /// Só na thread da sessão. A guarda da reprodução não altera o tempo capturado no arquivo.
+    func deslocamentosBrutos() -> (video: Int64?, audio: Int64?) {
+        travaDoUso.lock(); defer { travaDoUso.unlock() }
+        func ler(_ t: OpaquePointer?) -> Int64? {
+            guard let t else { return nil }
+            var valor: Int64 = 0, guarda: Int32 = 0
+            return quall_track_capture_offset_raw_us(t, &valor, &guarda) == 1 ? valor : nil
+        }
+        return (ler(track), ler(trackDeAudio))
     }
 
     /// **O caminho de volta do sinal**: conta ao emissor o que este receptor viu numa janela.

@@ -332,6 +332,7 @@ class MainActivity : AppCompatActivity() {
             runCatching {
                 com.quall.android.mirror.GravacaoIndisponivel.aquecer()
                 GravacaoDvService.publicarPendentes(applicationContext)
+                com.quall.android.receive.GravadorRecebido.recuperarAndroid9(applicationContext)
             }.onFailure { com.quall.android.core.LogSeguro.w("QuallMirror", "pendentes: ${com.quall.android.core.LogSeguro.erroExterno(it.message)}") }
         }
 

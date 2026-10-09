@@ -3510,6 +3510,37 @@ pub unsafe extern "C" fn quall_track_capture_offset_us(
     }
 }
 
+/// Deslocamento de captura para gravação. A guarda da reprodução não suprime este valor.
+/// Retorna 1 com saídas escritas, 0 enquanto a medida não existe, -1 para erro. `out_guard`
+/// recebe 1 (válida), 0 (pendente) ou -1 (recusada). As saídas não mudam com retorno 0/-1.
+/// Não usar no render de áudio: esta consulta toma o cadeado do relógio da sessão.
+///
+/// # Safety
+/// Handle receptor válido e duas saídas graváveis, distintas.
+#[no_mangle]
+pub unsafe extern "C" fn quall_track_capture_offset_raw_us(
+    t: *const QuallTrack,
+    out_us: *mut i64,
+    out_guard: *mut i32,
+) -> i32 {
+    let (Some(track), Some(saida), Some(guarda)) = (t.as_ref(), out_us.as_mut(), out_guard.as_mut()) else {
+        guardar_nulo("quall_track_capture_offset_raw_us: argumento nulo");
+        return -1;
+    };
+    let Lado::Receptor(receptor) = &track.lado else {
+        guardar_texto("quall_track_capture_offset_raw_us: track de emissão");
+        return -1;
+    };
+    let Some(us) = receptor.deslocamento_de_captura_cru() else { return 0; };
+    *saida = us;
+    *guarda = match receptor.deslocamento_de_captura() {
+        DeslocamentoDeCaptura::Valido { .. } => 1,
+        DeslocamentoDeCaptura::Ainda => 0,
+        DeslocamentoDeCaptura::Recusado { .. } => -1,
+    };
+    1
+}
+
 /// **`ao_pedir_idr` do contrato.** Registra o tratador do pedido de IDR do receptor.
 ///
 /// Disparado quando chega **PLI ou FIR**. A casca responde forçando um IDR pelo meio que a

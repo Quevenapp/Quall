@@ -12,7 +12,9 @@ No iOS/iPadOS, compartilhar tela usa ReplayKit e exige a interação prevista pe
 transmissão do sistema. Câmera e áudio seguem o ciclo de vida do app e podem ser interrompidos.
 
 O teleprompter usa texto local e controle remoto, com composição de câmera conforme o fluxo.
-A gravação própria fica no emissor; o receptor não grava por si. Confirme o destino e as
+O botão **Gravar** do receptor salva a câmera ou tela recebida, com o áudio da transmissão.
+Use **Parar gravação** para fechar o MP4; encerrar a recepção também fecha e salva o arquivo.
+O volume e o mudo da reprodução não alteram o áudio gravado. Confirme o destino e as
 permissões de armazenamento e capture apenas conteúdo autorizado.
 
 Câmera virtual e OBS são componentes separados. Consulte [câmera macOS](../integrations/camera-macos/README.md),

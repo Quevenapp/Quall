@@ -547,6 +547,13 @@ object QuallNative {
 
     external fun frameBoxFree(caixa: Long)
 
+    /** Independent recording mailbox. Detach before stopping/freeing it. */
+    external fun recordingBoxNew(): Long
+    external fun frameBoxSetRecording(caixa: Long, gravacao: Long)
+
+    /** Worker only; out=[capture offset µs, clock guard]. 1 available, 0 pending. */
+    external fun trackCaptureOffsetRawUs(track: Long, out: LongArray): Int
+
     /**
      * Copia o quadro mais antigo da caixa **direto para o `ByteBuffer` de entrada do
      * `MediaCodec`** e devolve o tamanho; `-1` quando nada chegou no prazo (normal), `-2` quando

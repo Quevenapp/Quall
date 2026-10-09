@@ -87,6 +87,7 @@ struct TelaDeRecepcao: View {
     /// **A câmera de quem filma** (R9b, `docs/controle-remoto-da-camera.md` §12): a engrenagem na
     /// barra e o painel "Ajustes da câmera" do R9, desenhado a partir das capacidades que chegaram.
     @ObservedObject var camera: ControleRemotoDaCamera
+    @ObservedObject var gravador: GravadorDoReceptor
     let conectar: (String, String?, Double) -> Void
     let parar: () -> Void
     /// Volta à tela de escolha de papel. **Escondido enquanto há sessão** (`emSessao`), e isso é a
@@ -117,6 +118,7 @@ struct TelaDeRecepcao: View {
     @AppStorage("ultimo_endereco") private var ultimoEndereco = ""
     /// A folha da engrenagem (§6.3). A folga de exibição, que morava neste formulário, mora lá.
     @State private var ajustes = false
+    @State private var exportandoGravacao = false
     /// **O painel de números** (§6.6): fechado no produto, aberto com o diagnóstico ligado ou quando
     /// a sessão foi aberta pela bancada (`--endereco`, `--laco-de-audio`), que fotografa e lê estes
     /// números. O ⓘ da barra abre e fecha.
@@ -140,6 +142,7 @@ struct TelaDeRecepcao: View {
     @State private var quadradoDoToque: CGPoint?
     @State private var vezDoQuadrado = 0
     @Environment(\.verticalSizeClass) private var classeVertical
+    @Environment(\.horizontalSizeClass) private var classeHorizontal
 
     /// Só nestas duas fases existe imagem para mostrar. Fora delas a camada **não entra na
     /// árvore** — ver `VistaDeVideo.dismantleUIView` para o porquê de isto ser estrutural.
@@ -220,7 +223,22 @@ struct TelaDeRecepcao: View {
                 formulario
             }
         }
+         .overlay(alignment: .topLeading) {
+            if telaCheia, gravador.estado.ocupada {
+                HStack(spacing: 6) {
+                    Circle().fill(Color.red).frame(width: 8, height: 8)
+                    Text(gravador.estado.gravando ? tr("Gravando no receptor")
+                        : (gravador.estado == .fechando ? tr("Salvando…") : tr("Aguardando imagem…")))
+                        .font(.caption)
+                }
+                .foregroundColor(.white).padding(8).background(Color.black.opacity(0.7)).cornerRadius(10)
+                .padding().allowsHitTesting(false)
+            }
+        }
         .sheet(isPresented: $ajustes) { FolhaDaEngrenagem(fechar: { ajustes = false }) }
+        .sheet(isPresented: $exportandoGravacao) {
+            ExportarGravacaoRecebida(arquivos: gravador.arquivosParaExportar.filter { FileManager.default.fileExists(atPath: $0.path) })
+        }
         .statusBar(hidden: telaCheia)
         .modifier(IndicadorDeInicio(escondido: telaCheia))
         // **A tela não apaga enquanto há imagem.** Um monitor que bloqueia sozinho no meio do uso
@@ -316,6 +334,10 @@ struct TelaDeRecepcao: View {
                         }) {
             // A mensagem vazia com a permissão faltando não acontece hoje (as duas andam juntas), mas
             // o botão dos Ajustes não pode depender disso.
+            if !gravador.recado.isEmpty { Text(gravador.recado).font(.footnote) }
+            if !gravador.arquivosParaExportar.isEmpty {
+                Button(tr("Salvar arquivo")) { exportandoGravacao = true }.buttonStyle(.secundarioPequeno)
+            }
             if painel.mensagem.isEmpty, painel.precisaDeRedeLocal {
                 Button(textoDoBotaoDosAjustes, action: abrirAjustesDoSistema)
                     .buttonStyle(.secundarioPequeno)
@@ -435,11 +457,22 @@ struct TelaDeRecepcao: View {
     /// (`SaidaDeAudio`, `SessaoDeRecepcao`); quem manda é o volume do aparelho.
     private var barra: some View {
         VStack(spacing: 8) {
+            if !gravador.recado.isEmpty {
+                Text(gravador.recado).font(Estilo.corpo(.footnote)).foregroundColor(.white)
+            }
+            if !gravador.arquivosParaExportar.isEmpty {
+                Button(tr("Salvar arquivo")) { exportandoGravacao = true }.buttonStyle(.secundarioPequeno)
+            }
             if painelAberto {
                 painelDeNumeros
                     .transition(.opacity)
             }
+            if classeHorizontal == .compact {
+                Text(painel.par.isEmpty ? painel.endereco : painel.par)
+                    .font(Estilo.corpo(.caption)).foregroundColor(Estilo.texto).lineLimit(1)
+            }
             HStack(spacing: 8) {
+                if classeHorizontal != .compact {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(painel.par.isEmpty ? painel.endereco : painel.par)
                         .font(Estilo.corpo(.subheadline, .semibold))
@@ -453,7 +486,9 @@ struct TelaDeRecepcao: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .layoutPriority(-1)
+                }
                 Spacer(minLength: 4)
+                botaoDaGravacao
                 Button(tr("Tela cheia"), action: entrarEmTelaCheia)
                     .buttonStyle(BotaoSecundario(pequeno: true, largo: false, fundo: Color.white.opacity(0.14)))
                 Button(tr("Parar"), action: parar)
@@ -481,6 +516,34 @@ struct TelaDeRecepcao: View {
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Estilo.vidro))
         }
         .padding(10)
+    }
+
+    private var botaoDaGravacao: some View {
+        Button(action: gravador.alternar) {
+            VStack(spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: gravador.estado.ocupada ? "stop.circle.fill" : "record.circle")
+                    if classeHorizontal != .compact {
+                        Text(gravador.estado.ocupada ? tr("Parar gravação") : tr("Gravar"))
+                    }
+                }
+                if case .gravando(let desde) = gravador.estado {
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        Text(GravadorLocal.duracaoLegivel(ProcessInfo.processInfo.systemUptime - desde))
+                            .font(.caption.monospacedDigit())
+                    }
+                } else if gravador.estado == .abrindo {
+                    Text(tr("Aguardando imagem…")).font(.caption)
+                } else if gravador.estado == .fechando {
+                    Text(tr("Salvando…")).font(.caption)
+                }
+            }
+        }
+        .buttonStyle(BotaoSecundario(pequeno: true, largo: false, fundo: Color.white.opacity(0.14)))
+        .foregroundColor(gravador.estado.ocupada ? .red : .white)
+        .disabled(gravador.estado == .fechando || !painel.podeGravarVideo)
+        .accessibilityLabel(gravador.estado.ocupada ? tr("Parar gravação") : tr("Gravar"))
+        .accessibilityIdentifier("recepcao.gravar")
     }
 
     /// Os números de hoje, sem tirar nenhum: esta é a tela que a bancada fotografa.
@@ -584,4 +647,13 @@ private struct ZonaDoToqueRemoto: UIViewRepresentable {
     }
 
     func updateUIView(_ v: Vista, context: Context) { v.tocou = tocou }
+}
+
+/// A cópia permanece em Documents/Gravacoes até Fotos aceitar; a folha também permite Arquivos.
+private struct ExportarGravacaoRecebida: UIViewControllerRepresentable {
+    let arquivos: [URL]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: arquivos, applicationActivities: nil)
+    }
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

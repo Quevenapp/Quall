@@ -115,6 +115,9 @@ pub struct EstadoDoReceptor {
     /// **R9b**: o aparelho que filma respondeu ao controle remoto da câmera, com a câmera aberta
     /// (`pronto` ou `nao_permitido`): a janela mostra a engrenagem "Ajustes da câmera".
     pub camera_remota: bool,
+    pub gravacao: String,
+    pub gravando: bool,
+    pub gravacao_fechando: bool,
 }
 
 impl EstadoDoReceptor {
@@ -306,6 +309,8 @@ pub struct Receptor {
     estado: Mutex<EstadoDoReceptor>,
     cancelamento: Mutex<Option<Cancelamento>>,
     parar: AtomicBool,
+    /// Inclui os guards finais: uma reconexão só começa depois de fechar mídia e gravação.
+    sessao_em_andamento: AtomicBool,
     pub busca: Arc<Busca>,
     pub argumentos: Argumentos,
     sessoes: AtomicU64,
@@ -321,6 +326,8 @@ pub struct Receptor {
     controle_do_som: Mutex<Option<Arc<ControleDoSom>>>,
     /// **R9b**: o controle da câmera de quem filma, nesta sessão (`camera_remota.rs`).
     camera_remota: Mutex<Option<Arc<ControleRemoto>>>,
+    gravacao: Arc<crate::gravador_recebido::Porta>,
+    gravador: Mutex<Option<crate::gravador_recebido::Gravador>>,
 }
 
 impl Receptor {
@@ -337,6 +344,9 @@ impl Receptor {
             vontade_do_som: Mutex::new(vontade),
             controle_do_som: Mutex::new(None),
             camera_remota: Mutex::new(None),
+            gravacao: crate::gravador_recebido::Porta::nova(),
+            gravador: Mutex::new(None),
+            sessao_em_andamento: AtomicBool::new(false),
             estado: Mutex::new(EstadoDoReceptor {
                 fase: FaseDoReceptor::Parado,
                 versao: 1,
@@ -358,6 +368,9 @@ impl Receptor {
                 som_volume: vontade.volume,
                 som_com_camera: vontade.tocar_com_a_camera,
                 camera_remota: false,
+                gravacao: String::new(),
+                gravando: false,
+                gravacao_fechando: false,
             }),
             cancelamento: Mutex::new(None),
             parar: AtomicBool::new(false),
@@ -371,6 +384,53 @@ impl Receptor {
 
     pub fn estado(&self) -> MutexGuard<'_, EstadoDoReceptor> {
         self.estado.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// O comando é local ao receptor. A mídia de antes do clique nunca entra no arquivo.
+    pub fn alternar_gravacao(&self) {
+        if self.estado().fase != FaseDoReceptor::Exibindo { return; }
+        let mut g = self.gravador.lock().unwrap_or_else(|e|e.into_inner());
+        if let Some(atual) = g.as_ref() { if atual.estado().ativa { atual.parar(); return; } }
+        *g = None;
+        let com_som = self.controle_do_som.lock().unwrap_or_else(|e|e.into_inner()).is_some();
+        match crate::gravador_recebido::Gravador::iniciar(Arc::clone(&self.gravacao), com_som) {
+            Ok(novo) => *g = Some(novo),
+            Err(motivo) => { let mut e = self.estado(); e.gravacao = tf("Não deu para gravar: {}", &[&motivo]); e.mudou(); }
+        }
+    }
+    fn publicar_gravacao(&self) {
+        let g = self.gravador.lock().unwrap_or_else(|e|e.into_inner());
+        if let Some(g) = g.as_ref() { let s = g.estado();
+            let linha = if s.ativa && !s.fechando { if let Some(d) = s.desde { let segundos=d.elapsed().as_secs(); tf("● Gravando neste computador · {}", &[&format!("{}:{:02}", segundos/60, segundos%60)]) } else { s.linha } } else { s.linha };
+            let mut e = self.estado(); if e.gravacao!=linha || e.gravando!=s.ativa || e.gravacao_fechando!=s.fechando { e.gravacao=linha; e.gravando=s.ativa; e.gravacao_fechando=s.fechando; e.mudou(); }
+        }
+    }
+    fn encerrar_gravacao(&self) {
+        if let Some(g) = self.gravador.lock().unwrap_or_else(|e|e.into_inner()).as_ref() { g.parar(); }
+    }
+
+    fn finalizar_gravacao(&self) {
+        let mut g = self.gravador.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(atual) = g.take() {
+            let resultado = atual.finalizar();
+            let mut e = self.estado();
+            e.gravacao = resultado.linha;
+            if e.conselho.is_empty() { e.conselho = e.gravacao.clone(); }
+            e.gravando = false;
+            e.gravacao_fechando = false;
+            e.mudou();
+        }
+    }
+
+    /// Fecha o mux antes de o processo desligar o Media Foundation.
+    pub fn esperar_encerramento(&self, prazo: Duration) -> bool {
+        self.encerrar();
+        let ate=Instant::now()+prazo;
+        loop {
+            if let Ok(g)=self.gravador.try_lock() { if g.as_ref().is_none_or(|g| !g.estado().ativa) && self.estado().fase==FaseDoReceptor::Parado { return true; } }
+            if Instant::now()>=ate { return false; }
+            std::thread::sleep(Duration::from_millis(20));
+        }
     }
 
     /// **R9b: abre a janela "Ajustes da câmera" da câmera de quem filma** (a engrenagem do Exibindo).
@@ -477,7 +537,9 @@ impl Receptor {
                 if self.argumentos.claquete {
                     t.ligar_claquete();
                 }
+                t.controle().gravar_em(Arc::clone(&self.gravacao));
                 *self.controle_do_som.lock().unwrap_or_else(|e| e.into_inner()) = Some(t.controle());
+                self.gravacao.habilitar_som();
                 // A vontade é relida **depois** de publicar o controle: um "Mudo" que chegou entre a
                 // leitura acima e a publicação não se perde (crítica 13, miúdo 7).
                 let v = self.vontade();
@@ -746,11 +808,16 @@ impl Receptor {
         let cancelamento = Cancelamento::novo();
         *self.cancelamento.lock().unwrap_or_else(|e| e.into_inner()) = Some(cancelamento.clone());
         self.parar.store(false, Ordering::SeqCst);
+        self.sessao_em_andamento.store(true, Ordering::Release);
 
         let eu = Arc::clone(self);
-        let _ = std::thread::Builder::new()
+        let thread = std::thread::Builder::new()
             .name("quall.receptor".into())
             .spawn(move || eu.correr_sessao(destino_texto, endereco, pin, cancelamento));
+        if thread.is_err() {
+            self.sessao_em_andamento.store(false, Ordering::Release);
+            self.voltar_ao_inicio();
+        }
     }
 
     fn correr_sessao(
@@ -760,6 +827,9 @@ impl Receptor {
         pin: Option<Pin>,
         cancelamento: Cancelamento,
     ) {
+        // Declarado primeiro para sair por último, depois de todos os callbacks e muxers.
+        let _fim_da_sessao = FimDaSessao(&self);
+        self.gravacao.comecar_sessao();
         let device_id = identidade::device_id();
         let nome = identidade::nome_do_aparelho();
         registro::linha(format!(
@@ -889,8 +959,10 @@ impl Receptor {
         {
             let transbordos = Arc::clone(&transbordos);
             let recebidos = Arc::clone(&recebidos);
+            let gravacao = Arc::clone(&self.gravacao);
             tracks[iv].ao_receber_quadro(move |q: QuadroCodificado<'_>| {
                 recebidos.fetch_add(1, Ordering::Relaxed);
+                gravacao.video(q.annexb, q.timestamp_us, q.idr);
                 let copia = QuadroRecebido {
                     bytes: q.annexb.to_vec(),
                     timestamp_us: q.timestamp_us,
@@ -911,6 +983,8 @@ impl Receptor {
                 }
             });
         }
+
+        *self.gravador.lock().unwrap_or_else(|e|e.into_inner()) = None;
 
         // --- o som (S6) --------------------------------------------------------------------------
         //
@@ -1013,7 +1087,15 @@ impl Receptor {
         // Quantas vezes o dispositivo D3D11 caiu nesta sessão e a exibição foi reaberta.
         let mut quedas_da_gpu: u32 = 0;
 
+        let _fecha_gravacao = FechaGravacao(&self);
+        let mut perdas_gravacao = tracks[iv].contadores().quadros_descartados;
+        let mut publicar_gravacao_em = Instant::now();
         loop {
+            self.gravacao.relogios(tracks[iv].deslocamento_de_captura_cru(), indice_do_som.and_then(|i| tracks[i].deslocamento_de_captura_cru()));
+            let perdas = tracks[iv].contadores().quadros_descartados;
+            if perdas != perdas_gravacao { perdas_gravacao=perdas; self.gravacao.perdeu_video(); }
+            if self.gravacao.tirar_pedido_idr() { self.pedir_idr(&tracks[iv], &mut politica, Causa::Abertura); }
+            if publicar_gravacao_em.elapsed() >= Duration::from_millis(100) { publicar_gravacao_em=Instant::now(); self.publicar_gravacao(); }
             if self.parar.load(Ordering::SeqCst) {
                 break;
             }
@@ -1470,6 +1552,7 @@ impl Receptor {
         // — é a única forma de saber que a thread da libdatachannel não vai tocar no `Sender`
         // depois que ele sumir. Ignorar isso é a classe de defeito que só aparece uma vez em cem
         // encerramentos.
+        self.encerrar_gravacao();
         let barreira = tracks[iv].desregistrar_quadro();
         registro::linha(format!("desregistrar_quadro: {barreira:?}"));
         // O som sai antes das tracks: o render para, e a porta puxada é encerrada com barreira.
@@ -1487,6 +1570,8 @@ impl Receptor {
             e.mudou();
         }
 
+        self.finalizar_gravacao();
+        self.publicar_gravacao();
         let mut retidos_finais = 0u64;
         if let Some(mut ex) = exibicao.take() {
             ex.fechar();
@@ -1767,17 +1852,22 @@ impl Receptor {
     }
 
     fn voltar_ao_inicio(&self) {
+        let finalizando = self.sessao_em_andamento.load(Ordering::Acquire);
         let mut e = self.estado();
-        e.fase = FaseDoReceptor::Parado;
+        e.fase = if finalizando { FaseDoReceptor::Encerrando } else { FaseDoReceptor::Parado };
+        e.gravando = false;
+        e.gravacao_fechando = false;
         e.par.clear();
         e.destino.clear();
         e.resumo.clear();
         e.cadeia.clear();
         e.cadeia_alerta = false;
         e.mudou();
+        if !finalizando {
+            *self.cancelamento.lock().unwrap_or_else(|e| e.into_inner()) = None;
+            self.parar.store(false, Ordering::SeqCst);
+        }
         drop(e);
-        *self.cancelamento.lock().unwrap_or_else(|e| e.into_inner()) = None;
-        self.parar.store(false, Ordering::SeqCst);
     }
 
     /// O mesmo botão do emissor, e o mesmo arquivo: `pares.json` é um só por computador.
@@ -1923,4 +2013,18 @@ fn refresh_da_tela_us() -> u64 {
     };
     let hz = if ok.as_bool() && dm.dmDisplayFrequency > 1 { dm.dmDisplayFrequency } else { 60 };
     1_000_000 / u64::from(hz)
+}
+
+struct FechaGravacao<'a>(&'a Receptor);
+impl Drop for FechaGravacao<'_> { fn drop(&mut self) { self.0.encerrar_gravacao(); self.0.finalizar_gravacao(); } }
+
+struct FimDaSessao<'a>(&'a Receptor);
+impl Drop for FimDaSessao<'_> {
+    fn drop(&mut self) {
+        self.0.encerrar_gravacao();
+        self.0.finalizar_gravacao();
+        self.0.gravacao.relogios(None, None);
+        self.0.sessao_em_andamento.store(false, Ordering::Release);
+        self.0.voltar_ao_inicio();
+    }
 }

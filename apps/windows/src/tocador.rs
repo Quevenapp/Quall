@@ -113,6 +113,7 @@ const ESPERAS: [f64; 5] = [0.2, 0.5, 1.0, 2.0, 4.0];
 /// Sem cadeado: atômicos.
 pub struct ControleDoSom {
     ganho_alvo: AtomicU32,
+    gravacao: Mutex<Option<Arc<crate::gravador_recebido::Porta>>>,
     parar: AtomicBool,
     /// A razão sugerida pelo núcleo, em bits de `f64`, posta aqui **fora** do render
     /// ([`Tocador::atualizar_razao`]): ler o `LeitorDeReproducao` é tomar o cadeado dele, e o render
@@ -129,6 +130,8 @@ pub struct ControleDoSom {
 }
 
 impl ControleDoSom {
+    pub fn gravar_em(&self, porta: Arc<crate::gravador_recebido::Porta>) { *self.gravacao.lock().unwrap_or_else(|e|e.into_inner()) = Some(porta); }
+
     pub fn aplicar_ganho(&self, g: f32) {
         // NaN não passa pelo `clamp`: o ganho que não é número vira mudo, e não NaN no WASAPI.
         let g = if g.is_finite() { g.clamp(0.0, 1.0) } else { 0.0 };
@@ -187,6 +190,7 @@ impl Tocador {
     ) -> std::result::Result<Tocador, String> {
         let decodificacao = Decodificacao::nova(codec, canais_do_fio)?;
         let controle = Arc::new(ControleDoSom {
+            gravacao: Mutex::new(None),
             ganho_alvo: AtomicU32::new(0f32.to_bits()),
             parar: AtomicBool::new(false),
             razao_bits: AtomicU64::new(1f64.to_bits()),
@@ -634,6 +638,13 @@ fn correr(
         let fonte = |atraso_us: u32, no_dac: u64, razao: f64, destino: &mut [f32]| {
             let p = porta.puxar(atraso_us, razao);
             let slot = dec.escrever(p, destino);
+            // O ramal da gravação é do PCM do emissor, antes do volume/mudo e do reamostrador.
+            if slot.ordem != Ordem::Ocioso && slot.quadros > 0 {
+                if let Ok(g) = ctl.gravacao.try_lock() { if let Some(g) = g.as_ref() {
+                    let n = (slot.quadros * CANAIS).min(destino.len());
+                    g.som(&destino[..n], (slot.carimbo_us as f64 - atraso_interno_us).round() as i64);
+                }}
+            }
             ctl.falhas_de_decodificar.store(dec.falhas, Ordering::Relaxed);
             if ctl.claquete.load(Ordering::Relaxed) && slot.ordem != Ordem::Ocioso && slot.quadros > 0 {
                 let n = (slot.quadros * CANAIS).min(destino.len());
@@ -655,6 +666,7 @@ fn correr(
             slot
         };
         let mut montador = Montador::novo(fonte);
+        let mut sem_dac = vec![0.0f32; QUADROS_POR_SLOT * CANAIS];
         let mut ganho_atual = controle.ganho();
         let mut tentativa = 0usize;
         while !controle.parar.load(Ordering::SeqCst) {
@@ -701,6 +713,7 @@ fn correr(
                             // meio segundo antes de remontar (crítica 13, miúdo 5).
                             let ate = Instant::now() + Duration::from_millis(500);
                             while Instant::now() < ate && !controle.parar.load(Ordering::SeqCst) {
+                                if controle.gravacao.try_lock().ok().and_then(|g|g.as_ref().map(|p|p.ativa())).unwrap_or(false) { montador.render(&mut sem_dac, 0.0, 1.0, inicio.elapsed().as_micros() as u64); }
                                 std::thread::sleep(Duration::from_millis(20));
                             }
                         }
@@ -722,6 +735,7 @@ fn correr(
                     }
                     let ate = Instant::now() + Duration::from_secs_f64(espera);
                     while Instant::now() < ate && !controle.parar.load(Ordering::SeqCst) {
+                        if controle.gravacao.try_lock().ok().and_then(|g|g.as_ref().map(|p|p.ativa())).unwrap_or(false) { montador.render(&mut sem_dac, 0.0, 1.0, inicio.elapsed().as_micros() as u64); }
                         std::thread::sleep(Duration::from_millis(20));
                     }
                 }

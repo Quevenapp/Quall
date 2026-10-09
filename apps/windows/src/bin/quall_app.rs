@@ -17,7 +17,8 @@ use quall_capture_probe::{
 use windows::Win32::Media::MediaFoundation::{MFStartup, MFShutdown, MFSTARTUP_FULL, MF_VERSION};
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
 use windows::Win32::UI::HiDpi::{
-    SetProcessDpiAwarenessContext, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+    AreDpiAwarenessContextsEqual, GetThreadDpiAwarenessContext, SetProcessDpiAwarenessContext,
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
 };
 
 fn main() {
@@ -137,8 +138,15 @@ fn rodar() -> windows::core::Result<()> {
     // cima (borrada), e — o que importa mais num app de captura — as coordenadas de monitor que a
     // enumeração devolve viriam em pixels virtualizados, não nos reais. Um app que captura tela
     // não pode ver a tela por uma lente que o sistema esticou.
-    let dpi_ok = unsafe { SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) }
-        .is_ok();
+    // O manifesto já configura PMV2. Consultar o contexto evita chamar o setter de novo
+    // (ERROR_ACCESS_DENIED) e registrar como falha uma configuração que já está correta.
+    let por_monitor_v2 = || unsafe {
+        AreDpiAwarenessContextsEqual(GetThreadDpiAwarenessContext(), DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+    }.as_bool();
+    if !por_monitor_v2() {
+        let _ = unsafe { SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
+    }
+    let dpi_ok = por_monitor_v2();
 
     // **MTA, não STA.** O `Direct3D11CaptureFramePool::CreateFreeThreaded` da captura exige
     // apartamento multithreaded, e o apartamento é do processo. Uma janela Win32 funciona nos dois
@@ -450,6 +458,8 @@ fn rodar() -> windows::core::Result<()> {
     }
     receptor.encerrar();
     receptor.busca.parar();
+    let receptor_finalizou = receptor.esperar_encerramento(Duration::from_secs(15));
+    if !receptor_finalizou { registro::linha("receptor: a gravação não terminou em 15 s; sem MFShutdown enquanto escreve"); }
     // **Com várias sessões, a espera fixa não basta**: são até oito desmontes (encoders, oficinas,
     // links) e o adeus do mDNS, e um `MFShutdown` com MFT vivo ou uma saída antes do `Bye` é o que
     // a espera existe para evitar (revisão adversarial de 13/09/2026). Espera todas avisarem, com
@@ -477,7 +487,7 @@ fn rodar() -> windows::core::Result<()> {
     let pode_desligar = quall_capture_probe::captura_de_camera::esperar_solturas_na_saida(Duration::from_secs(30));
     registro::linha("quall-app encerrou");
 
-    if pode_desligar {
+    if pode_desligar && receptor_finalizou {
         unsafe {
             let _ = MFShutdown();
             CoUninitialize();

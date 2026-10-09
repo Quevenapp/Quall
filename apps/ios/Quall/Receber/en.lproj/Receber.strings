@@ -53,3 +53,15 @@
 "áudio: codec negociado indisponível" = "audio: negotiated codec unavailable";
 "áudio: o decodificador recusou o formato" = "audio: decoder rejected the format";
 "áudio: pacote Opus inválido — desligado" = "audio: invalid Opus packet — disabled";
+
+"Não foi possível criar a pasta de gravações." = "Could not create the recordings folder.";
+"Não foi possível concluir a gravação recebida." = "Could not finish the received recording.";
+"Gravação guardada no aparelho. Use Salvar arquivo para exportar." = "Recording kept on this device. Use Save file to export it.";
+"A gravação foi interrompida. Os trechos concluídos foram salvos em Fotos." = "Recording was interrupted. Completed parts were saved to Photos.";
+"Gravação recebida salva em Fotos." = "Received recording saved to Photos.";
+"Salvar arquivo" = "Save file";
+"Aguardando imagem…" = "Waiting for video…";
+"Parar gravação" = "Stop recording";
+"A gravação foi interrompida. O arquivo parcial foi preservado no aparelho." = "Recording was interrupted. The partial file was kept on this device.";
+"Gravando no receptor" = "Recording on this receiver";
+"A gravação foi interrompida. Há arquivos preservados no aparelho. Use Salvar arquivo para exportar." = "Recording was interrupted. Files were kept on this device. Use Save file to export them.";

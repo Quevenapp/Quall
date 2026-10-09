@@ -1215,7 +1215,8 @@ Java_com_quall_android_core_QuallNative_trackFree(JNIEnv *env, jclass cls, jlong
  * caixa por conta própria.
  */
 
-#define CAIXA_SLOTS 4
+#define CAIXA_SLOTS 16
+#define CAIXA_EXIBICAO_SLOTS 4
 /* Teto por quadro. Um IDR de 720p a 4 Mbps fica na casa das dezenas de KiB; 4 MiB é folga de
  * duas ordens de grandeza e ainda assim um limite, para um quadro corrompido não pedir o mundo. */
 #define CAIXA_MAX_QUADRO (4u * 1024u * 1024u)
@@ -1232,6 +1233,8 @@ typedef struct CaixaDeQuadros {
     pthread_mutex_t m;
     pthread_cond_t cv;
     SlotDeQuadro slots[CAIXA_SLOTS];
+    unsigned capacidade;
+    struct CaixaDeQuadros *gravacao;
     /* Contadores monotônicos: `escrita - leitura` é quantos quadros esperam. */
     unsigned escrita;
     unsigned leitura;
@@ -1245,8 +1248,7 @@ typedef struct CaixaDeQuadros {
  * O tratador. Roda em thread da libdatachannel: **nada de JNI aqui dentro**, nada que bloqueie
  * por tempo indeterminado. Uma trava curta e um `memcpy`.
  */
-static void receber_quadro(const struct QuallFrame *frame, void *user_data) {
-    CaixaDeQuadros *c = (CaixaDeQuadros *)user_data;
+static void guardar_quadro(CaixaDeQuadros *c, const struct QuallFrame *frame) {
     if (c == NULL || frame == NULL || frame->annexb == NULL || frame->len == 0) {
         return;
     }
@@ -1259,12 +1261,12 @@ static void receber_quadro(const struct QuallFrame *frame, void *user_data) {
 
     pthread_mutex_lock(&c->m);
     c->recebidos++;
-    if (c->escrita - c->leitura >= CAIXA_SLOTS) {
+    if (c->escrita - c->leitura >= c->capacidade) {
         /* Cheio: o mais velho vai embora. Ver "o anel descarta o mais velho" acima. */
         c->leitura++;
         c->descartados++;
     }
-    SlotDeQuadro *s = &c->slots[c->escrita % CAIXA_SLOTS];
+    SlotDeQuadro *s = &c->slots[c->escrita % c->capacidade];
     if (s->cap < frame->len) {
         uint8_t *maior = (uint8_t *)realloc(s->bytes, frame->len);
         if (maior == NULL) {
@@ -1289,6 +1291,15 @@ static void receber_quadro(const struct QuallFrame *frame, void *user_data) {
     pthread_mutex_unlock(&c->m);
 }
 
+static void receber_quadro(const struct QuallFrame *frame, void *user_data) {
+    CaixaDeQuadros *c = (CaixaDeQuadros *)user_data;
+    if (c == NULL) return;
+    pthread_mutex_lock(&c->m);
+    if (c->gravacao != NULL) guardar_quadro(c->gravacao, frame);
+    pthread_mutex_unlock(&c->m);
+    guardar_quadro(c, frame);
+}
+
 JNIEXPORT jlong JNICALL
 Java_com_quall_android_core_QuallNative_frameBoxNew(JNIEnv *env, jclass cls) {
     (void)env;
@@ -1297,6 +1308,7 @@ Java_com_quall_android_core_QuallNative_frameBoxNew(JNIEnv *env, jclass cls) {
     if (c == NULL) {
         return 0;
     }
+    c->capacidade = CAIXA_EXIBICAO_SLOTS;
     if (pthread_mutex_init(&c->m, NULL) != 0) {
         free(c);
         return 0;
@@ -1313,6 +1325,41 @@ Java_com_quall_android_core_QuallNative_frameBoxNew(JNIEnv *env, jclass cls) {
         return 0;
     }
     return (jlong)(uintptr_t)c;
+}
+
+/* Recording owns a separate bounded queue: disk/AAC latency cannot drain the display queue.
+ * Unset under this lock before freeing the recording box, even if track unregister fails. */
+JNIEXPORT jlong JNICALL
+Java_com_quall_android_core_QuallNative_recordingBoxNew(JNIEnv *env, jclass cls) {
+    jlong box = Java_com_quall_android_core_QuallNative_frameBoxNew(env, cls);
+    if (box != 0) ((CaixaDeQuadros *)(uintptr_t)box)->capacidade = CAIXA_SLOTS;
+    return box;
+}
+
+JNIEXPORT void JNICALL
+Java_com_quall_android_core_QuallNative_frameBoxSetRecording(JNIEnv *env, jclass cls,
+                                                            jlong box, jlong recording) {
+    (void)env; (void)cls;
+    CaixaDeQuadros *c = (CaixaDeQuadros *)(uintptr_t)box;
+    if (c == NULL) return;
+    pthread_mutex_lock(&c->m);
+    c->gravacao = (CaixaDeQuadros *)(uintptr_t)recording;
+    pthread_mutex_unlock(&c->m);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_quall_android_core_QuallNative_trackCaptureOffsetRawUs(JNIEnv *env, jclass cls,
+                                                               jlong track, jlongArray out) {
+    (void)cls;
+    if (out == NULL || (*env)->GetArrayLength(env, out) < 2) return -1;
+    int64_t offset = 0;
+    int32_t guard = 0;
+    int32_t status = quall_track_capture_offset_raw_us((QuallTrack *)(uintptr_t)track, &offset, &guard);
+    if (status == 1) {
+        jlong values[2] = {(jlong)offset, (jlong)guard};
+        (*env)->SetLongArrayRegion(env, out, 0, 2, values);
+    }
+    return status;
 }
 
 /*
@@ -1390,7 +1437,7 @@ Java_com_quall_android_core_QuallNative_frameBoxTake(JNIEnv *env, jclass cls, jl
     if (c->escrita == c->leitura) {
         saida = -1;
     } else {
-        SlotDeQuadro *s = &c->slots[c->leitura % CAIXA_SLOTS];
+        SlotDeQuadro *s = &c->slots[c->leitura % c->capacidade];
         if ((jlong)s->len > capacidade) {
             c->nao_couberam++;
             c->leitura++;

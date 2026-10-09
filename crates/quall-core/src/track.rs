@@ -1876,6 +1876,13 @@ mod webrtc {
             self.relogio.deslocamento(self.indice_no_relogio)
         }
 
+        /// Deslocamento para gravação, independente da guarda da reprodução. Consulte a
+        /// guarda separadamente para diagnóstico; não chame na thread de áudio.
+        pub fn deslocamento_de_captura_cru(&self) -> Option<i64> {
+            self.informar_base();
+            self.relogio.deslocamento_cru(self.indice_no_relogio)
+        }
+
         /// O retrato do relógio comum desta track, para relatório. `None` antes do primeiro
         /// pacote.
         pub fn retrato_do_relogio(&self) -> Option<RetratoDoRelogio> {

@@ -210,6 +210,13 @@ class MuxerMediaMuxer(
         }
     }
 
+    /** MP4 EOS metadata sets the final sample duration without duplicating a reference slice. */
+    fun fimDoVideo(ptsUs: Long) {
+        if (!comecou || trilhaVideo < 0) return
+        info.set(0, 0, ptsUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+        muxer.writeSampleData(trilhaVideo, ByteBuffer.allocateDirect(0), info)
+    }
+
     override fun fechar(): String? {
         var erro: String? = null
         if (comecou) {

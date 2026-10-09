@@ -73,4 +73,16 @@
     <string name="rx_papel_exibe">exibe</string>
     <string name="rx_papel_teleprompter">teleprompter</string>
     <string name="rx_sem_capacidade">sem capacidade declarada</string>
+    <string name="rx_gravar">Gravar</string>
+    <string name="rx_parar_gravacao">Parar gravação</string>
+    <string name="rx_gravacao_idr">Esperando a imagem para começar a gravar…</string>
+    <string name="rx_gravacao_tempo">● Gravando %1$02d:%2$02d · parte %3$d</string>
+    <string name="rx_gravacao_salvando">Salvando gravação…</string>
+    <string name="rx_gravacao_salva">Gravação salva: %1$s</string>
+    <string name="rx_gravacao_compartilhar">Compartilhar gravação</string>
+    <string name="rx_gravacao_falhou">Não deu para concluir a gravação. Os trechos já salvos foram mantidos.</string>
+    <string name="rx_gravacao_espaco">Sem espaço suficiente. A gravação parou.</string>
+    <string name="rx_gravacao_limite">A gravação chegou ao limite de tamanho do arquivo. Comece outra gravação para continuar.</string>
+    <string name="rx_gravacao_ultima">Compartilhar última gravação</string>
+    <string name="rx_gravacao_guardar_copia">Guarde uma cópia usando Compartilhar antes de remover o app.</string>
 </resources>

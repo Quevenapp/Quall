@@ -78,6 +78,16 @@
         android:theme="@style/Theme.Quall"
         android:usesCleartextTraffic="true">
 
+        <!-- Android 9 recordings are shared through a private, read-only grant. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.gravacoes"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/arquivos_gravados" />
+        </provider>
+
         <!-- **A rotação não recria esta tela**, e o motivo é a transmissão.
 
              Recriar a Activity dispara `onStop` (`PreviaDaCamera.ligar(null)`) e `onStart`

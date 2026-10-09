@@ -622,3 +622,43 @@
 
 
 "não foi possível iniciar a gravação; veja o aviso no aparelho que grava" = "couldn't start recording; see the notice on the recording device";
+
+"Parar gravação" = "Stop recording";
+
+"Aguardando imagem para gravar…" = "Waiting for a complete frame to record…";
+
+"Salvando gravação…" = "Saving recording…";
+
+"Gravando" = "Recording";
+
+"Gravando sem som" = "Recording without audio";
+
+"São necessários 500 MB livres para gravar." = "Recording requires 500 MB of free space.";
+
+"Não chegou uma imagem completa para gravar." = "No complete frame arrived to record.";
+
+"A pasta de gravações não está disponível." = "The recording folder is unavailable.";
+
+"O formato recebido não pôde ser gravado." = "The received format could not be recorded.";
+
+"Não foi possível criar a trilha de vídeo." = "Could not create the video track.";
+
+"Não foi possível criar a trilha de áudio." = "Could not create the audio track.";
+
+"O formato de áudio não pôde ser gravado." = "Could not record this audio format.";
+
+"Não foi possível iniciar a gravação." = "Could not start recording.";
+
+"Falha ao salvar o vídeo." = "Could not save the video.";
+
+"Falha ao salvar o áudio." = "Could not save the audio.";
+
+"Não chegou imagem para salvar." = "No video arrived to save.";
+
+"Gravação salva em %@" = "Recording saved in %@";
+
+"O arquivo foi preservado em %@: %@" = "The file was preserved in %@: %@";
+
+"A gravação não foi concluída: %@. Arquivo preservado em %@." = "Recording did not finish: %@. File preserved in %@.";
+
+"erro no arquivo" = "file error";

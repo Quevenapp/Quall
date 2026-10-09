@@ -82,6 +82,8 @@ pub mod regras_da_gravacao;
 pub mod dono_da_captura;
 pub mod previa_da_camera;
 pub mod gravador_local;
+pub mod gravador_recebido;
+mod guardia_da_gravacao;
 pub mod conversor_de_camera;
 pub mod desentrelacador;
 
