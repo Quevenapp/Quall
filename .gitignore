@@ -82,3 +82,5 @@ keystore.properties
 *.dSYM/
 .kotlin/
 /apps/ios/Receptor/saida/
+/qa-receptor/
+/apps/macos/qa-receptor/

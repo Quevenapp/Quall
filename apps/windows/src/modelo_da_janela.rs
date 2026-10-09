@@ -458,6 +458,9 @@ pub struct TelaExibindo {
     /// **R9b**: o aparelho que filma aceita o controle remoto da câmera (está `pronto` ou
     /// `nao_permitido`): a engrenagem "Ajustes da câmera" abre a janela dos ajustes da câmera dele.
     pub ajustes_da_camera: bool,
+    pub gravacao: String,
+    pub gravando: bool,
+    pub gravacao_fechando: bool,
 }
 
 /// A janela do teleprompter aberta (a de janela própria, `teleprompter::papel_aberto`), e em que
@@ -725,6 +728,7 @@ pub fn habilitado(c: Controle, e: &EstadoDaTela) -> bool {
     match c {
         Controle::Item(p) => e.sessao.as_ref().is_none_or(|s| s.item == p),
         Controle::Espelhar => e.espelhar.pode_espelhar,
+        Controle::Gravar if e.cena == Cena::Exibindo => !e.exibindo.encerrando && !e.exibindo.gravacao_fechando,
         Controle::Gravar => e.camera.as_ref().is_some_and(|c| c.gravar_ativo),
         #[cfg(feature = "tela-estendida-futura")]
         Controle::DriverDaTelaEstendida => crate::regras_do_driver::pode_comecar(&e.driver.andamento),
@@ -1187,10 +1191,14 @@ fn cena_exibindo(q: &mut Quadro, e: &EstadoDaTela) {
         q.mais(texto(lugar::ENCERRANDO, t(ENCERRANDO), F_LEGENDA_13, TEXTO3).meio().item());
     }
     #[cfg(feature = "loja")]
-    q.mais(texto(lugar::RODAPE_DA_SESSAO, t("Câmera virtual para outros apps requer um componente externo, não incluído nesta edição."), F_LEGENDA, TEXTO3).quebra().item());
+    if !s.encerrando { q.mais(texto(Ret::new(lugar::X, lugar::PE_Y - 80.0, lugar::L, 32.0), t("Câmera virtual para outros apps requer um componente externo, não incluído nesta edição."), F_LEGENDA, TEXTO3).quebra().item()); }
     #[cfg(not(feature = "loja"))]
-    q.mais(texto(lugar::RODAPE_DA_SESSAO, t("Parar encerra a sessão nos dois lados."), F_LEGENDA, TEXTO3).meio().item());
+    if !s.encerrando { q.mais(texto(Ret::new(lugar::X, lugar::PE_Y - 80.0, lugar::L, 32.0), t("Parar encerra a sessão nos dois lados."), F_LEGENDA, TEXTO3).meio().item()); }
+    q.controle(Controle::Gravar, Ret::new(lugar::X, lugar::PE_Y, 210.0, ALTURA_DO_BOTAO));
     q.controle(Controle::Cancelar, lugar::PARAR);
+    if !s.gravacao.is_empty() {
+        q.mais(texto(Ret::new(lugar::X, lugar::PE_Y - 44.0, lugar::L, 36.0), s.gravacao.clone(), F_LEGENDA, if s.gravando { AGUARDANDO_TEXTO } else { TEXTO2 }).quebra().item());
+    }
 }
 
 // =============================================================================================
@@ -1316,6 +1324,9 @@ pub fn aparencia(c: Controle, e: &EstadoDaTela, l: f32, a: f32, s: EstadoDoContr
             (_, Cena::Esperando | Cena::Conectando) => botao(l, a, TipoDeBotao::Secundario, t("Cancelar"), None, F_BOTAO),
             _ => botao(l, a, TipoDeBotao::PararCheio, t("Parar"), None, F_BOTAO),
         },
+        Controle::Gravar if e.cena == Cena::Exibindo => {
+            botao(l, a, TipoDeBotao::Secundario, if e.exibindo.gravacao_fechando { t("Salvando…") } else if e.exibindo.gravando { t("■ Parar a gravação") } else { t("● Gravar neste computador") }, None, F_BOTAO_PEQUENO)
+        }
         Controle::Gravar => {
             raio = l / 2.0;
             let cam = e.camera.clone().unwrap_or_default();
@@ -1467,6 +1478,7 @@ pub fn texto_acessivel(c: Controle, e: &EstadoDaTela) -> String {
             (_, Cena::Esperando | Cena::Conectando) => t("Cancelar").into(),
             _ => t("Parar").into(),
         },
+        Controle::Gravar if e.cena == Cena::Exibindo => if e.exibindo.gravando { t("Parar e salvar a gravação recebida") } else { t("Gravar o vídeo e o som recebidos neste computador") }.into(),
         Controle::Gravar => e
             .camera
             .as_ref()
@@ -1571,6 +1583,9 @@ fn base_de_exemplo() -> EstadoDaTela {
             alerta: false,
             encerrando: false,
             ajustes_da_camera: true,
+            gravacao: String::new(),
+            gravando: false,
+            gravacao_fechando: false,
         },
         ..Default::default()
     }

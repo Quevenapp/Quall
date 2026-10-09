@@ -96,6 +96,12 @@ public final class NucleoReceptor {
 
     public init() {}
 
+    /// Called on the UI thread before starting a new connection worker, after the previous
+    /// worker has ended. Reset here so a Stop between this call and conectar is still honored.
+    public func prepararConexao() {
+        travaDaParada.lock(); _parar = false; travaDaParada.unlock()
+    }
+
     // --- utilidade ---------------------------------------------------------------------------
 
     public static func ultimoErro() -> String {
@@ -171,6 +177,7 @@ public final class NucleoReceptor {
         travaDoCancelador.lock()
         cancelador = novoCancelador
         travaDoCancelador.unlock()
+        if parou { quall_session_cancel(novoCancelador) }
 
         var opcoes = QuallSessionOptions(
             me: QuallDeviceDesc(device_id: idC,
@@ -365,6 +372,16 @@ public final class NucleoReceptor {
         guard let t else { return nil }
         var us: Int64 = 0
         return quall_track_capture_offset_us(t, &us) == 1 ? us : nil
+    }
+
+    /// Source clock for the file; never called from the render/network callback.
+    public func deslocamentoCruDeCaptura(doSom: Bool) -> Int64? {
+        travaDoUso.lock()
+        let t = doSom ? trackDeAudio : track
+        travaDoUso.unlock()
+        guard let t else { return nil }
+        var us: Int64 = 0, guarda: Int32 = 0
+        return quall_track_capture_offset_raw_us(t, &us, &guarda) == 1 ? us : nil
     }
 
     /// O rótulo da track, pelo padrão `(buf, cap)` — **pergunta o tamanho antes**.

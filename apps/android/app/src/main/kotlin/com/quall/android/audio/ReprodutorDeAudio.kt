@@ -97,6 +97,9 @@ class ReprodutorDeAudio(
     /** Do registro do tratador ao primeiro quadro **escrito no `AudioTrack`**, em ms. */
     @Volatile var primeiroSomMs = 0.0; private set
 
+    /** Received PCM before output volume, no local capture. Callback must copy without waiting. */
+    @Volatile var aoPcmRecebido: ((ShortArray, Int, Long, Long, Int, Int) -> Unit)? = null
+
     fun iniciar(): Boolean {
         val codec = QuallNative.trackAudioCodec(track)
         if (codec == QuallNative.AudioCodec.DEFAULT) {
@@ -304,6 +307,7 @@ class ReprodutorDeAudio(
             val total = amostras * p.canais
             analisador.analisar(pcm, amostras)
             wav?.escrever(pcm, total)
+            aoPcmRecebido?.invoke(pcm, amostras, meta[1], meta[2], p.taxaHz, p.canais)
 
             val escritos = saida.write(pcm, 0, total, AudioTrack.WRITE_BLOCKING)
             if (escritos < 0) {
@@ -348,6 +352,7 @@ class ReprodutorDeAudio(
             if (amostras <= 0) continue
             analise?.analisar(pcm, amostras)
             wav?.escrever(pcm, amostras * p.canais)
+            aoPcmRecebido?.invoke(pcm, amostras, meta[1], meta[2], p.taxaHz, p.canais)
             saida.write(pcm, 0, amostras * p.canais, AudioTrack.WRITE_BLOCKING)
             quadrosTocados++
         }

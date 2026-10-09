@@ -179,6 +179,8 @@ struct TelaDoVideo: View {
                 },
                 // R9b: a engrenagem dos ajustes da câmera do outro lado, com `pronto` ou `nao_permitido`.
                 aoAjustesDaCamera: planoDaCameraRemota == nil ? nil : { abrirJanela(id: JanelaDosAjustesDaCameraRemota.id) },
+                gravacao: receptor.gravacaoRecebida,
+                aoGravar: { receptor.alternarGravacaoRecebida() },
                 aoParar: { receptor.parar() })
                 .padding(12)
         }
@@ -296,12 +298,19 @@ struct BarraDoVideo: View {
     let aoControlar: () -> Void
     /// R9b: a engrenagem "Ajustes da câmera" da câmera do outro lado; `nil` esconde (o filmador não oferece).
     var aoAjustesDaCamera: (() -> Void)? = nil
+    var gravacao = GravadorRecebido.Estado()
+    var aoGravar: (() -> Void)? = nil
     let aoParar: () -> Void
 
     private static let vidro = Color.black.opacity(0.85)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !gravacao.mensagem.isEmpty {
+                Text(gravacao.mensagem).font(.system(size: 12)).foregroundColor(Estilo.texto)
+                    .padding(10).background(RoundedRectangle(cornerRadius: 10).fill(Self.vidro))
+                    .textSelection(.enabled)
+            }
             if numerosAbertos { painelDosNumeros }
             if somAMostra && !estadoDoSom.isEmpty {
                 linhaDoSom
@@ -336,6 +345,15 @@ struct BarraDoVideo: View {
             }
             if let aoAjustesDaCamera {
                 BotaoRedondo(icone: "gearshape", rotulo: TextosDosAjustes.titulo, tamanho: 32, acao: aoAjustesDaCamera)
+            }
+            if let aoGravar {
+                Button(action: aoGravar) {
+                    Label(gravacao.ativo ? String(format: "%@ %d:%02d", T("Parar gravação"),
+                        Int(gravacao.segundos)/60, Int(gravacao.segundos)%60) : T("Gravar"),
+                        systemImage: gravacao.ativo ? "stop.circle.fill" : "record.circle")
+                }
+                .buttonStyle(.quall(gravacao.ativo ? .perigo : .secundario, altura: 32))
+                .disabled(parando || gravacao.fechando)
             }
             if compacta {
                 BotaoRedondo(icone: "text.alignleft", rotulo: T("Controlar um teleprompter…"), tamanho: 32, acao: aoControlar)

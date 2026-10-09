@@ -59,4 +59,16 @@
     <string name="rx_papel_exibe">receives</string>
     <string name="rx_papel_teleprompter">teleprompter</string>
     <string name="rx_sem_capacidade">no declared capabilities</string>
+    <string name="rx_gravar">Record</string>
+    <string name="rx_parar_gravacao">Stop recording</string>
+    <string name="rx_gravacao_idr">Waiting for video to start recording…</string>
+    <string name="rx_gravacao_tempo">● Recording %1$02d:%2$02d · part %3$d</string>
+    <string name="rx_gravacao_salvando">Saving recording…</string>
+    <string name="rx_gravacao_salva">Recording saved: %1$s</string>
+    <string name="rx_gravacao_compartilhar">Share recording</string>
+    <string name="rx_gravacao_falhou">Recording could not be completed. Any saved parts have been kept.</string>
+    <string name="rx_gravacao_espaco">Not enough storage. The recording has stopped.</string>
+    <string name="rx_gravacao_limite">The recording reached the file size limit. Start a new recording to continue.</string>
+    <string name="rx_gravacao_ultima">Share last recording</string>
+    <string name="rx_gravacao_guardar_copia">Save a copy with Share before removing the app.</string>
 </resources>

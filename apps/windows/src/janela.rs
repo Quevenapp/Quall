@@ -1279,7 +1279,7 @@ impl Janela {
             // que ficou. Escrever o estado de volta daqui brigaria com o controle.
             Controle::Som => emissor.alternar_som(ler(Controle::Som)),
             Controle::Microfone => emissor.alternar_microfone(ler(Controle::Microfone)),
-            Controle::Gravar => emissor.alternar_gravacao(),
+            Controle::Gravar => { if receptor.estado().fase == FaseDoReceptor::Exibindo { receptor.alternar_gravacao(); } else { emissor.alternar_gravacao(); } },
             // **Os ajustes da câmera** (R9 §4.2): a janela própria, com a prévia dentro.
             // R9b: no Exibindo, a câmera de quem filma (a janela em modo remoto).
             Controle::AjustesDaCamera => {
@@ -1529,6 +1529,9 @@ impl Janela {
             alerta: r.cadeia_alerta,
             encerrando: r.fase == FaseDoReceptor::Encerrando,
             ajustes_da_camera: r.fase == FaseDoReceptor::Exibindo && r.camera_remota,
+            gravacao: r.gravacao.clone(),
+            gravando: r.gravando,
+            gravacao_fechando: r.gravacao_fechando,
         };
 
         EstadoDaTela {

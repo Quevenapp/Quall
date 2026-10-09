@@ -195,6 +195,7 @@ struct Raiz: View {
                 TelaDeRecepcao(painel: recepcao.painel,
                                exibidor: recepcao.exibidor,
                                camera: recepcao.cameraRemota,
+                               gravador: recepcao.gravador,
                                conectar: { endereco, pin, segundos in
                                    recepcao.conectar(endereco: endereco, pin: pin,
                                                      segundos: segundos)

@@ -28,6 +28,10 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResumoSps {
     pub bytes: usize,
+    pub sps_id: u32,
+    pub bits_frame_num: u32,
+    pub separate_colour_plane: bool,
+    pub frame_mbs_only: bool,
     pub profile_idc: u8,
     pub constraint_flags: u8,
     pub level_idc: u8,
@@ -53,8 +57,12 @@ impl ResumoSps {
         let restricao = if self.tem_bitstream_restriction {
             format!(
                 "reorder={} dpb={}",
-                self.max_num_reorder_frames.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
-                self.max_dec_frame_buffering.map(|v| v.to_string()).unwrap_or_else(|| "?".into()),
+                self.max_num_reorder_frames
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "?".into()),
+                self.max_dec_frame_buffering
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "?".into()),
             )
         } else {
             "AUSENTE (o decodificador vai assumir o teto do nível)".to_string()
@@ -137,7 +145,9 @@ pub fn declarar_constrained_baseline(annexb: &mut [u8]) -> bool {
         match annexb[corpo] & 0x1f {
             7 => {
                 // [cabeçalho][profile_idc][restrições][level_idc]
-                if corpo + 3 < annexb.len() && annexb[corpo + 1] == 66 && annexb[corpo + 2] & 0x40 == 0
+                if corpo + 3 < annexb.len()
+                    && annexb[corpo + 1] == 66
+                    && annexb[corpo + 2] & 0x40 == 0
                 {
                     annexb[corpo + 2] |= 0x40;
                     mexeu = true;
@@ -361,7 +371,10 @@ pub struct Preparo {
 pub fn preparar_para_o_decoder(annexb: &mut Vec<u8>) -> Preparo {
     let constrained = declarar_constrained_baseline(annexb);
     let restricao = declarar_restricao_de_bitstream(annexb);
-    Preparo { constrained, restricao }
+    Preparo {
+        constrained,
+        restricao,
+    }
 }
 
 /// Acha o primeiro SPS num fluxo Annex-B e o resume. `None` se não houver SPS legível.
@@ -410,7 +423,7 @@ pub fn primeiro_sps(annexb: &[u8]) -> Option<&[u8]> {
     saida.map(|(a, b)| &annexb[a..b])
 }
 
-fn analisar(nal: &[u8]) -> Option<ResumoSps> {
+pub(crate) fn analisar(nal: &[u8]) -> Option<ResumoSps> {
     analisar_com_posicoes(nal).map(|(r, _)| r)
 }
 
@@ -434,16 +447,23 @@ fn analisar_com_posicoes(nal: &[u8]) -> Option<(ResumoSps, Posicoes)> {
     let profile_idc = b.u(8)? as u8;
     let constraint_flags = b.u(8)? as u8;
     let level_idc = b.u(8)? as u8;
-    b.ue()?; // seq_parameter_set_id
+    let sps_id = b.ue()?;
+    if sps_id > 31 {
+        return None;
+    }
 
     let mut chroma_format_idc = 1u32;
+    let mut separate_colour_plane = false;
     if matches!(
         profile_idc,
         100 | 110 | 122 | 244 | 44 | 83 | 86 | 118 | 128 | 138 | 139 | 134 | 135
     ) {
         chroma_format_idc = b.ue()?;
+        if chroma_format_idc > 3 {
+            return None;
+        }
         if chroma_format_idc == 3 {
-            b.u(1)?; // separate_colour_plane_flag
+            separate_colour_plane = b.u(1)? == 1;
         }
         b.ue()?; // bit_depth_luma_minus8
         b.ue()?; // bit_depth_chroma_minus8
@@ -458,8 +478,14 @@ fn analisar_com_posicoes(nal: &[u8]) -> Option<(ResumoSps, Posicoes)> {
         }
     }
 
-    b.ue()?; // log2_max_frame_num_minus4
+    let bits_frame_num = b.ue()?.checked_add(4)?;
+    if bits_frame_num > 16 {
+        return None;
+    }
     let pic_order_cnt_type = b.ue()?;
+    if pic_order_cnt_type > 2 {
+        return None;
+    }
     if pic_order_cnt_type == 0 {
         b.ue()?; // log2_max_pic_order_cnt_lsb_minus4
     } else if pic_order_cnt_type == 1 {
@@ -467,6 +493,9 @@ fn analisar_com_posicoes(nal: &[u8]) -> Option<(ResumoSps, Posicoes)> {
         b.se()?; // offset_for_non_ref_pic
         b.se()?; // offset_for_top_to_bottom_field
         let ciclo = b.ue()?;
+        if ciclo > 256 {
+            return None;
+        }
         for _ in 0..ciclo {
             b.se()?;
         }
@@ -508,10 +537,18 @@ fn analisar_com_posicoes(nal: &[u8]) -> Option<(ResumoSps, Posicoes)> {
     let altura = altura_map_units
         .checked_mul(mult_v)?
         .checked_mul(16)?
-        .checked_sub(topo.checked_add(base)?.checked_mul(sub_h)?.checked_mul(mult_v)?)?;
+        .checked_sub(
+            topo.checked_add(base)?
+                .checked_mul(sub_h)?
+                .checked_mul(mult_v)?,
+        )?;
 
     let mut resumo = ResumoSps {
         bytes: nal.len(),
+        sps_id,
+        bits_frame_num,
+        separate_colour_plane,
+        frame_mbs_only: frame_mbs_only == 1,
         profile_idc,
         constraint_flags,
         level_idc,
@@ -526,8 +563,11 @@ fn analisar_com_posicoes(nal: &[u8]) -> Option<(ResumoSps, Posicoes)> {
         max_dec_frame_buffering: None,
     };
 
-    let mut posicoes =
-        Posicoes { bit_do_flag_de_vui: b.pos, bit_do_flag_de_restricao: None, max_num_ref_frames };
+    let mut posicoes = Posicoes {
+        bit_do_flag_de_vui: b.pos,
+        bit_do_flag_de_restricao: None,
+        max_num_ref_frames,
+    };
     if b.u(1)? == 1 {
         resumo.tem_vui = true;
         ler_vui(&mut b, &mut resumo, &mut posicoes.bit_do_flag_de_restricao);
@@ -582,8 +622,8 @@ fn ler_vui(b: &mut Bits, r: &mut ResumoSps, bit_da_restricao: &mut Option<usize>
         b.u(1)?; // low_delay_hrd_flag
     }
     b.u(1)?; // pic_struct_present_flag
-    // A posição só vale se o flag couber no RBSP: um SPS que acaba antes dele não é remendado (o
-    // mesmo que o C do plugin faz; revisão da S7, N2).
+             // A posição só vale se o flag couber no RBSP: um SPS que acaba antes dele não é remendado (o
+             // mesmo que o C do plugin faz; revisão da S7, N2).
     let pos_do_flag = b.pos;
     let flag = b.u(1)?;
     *bit_da_restricao = Some(pos_do_flag);
@@ -635,7 +675,7 @@ fn pular_lista_de_escala(b: &mut Bits, tamanho: usize) -> Option<()> {
 ///
 /// Sem isto, um SPS que contenha o padrão — o que acontece de verdade em campos de recorte e em
 /// VUI — é lido a partir de um byte deslocado, e o parser devolve números plausíveis e errados.
-fn desescapar(bruto: &[u8]) -> Vec<u8> {
+pub(crate) fn desescapar(bruto: &[u8]) -> Vec<u8> {
     let mut saida = Vec::with_capacity(bruto.len());
     let mut zeros = 0usize;
     for &byte in bruto {
@@ -653,17 +693,17 @@ fn desescapar(bruto: &[u8]) -> Vec<u8> {
     saida
 }
 
-struct Bits<'a> {
+pub(crate) struct Bits<'a> {
     dados: &'a [u8],
     pos: usize,
 }
 
 impl<'a> Bits<'a> {
-    fn new(dados: &'a [u8]) -> Self {
+    pub(crate) fn new(dados: &'a [u8]) -> Self {
         Bits { dados, pos: 0 }
     }
 
-    fn u(&mut self, n: usize) -> Option<u32> {
+    pub(crate) fn u(&mut self, n: usize) -> Option<u32> {
         if n > 32 {
             return None;
         }
@@ -677,7 +717,7 @@ impl<'a> Bits<'a> {
         Some(v)
     }
 
-    fn ue(&mut self) -> Option<u32> {
+    pub(crate) fn ue(&mut self) -> Option<u32> {
         let mut zeros = 0usize;
         loop {
             let bit = self.u(1)?;
@@ -814,7 +854,10 @@ mod testes {
     #[test]
     fn desescapa_antes_de_ler() {
         // `00 00 03 01` tem de virar `00 00 01` na leitura.
-        assert_eq!(desescapar(&[0x00, 0x00, 0x03, 0x01]), vec![0x00, 0x00, 0x01]);
+        assert_eq!(
+            desescapar(&[0x00, 0x00, 0x03, 0x01]),
+            vec![0x00, 0x00, 0x01]
+        );
         // Um `03` que não vem depois de dois zeros é dado, não escape.
         assert_eq!(desescapar(&[0x01, 0x03, 0x00]), vec![0x01, 0x03, 0x00]);
     }
@@ -858,10 +901,17 @@ mod testes {
         let p = preparar_para_o_decoder(&mut q);
         assert!(p.constrained, "o constraint_set1 continua sendo marcado");
         let r = resumir(&q).expect("o SPS continua legível");
-        assert!(r.declara_a_restricao(), "o SPS que vai ao decoder: {}", r.linha());
+        assert!(
+            r.declara_a_restricao(),
+            "o SPS que vai ao decoder: {}",
+            r.linha()
+        );
         assert_eq!(r.max_num_reorder_frames, Some(0));
         assert_eq!(r.max_dec_frame_buffering, Some(1));
-        assert_eq!((r.profile_idc, r.level_idc, r.largura, r.altura), (66, 31, 1280, 720));
+        assert_eq!(
+            (r.profile_idc, r.level_idc, r.largura, r.altura),
+            (66, 31, 1280, 720)
+        );
         assert_eq!(r.constraint_flags, 0x40, "Constrained Baseline, e só isso");
         let remendo = p.restricao.expect("o remendo diz o que fez");
         assert!(!remendo.antes.declara_a_restricao());
@@ -899,7 +949,10 @@ mod testes {
             let mut q = idr_da_sonda();
             q[5] = perfil;
             let antes = q.clone();
-            assert!(declarar_restricao_de_bitstream(&mut q).is_none(), "perfil {perfil}");
+            assert!(
+                declarar_restricao_de_bitstream(&mut q).is_none(),
+                "perfil {perfil}"
+            );
             assert_eq!(q, antes, "perfil {perfil}");
         }
     }
@@ -939,7 +992,10 @@ mod testes {
         q.extend_from_slice(&nal);
         q.extend_from_slice(&[0, 0, 1, 0x65, 0x88]);
         let r = declarar_restricao_de_bitstream(&mut q).expect("remendou");
-        assert_eq!((r.depois.full_range, r.depois.cor), (Some(true), Some((1, 1, 1))));
+        assert_eq!(
+            (r.depois.full_range, r.depois.cor),
+            (Some(true), Some((1, 1, 1)))
+        );
         assert_eq!(r.depois.max_num_reorder_frames, Some(0));
         assert!(q.ends_with(&[0, 0, 1, 0x65, 0x88]), "a fatia não muda");
     }
@@ -949,11 +1005,12 @@ mod testes {
     /// 709 e sem a restrição, antes e depois. Os dois conferidos à parte pelo `tools/ler-sps.py`.
     #[test]
     fn o_sps_com_vui_sai_como_o_parser_independente_leu() {
-        const ANTES: &[u8] =
-            &[0x27, 0x42, 0x00, 0x1f, 0xab, 0x40, 0x28, 0x02, 0xdd, 0x37, 0x01, 0x01, 0x01, 0x02];
+        const ANTES: &[u8] = &[
+            0x27, 0x42, 0x00, 0x1f, 0xab, 0x40, 0x28, 0x02, 0xdd, 0x37, 0x01, 0x01, 0x01, 0x02,
+        ];
         const DEPOIS: &[u8] = &[
-            0x27, 0x42, 0x00, 0x1f, 0xab, 0x40, 0x28, 0x02, 0xdd, 0x37, 0x01, 0x01, 0x01, 0x07, 0x84,
-            0x42, 0x35,
+            0x27, 0x42, 0x00, 0x1f, 0xab, 0x40, 0x28, 0x02, 0xdd, 0x37, 0x01, 0x01, 0x01, 0x07,
+            0x84, 0x42, 0x35,
         ];
         let mut q = vec![0, 0, 0, 1];
         q.extend_from_slice(ANTES);
@@ -968,14 +1025,19 @@ mod testes {
     /// A busca para na primeira fatia: um `0x67` dentro dos dados de uma fatia não é SPS.
     #[test]
     fn quadro_p_nao_ganha_restricao() {
-        let mut q = vec![0, 0, 0, 1, 0x41, 0x9A, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x1f];
+        let mut q = vec![
+            0, 0, 0, 1, 0x41, 0x9A, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x1f,
+        ];
         let antes = q.clone();
         assert!(declarar_restricao_de_bitstream(&mut q).is_none());
         assert_eq!(q, antes);
     }
 
     fn de_hex(h: &str) -> Vec<u8> {
-        (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i + 2], 16).expect("hex")).collect()
+        (0..h.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&h[i..i + 2], 16).expect("hex"))
+            .collect()
     }
 
     /// Os dois SPS malformados da revisão (B1): numa compilação de debug (a do `cargo test`), o
@@ -984,7 +1046,10 @@ mod testes {
     /// zeros no `chroma_loc`). Agora dão `None`, e o quadro sai intocado.
     #[test]
     fn sps_malformado_nao_entra_em_panico_e_fica_como_veio() {
-        for hex in ["2742001ff402802df007d3a0", "6742c028d900780227e58c00000300020004000003000810"] {
+        for hex in [
+            "2742001ff402802df007d3a0",
+            "6742c028d900780227e58c00000300020004000003000810",
+        ] {
             let nal = de_hex(hex);
             let mut q = vec![0, 0, 0, 1];
             q.extend_from_slice(&nal);
@@ -1028,10 +1093,17 @@ mod testes {
 
     #[test]
     fn o_escape_de_emulacao_volta_ao_que_era() {
-        for bruto in [vec![0u8, 0, 1, 0, 0, 0, 0, 3, 7], vec![0, 0, 0, 0, 2], vec![1, 2, 3]] {
+        for bruto in [
+            vec![0u8, 0, 1, 0, 0, 0, 0, 3, 7],
+            vec![0, 0, 0, 0, 2],
+            vec![1, 2, 3],
+        ] {
             assert_eq!(desescapar(&escapar(&bruto)), bruto);
             let e = escapar(&bruto);
-            assert!(!e.windows(3).any(|w| w[0] == 0 && w[1] == 0 && w[2] <= 2), "{e:?}");
+            assert!(
+                !e.windows(3).any(|w| w[0] == 0 && w[1] == 0 && w[2] <= 2),
+                "{e:?}"
+            );
         }
     }
 }

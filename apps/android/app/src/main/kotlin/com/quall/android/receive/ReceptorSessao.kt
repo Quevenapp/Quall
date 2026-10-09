@@ -214,6 +214,7 @@ class ReceptorSessao(
      * `0 to 0` é "não digo". Ver `QuallNative.connectStart`.
      */
     private val telaDoAparelho: Pair<Int, Int> = 0 to 0,
+    private val contextoDeGravacao: android.content.Context? = null,
 ) {
 
     companion object {
@@ -353,6 +354,49 @@ class ReceptorSessao(
      * track nem na caixa de quadros: levanta a bandeira e, se houver espera em curso, aciona o
      * cancelador atrás da trava que [rodar] usa para zerá-lo.
      */
+    @Volatile private var gravarPedido: Boolean? = null
+    @Volatile private var gravadorRecebido: GravadorRecebido? = null
+    private var caixaDeGravacao = 0L
+
+    /** UI command only; native handles are owned by the session worker. */
+    fun gravarRecepcao(gravar: Boolean) { gravarPedido = gravar }
+
+    private fun atualizarGravacao(track: Long, caixa: Long) {
+        if (gravadorRecebido?.terminou() == true) pararGravacao(caixa)
+        val pedido = gravarPedido ?: return
+        gravarPedido = null
+        if (!pedido) { pararGravacao(caixa, esperar = false); return }
+        if (gravadorRecebido != null) return
+        val contexto = contextoDeGravacao ?: return
+        caixaDeGravacao = QuallNative.recordingBoxNew()
+        if (caixaDeGravacao == 0L) {
+            GravacaoRecebidaBus.publicar(GravacaoRecebidaBus.Estado(GravacaoRecebidaBus.Fase.ERRO, detalhe = "memoria"))
+            return
+        }
+        val g = GravadorRecebido(contexto, caixaDeGravacao, track, { trackDeAudio }, reprodutor?.preset,
+            presetDeAudio = { reprodutor?.preset })
+        gravadorRecebido = g
+        QuallNative.frameBoxSetRecording(caixa, caixaDeGravacao)
+        if (!g.iniciar()) {
+            QuallNative.frameBoxSetRecording(caixa, 0L)
+            gravadorRecebido = null
+            QuallNative.frameBoxFree(caixaDeGravacao)
+            caixaDeGravacao = 0L
+        }
+    }
+    private fun pararGravacao(caixa: Long, esperar: Boolean = true) {
+        QuallNative.frameBoxSetRecording(caixa, 0L)
+        val g = gravadorRecebido ?: return
+        g.pedirParada()
+        // A normal recording Stop does not pause the display decoder while AAC and disk finish.
+        // Disconnection still waits before freeing either track/native mailbox.
+        if (!esperar && !g.terminou()) return
+        gravadorRecebido = null
+        g.parar()
+        QuallNative.frameBoxFree(caixaDeGravacao)
+        caixaDeGravacao = 0L
+    }
+
     fun parar() {
         pararPedido = true
         synchronized(cancelLock) {
@@ -581,6 +625,7 @@ class ReceptorSessao(
         } finally {
             // A bombeada da câmera sai antes de a sessão fechar (o handle das mensagens sobrevive a ela,
             // mas o controle é liberado só com a thread fora dele).
+            pararGravacao(caixa)
             camera?.fechar()
             // O áudio sai **antes** do vídeo, e antes de qualquer `trackFree`: o desligamento
             // dele é barreira e escoa o buffer, e a track precisa estar viva para isso.
@@ -690,6 +735,7 @@ class ReceptorSessao(
         ultimoPedidoDeIdr = MonotonicClock.micros()
 
         while (!pararPedido) {
+            atualizarGravacao(track, caixa)
             // O detector de queda, com prazo zero: ele olha a sinalização, que sabe em
             // milissegundos, em vez de esperar o `CONSENT_TIMEOUT` de 30 s do libjuice.
             when (QuallNative.sessionNextEvent(sessao, 0)) {
@@ -1215,6 +1261,7 @@ class ReceptorSessao(
         }
         Log.i(TAG, "track de áudio recebida: $rotulo (kind=$kind)")
         val r = ReprodutorDeAudio(track, kind, gravarAudioEm)
+        r.aoPcmRecebido = { pcm, n, seq, ts, taxa, canais -> gravadorRecebido?.som(pcm, n, seq, ts, taxa, canais) }
         if (r.iniciar()) {
             reprodutor = r
             ReceptorBus.atualizar { it.copy(rotuloDoAudio = rotulo, audioTocando = true) }

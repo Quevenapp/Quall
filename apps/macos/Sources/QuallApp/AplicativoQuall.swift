@@ -453,15 +453,20 @@ final class DelegadoDoApp: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let gravandoNaTela = Teleprompter.atual?.camera?.gravador?.estado.ocupada == true
         let gravandoNaEspera = Emissor.atual?.gravador?.estado.ocupada == true
-        guard gravandoNaTela || gravandoNaEspera || TelaComCamera.emFecho > 0 else { return .terminateNow }
+        let recebido = Receptor.atual?.gravacaoRecebida
+        let gravandoRecebido = recebido?.ativo == true || recebido?.fechando == true
+        guard gravandoNaTela || gravandoNaEspera || gravandoRecebido || TelaComCamera.emFecho > 0 else { return .terminateNow }
         Registro.compartilhado.linha("app vai fechar com a câmera gravando: fechando o arquivo antes (até 8 s)")
         Teleprompter.atual?.sair()
         Emissor.atual?.encerrar()
+        Receptor.atual?.parar()
         let inicio = Date()
         func esperar() {
             // O Emissor só abre o fecho da câmera depois de as sessões desmontarem: esperar também a
             // fase dele voltar ao começo, senão o contador ainda estaria em zero.
+            let r = Receptor.atual?.gravacaoRecebida
             let pronto = TelaComCamera.emFecho == 0 && (Emissor.atual?.fase ?? .inicial) == .inicial
+                && r?.ativo != true && r?.fechando != true
             if pronto || Date().timeIntervalSince(inicio) > 8 {
                 Registro.compartilhado.linha(pronto ? "arquivo fechado; saindo"
                                              : "saindo sem esperar o arquivo (8 s): vira pendente na volta")

@@ -286,7 +286,11 @@ object CopiaCrua {
      * também, no fim. O arquivo só nasce no [abrir] (os formatos chegaram): antes disso não há MP4
      * a recuperar.
      */
-    class Escritor(private val arquivo: File, private val id: Long, private val nome: String) {
+    class Escritor(
+        private val arquivo: File, private val id: Long, private val nome: String,
+        /** The receiver serializes parts: a slow disk must never leave a writer behind per part. */
+        private val esperarFechamento: Boolean = false,
+    ) {
         private class Item(val video: Boolean, val chave: Boolean, val pts: Long, val dados: ByteArray)
         private val fim = Item(false, false, -1, ByteArray(0))
         private val fila = LinkedBlockingQueue<Item>()
@@ -364,7 +368,7 @@ object CopiaCrua {
             if (!aberta) return "nao_aberta"
             aberta = false
             fila.put(fim)
-            thread?.join(10_000)
+            thread?.join(if (esperarFechamento) 0L else 10_000L)
             return if (incompleta) "guardada_incompleta" else "guardada"
         }
     }

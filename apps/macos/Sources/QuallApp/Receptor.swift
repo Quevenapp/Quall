@@ -42,6 +42,9 @@ final class Receptor: ObservableObject, @unchecked Sendable {
 
     @Published private(set) var fase: Fase = .fechado
     @Published private(set) var mensagem = ""
+    @Published private(set) var gravacaoRecebida = GravadorRecebido.Estado()
+    private let gravadorRecebido = GravadorRecebido()
+    private var pedirIDRDaGravacao = false
     @Published private(set) var endereco = ""
     @Published private(set) var par = ""
     @Published private(set) var pareamentoNovo = false
@@ -233,6 +236,15 @@ final class Receptor: ObservableObject, @unchecked Sendable {
 
     init() {
         Receptor.atual = self
+        gravadorRecebido.aoEstado = { [weak self] e in
+            guard let self else { return }
+            self.gravacaoRecebida = e
+            if !e.ativo, !e.mensagem.isEmpty { self.mensagem = e.mensagem }
+        }
+        gravadorRecebido.aoPedirIDR = { [weak self] in
+            guard let self else { return }; self.trava.lock()
+            self.pedirIDRDaGravacao = true; self.trava.unlock()
+        }
         if let v = UserDefaults.standard.object(forKey: Receptor.chaveDoVolume) as? Float { somVolume = v }
         if let v = argumentos.somVolume { somVolume = min(max(v, 0), 1) }
         somMudo = argumentos.somMudo
@@ -298,6 +310,8 @@ final class Receptor: ObservableObject, @unchecked Sendable {
 
         guard thread == nil else { return }
 
+        nucleo.prepararConexao()
+
         endereco = alvo
         par = ""
         rotuloDaTrack = ""
@@ -336,6 +350,17 @@ final class Receptor: ObservableObject, @unchecked Sendable {
         guard fase != .fechado, fase != .formulario else { return }
         if fase != .encerrando { fase = .encerrando }
         nucleo.parar()
+    }
+
+    func alternarGravacaoRecebida() {
+        guard !gravacaoRecebida.fechando else { return }
+        if gravacaoRecebida.ativo { gravadorRecebido.parar(); return }
+        guard fase == .exibindo else { return }
+        let formato = nucleo.portaDeSom?.formato
+        let pasta = FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("Quall", isDirectory: true)
+        gravadorRecebido.iniciar(nome: par, pasta: pasta, canais: formato?.canais,
+            atrasoAudioUs: Int64(formato?.atrasoInternoUs ?? 0))
     }
 
     // MARK: - a corrida (roda inteira fora da main)
@@ -542,6 +567,7 @@ final class Receptor: ObservableObject, @unchecked Sendable {
         trava.lock(); self.decodificador = decodificador; trava.unlock()
 
         let registro = nucleo.ouvirQuadros { [weak decodificador] bytes, ts, idr in
+            self.gravadorRecebido.quadro(bytes, timestampUs: ts, idr: idr)
             let agora = Medidas.agoraUs()
             travaDoTempo.lock()
             ultimaChegadaUs = agora
@@ -609,6 +635,10 @@ final class Receptor: ObservableObject, @unchecked Sendable {
         trava.lock(); controleRemoto = bombeandoACamera ? controle : nil; trava.unlock()
 
         while !nucleo.parou {
+            gravadorRecebido.relogios(video: nucleo.deslocamentoCruDeCaptura(doSom: false),
+                                     audio: nucleo.deslocamentoCruDeCaptura(doSom: true))
+            trava.lock(); let pedidoGravacao = pedirIDRDaGravacao; pedirIDRDaGravacao = false; trava.unlock()
+            if pedidoGravacao { _ = nucleo.pedirIdr() }
             if let fimUs, Medidas.agoraUs() >= fimUs {
                 motivoDaSaida = "o tempo de bancada (--segundos) acabou"
                 break
@@ -900,6 +930,11 @@ final class Receptor: ObservableObject, @unchecked Sendable {
             return
         }
         if argumentos.claquete { porta.ligarClaquete() }
+        gravadorRecebido.configurarSom(canais: porta.formato.canais,
+            atrasoAudioUs: Int64(porta.formato.atrasoInternoUs))
+        porta.aoPCM = { [weak self] bytes, n, ts in
+            self?.gravadorRecebido.som(bytes, amostras: n, timestampUs: ts)
+        }
         let t = Tocador(formato: porta.formato, fonte: porta.fonte)
         t.aoRegistrar = { linha in Registro.compartilhado.linha("receptor: \(linha)") }
         trava.lock()
@@ -1349,6 +1384,7 @@ final class Receptor: ObservableObject, @unchecked Sendable {
     /// O decodificador só é fechado **depois** de o tratador de quadro estar desregistrado com
     /// barreira: fechar antes deixaria um quadro em voo entrando numa sessão de VideoToolbox morta.
     private func desmontar(voltarAoFormulario: Bool) {
+        gravadorRecebido.parar(receberSomAtrasado: false)
         // **O motor para antes de a porta ser liberada**: nenhuma puxada pode estar em curso quando
         // `quall_audio_playout_free` roda (`docs/contrato-som-puxado.md` §2).
         trava.lock()

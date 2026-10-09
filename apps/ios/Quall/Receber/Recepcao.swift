@@ -29,6 +29,7 @@ final class Recepcao: ObservableObject {
 
     let painel = Painel()
     let exibidor = Exibidor()
+    let gravador = GravadorDoReceptor()
     /// A câmera de quem filma (R9b): o painel "Ajustes da câmera" da tela de recepção. Vive o app; a
     /// sessão de agora o alimenta.
     let cameraRemota = ControleRemotoDaCamera()
@@ -53,10 +54,10 @@ final class Recepcao: ObservableObject {
                                    automatico: false)
     }
 
-    func parar() { sessao?.parar() }
+    func parar() { gravador.parar(); sessao?.parar() }
 
     private func iniciar(endereco: String, pin: String?, segundos: Double) {
-        let nova = SessaoDeRecepcao(painel: painel, exibidor: exibidor, cameraRemota: cameraRemota)
+        let nova = SessaoDeRecepcao(painel: painel, exibidor: exibidor, cameraRemota: cameraRemota, gravador: gravador)
         sessao = nova
         nova.iniciar(endereco: endereco, pin: pin, segundos: segundos)
     }

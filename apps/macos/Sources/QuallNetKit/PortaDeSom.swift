@@ -31,6 +31,10 @@ import QuallReceptorKit
 /// um render que escapasse do desmonte lia memória liberada (crítica 9, G1).
 public final class PortaDeSom {
 
+    /// Set before the output starts. Receives decoded 48 kHz PCM before mute/volume/resampling;
+    /// the receiver recorder copies into a preallocated mailbox and never waits on this thread.
+    public var aoPCM: ((UnsafePointer<Float>, Int, UInt64) -> Void)?
+
     public let especie: EspecieDeTrack
     public let codec: String
     public let formato: Tocador.Formato
@@ -174,6 +178,9 @@ public final class PortaDeSom {
             return puxarEDecodificar(p, atraso, razao, destino, cap)
         }
         let s = feito ?? ocioso
+        if s.ordem != .ocioso, s.amostrasPorCanal > 0 {
+            aoPCM?(UnsafePointer(destino), s.amostrasPorCanal * formato.canais, s.timestampUs)
+        }
         if detector != nil, s.ordem != .ocioso, s.amostrasPorCanal > 0,
            let o = detector!.processar(destino, s.amostrasPorCanal, salto: formato.canais) {
             let r = razao.isFinite && razao > 0 ? razao : 1

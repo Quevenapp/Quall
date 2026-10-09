@@ -2,5 +2,5 @@
    (or Settings › Quall › Language), not by the in-app PT | EN switch. */
 "NSCameraUsageDescription" = "Quall Studio uses the camera to show a preview, record video, and send the image to the devices you choose.";
 "NSMicrophoneUsageDescription" = "Quall Studio uses the microphone to add audio to streaming and recording when you turn on the microphone button.";
-"NSPhotoLibraryAddUsageDescription" = "Quall Studio saves to your camera roll the video you record on the teleprompter with camera screen. It only adds videos; it doesn't read your photos.";
+"NSPhotoLibraryAddUsageDescription" = "Quall Studio adds camera and received mirroring recordings to Photos. It does not read your photos.";
 "NSLocalNetworkUsageDescription" = "Quall Studio uses the local network to discover and connect to the devices you choose, send screen and camera video, and receive content from another device.";

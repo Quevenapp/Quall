@@ -1978,6 +1978,19 @@ enum QuallStatus quall_audio_playout_free(struct QuallAudioPlayout *p);
 int32_t quall_track_capture_offset_us(const struct QuallTrack *t, int64_t *out_us);
 
 /**
+ * Deslocamento de captura para gravação. A guarda da reprodução não suprime este valor.
+ * Retorna 1 com saídas escritas, 0 enquanto a medida não existe, -1 para erro. `out_guard`
+ * recebe 1 (válida), 0 (pendente) ou -1 (recusada). As saídas não mudam com retorno 0/-1.
+ * Não usar no render de áudio: esta consulta toma o cadeado do relógio da sessão.
+ *
+ * # Safety
+ * Handle receptor válido e duas saídas graváveis, distintas.
+ */
+int32_t quall_track_capture_offset_raw_us(const struct QuallTrack *t,
+                                          int64_t *out_us,
+                                          int32_t *out_guard);
+
+/**
  * **`ao_pedir_idr` do contrato.** Registra o tratador do pedido de IDR do receptor.
  *
  * Disparado quando chega **PLI ou FIR**. A casca responde forçando um IDR pelo meio que a

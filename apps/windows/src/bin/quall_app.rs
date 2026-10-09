@@ -450,6 +450,8 @@ fn rodar() -> windows::core::Result<()> {
     }
     receptor.encerrar();
     receptor.busca.parar();
+    let receptor_finalizou = receptor.esperar_encerramento(Duration::from_secs(15));
+    if !receptor_finalizou { registro::linha("receptor: a gravação não terminou em 15 s; sem MFShutdown enquanto escreve"); }
     // **Com várias sessões, a espera fixa não basta**: são até oito desmontes (encoders, oficinas,
     // links) e o adeus do mDNS, e um `MFShutdown` com MFT vivo ou uma saída antes do `Bye` é o que
     // a espera existe para evitar (revisão adversarial de 13/09/2026). Espera todas avisarem, com
@@ -477,7 +479,7 @@ fn rodar() -> windows::core::Result<()> {
     let pode_desligar = quall_capture_probe::captura_de_camera::esperar_solturas_na_saida(Duration::from_secs(30));
     registro::linha("quall-app encerrou");
 
-    if pode_desligar {
+    if pode_desligar && receptor_finalizou {
         unsafe {
             let _ = MFShutdown();
             CoUninitialize();

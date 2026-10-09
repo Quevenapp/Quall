@@ -60,6 +60,7 @@ final class Painel: ObservableObject {
     @Published var par = ""
     @Published var pareamentoNovo = false
     @Published var rotuloDaTrack = ""
+    @Published var podeGravarVideo = false
     @Published var dimensao = ""
     @Published var perfil = ""
     @Published var primeiraImagemMs: Double = 0
@@ -294,6 +295,9 @@ final class SessaoDeRecepcao {
     let exibidor: Exibidor
     private var decodificador: DecodificadorH264?
     private var thread: Thread?
+    private let gravador: GravadorDoReceptor?
+    private let travaDaGravacao = NSLock()
+    private var gravacaoQuerIdr = false
 
     // --- o lado do som -------------------------------------------------------------------------
     //
@@ -347,10 +351,12 @@ final class SessaoDeRecepcao {
     /// ele. `nil` só nos testes de bancada que montam a sessão sem tela.
     private let cameraRemota: ControleRemotoDaCamera?
 
-    init(painel: Painel, exibidor: Exibidor, cameraRemota: ControleRemotoDaCamera? = nil) {
+    init(painel: Painel, exibidor: Exibidor, cameraRemota: ControleRemotoDaCamera? = nil,
+         gravador: GravadorDoReceptor? = nil) {
         self.painel = painel
         self.exibidor = exibidor
         self.cameraRemota = cameraRemota
+        self.gravador = gravador
     }
 
     // --- o controle remoto da câmera (R9b) ------------------------------------------------------
@@ -436,8 +442,13 @@ final class SessaoDeRecepcao {
 
     private func correr(endereco: String, pin: String?, segundos: Double) {
         defer { thread = nil }
+        gravador?.preparar { [weak self] in
+            guard let self else { return }
+            self.travaDaGravacao.lock(); self.gravacaoQuerIdr = true; self.travaDaGravacao.unlock()
+        }
 
         publicar { $0.fase = .conectando; $0.endereco = endereco; $0.precisaDePin = false
+                   $0.podeGravarVideo = false
                    $0.precisaDeRedeLocal = false
                    $0.dizer { pin == nil ? tr("retomando pareamento…") : tr("conectando e pareando…") } }
 
@@ -531,6 +542,7 @@ final class SessaoDeRecepcao {
         }
         let nomeDaTrack = rotulo.isEmpty ? (tipo == QUALL_TRACK_KIND_CAMERA ? "câmera" : "tela") : rotulo
         Diario.dizer("track recebida (kind=\(tipo.rawValue))")
+        publicar { $0.podeGravarVideo = true }
         // O rótulo que o emissor deu vai como veio; só o nome padrão segue o idioma da interface.
         let nomeNaTela = rotulo.isEmpty
             ? (tipo == QUALL_TRACK_KIND_CAMERA ? tr("câmera") : tr("tela")) : rotulo
@@ -699,7 +711,8 @@ final class SessaoDeRecepcao {
         // `primeiraImagemUs`, que sempre foi exata.
         var primeiroIdrUs: UInt64 = 0
 
-        let registro = nucleo.ouvirQuadros { [weak decodificador] bytes, ts, idr in
+        let registro = nucleo.ouvirQuadros { [weak decodificador, weak gravador] bytes, ts, idr in
+            gravador?.quadro(bytes, ts: ts, idr: idr)
             let agora = Medidas.agoraUs()
             travaDoTempo.lock()
             ultimaChegadaUs = agora
@@ -861,6 +874,10 @@ final class SessaoDeRecepcao {
             // O detector de queda, com prazo pequeno: ele olha a sinalização, que sabe em
             // milissegundos, em vez de esperar o `CONSENT_TIMEOUT` de 30 s do libjuice.
             let e = nucleo.evento(prazoMs: 50)
+            travaDaGravacao.lock(); let pedirParaGravar = gravacaoQuerIdr; gravacaoQuerIdr = false; travaDaGravacao.unlock()
+            if pedirParaGravar { nucleo.pedirIdr() }
+            let o = nucleo.deslocamentosBrutos()
+            gravador?.relogio(video: o.video, audio: o.audio)
             // R9b: a câmera de quem filma, na mesma thread do `next_event` (contrato §11.1).
             bombearCamera(prazoMs: 0)
             // As duas mensagens de saída nomeiam **o quê, onde e o que fazer**. A anterior era
@@ -1153,6 +1170,7 @@ final class SessaoDeRecepcao {
             return
         }
         decodificadorDeAudio = dec
+        gravador?.configurarSom(taxa: Int(preset.taxaHz), canais: preset.canais)
 
         let saida = SaidaDeAudio()
         guard saida.abrir(taxaHz: Double(preset.taxaHz), canais: preset.canais) else {
@@ -1164,7 +1182,7 @@ final class SessaoDeRecepcao {
         saidaDeAudio = saida
         analisadorDeTom = AnalisadorDeTom(taxaHz: Double(preset.taxaHz), canais: preset.canais)
 
-        let registro = nucleo.ouvirAudio { [weak self] ordem, bytes, _, _, temLbrr in
+        let registro = nucleo.ouvirAudio { [weak self] ordem, bytes, sequencia, timestamp, temLbrr in
             guard let self else { return }
             // TOC só existe em Opus. PCMU pode coincidir com um TOC válido e nunca serve para
             // inferir codec. Se o Opus exigir remontagem, usa os novos decoder e saída abaixo.
@@ -1178,13 +1196,16 @@ final class SessaoDeRecepcao {
                 // O decodificador falhou. **O DAC ainda precisa de 20 ms**: um buraco na fila do tocador
                 // é um estalo, e a política do núcleo é justamente "sempre, sem buraco". Silêncio
                 // explícito é a única saída honesta, e o contador de falhas já registrou o quê.
-                s.tocar([Int16](repeating: 0, count: d.amostrasPorQuadro * d.canais))
+                let silencio = [Int16](repeating: 0, count: d.amostrasPorQuadro * d.canais)
+                self.gravador?.som(silencio, taxa: Int(d.taxaHz), canais: d.canais, ordem: sequencia, ts: timestamp)
+                s.tocar(silencio)
                 return
             }
             // **Medido antes de tocar, e sobre o mesmo vetor que vai para o alto-falante.** Medir
             // depois exigiria uma cópia; medir outra coisa mediria outra coisa. O analisador lê e
             // não guarda nada.
             self.analisadorDeTom?.medir(pcm)
+            self.gravador?.som(pcm, taxa: Int(d.taxaHz), canais: d.canais, ordem: sequencia, ts: timestamp)
             s.tocar(pcm)
         }
         guard registro == QUALL_STATUS_OK else {
@@ -1255,6 +1276,7 @@ final class SessaoDeRecepcao {
         // leria uma amostra a cada duas, o que dobra a frequência aparente e faria o Goertzel
         // acusar a nota errada. Mesmo defeito do fator de 6, uma camada acima.
         analisadorDeTom = AnalisadorDeTom(taxaHz: Double(preset.taxaHz), canais: canais)
+        gravador?.configurarSom(taxa: Int(preset.taxaHz), canais: canais)
         presetDeAudio?.canais = canais
         presetDeAudio?.amostrasPorQuadro = amostrasPorQuadro
     }
@@ -1597,6 +1619,7 @@ final class SessaoDeRecepcao {
         // de vídeo já ser fechado depois da barreira, e não antes.
         if let som = linhaDeAudio() { Diario.dizer("FIM \(som)") }
         desmontarAudio()
+        if let gravador { DispatchQueue.main.async { gravador.parar() } }
         Diario.dizer("pegada final: \(Medidas.pegadaDeMemoria())")
     }
 }
