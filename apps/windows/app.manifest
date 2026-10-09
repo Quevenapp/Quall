@@ -2,7 +2,8 @@
 <!--
   Manifesto do app Windows do Quall.
 
-  Liga os Common Controls 6 e declara a consciência de DPI antes do início do processo.
+  Identifica o executável Win32, liga os Common Controls 6 e declara a consciência de DPI
+  antes do início do processo.
   Sem esta dependência declarada, o
   Windows 11 desenha o botão e a lista suspensa com a aparência clássica do Windows 95 — o app
   funciona igual e parece abandonado.
@@ -13,10 +14,11 @@
   "assemblyIdentity". A diretiva não chegou ao linker. É mais um caso da distância entre o que se
   supõe da plataforma e o que ela faz — a mesma família do `S_OK` que o driver ignora.
 
-  A identidade de pacote do produto está em `docs/identidade-windows.md` e **não** entra aqui:
-  este manifesto é de controles e DPI, não de identidade.
+  A assemblyIdentity própria permite validar este manifesto pelo mt.exe. Sua versão acompanha
+  a versão do executável no Cargo. A identidade MSIX do produto está em `docs/identidade-windows.md`.
 -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="Queven.Quall.Studio" version="1.0.0.0" />
   <dependency>
     <dependentAssembly>
       <assemblyIdentity
