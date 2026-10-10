@@ -10,6 +10,14 @@ desenvolvimento. Não são um pacote comercial final nem um redesign autorizado 
 Não representam capturas de uma release ou capacidades adicionais. Publicar o fonte não certifica
 builds, testes ou aprovação nas lojas.
 
+## Plugin para OBS — download
+
+O **Quall Studio OBS 1.0.0** está disponível para Windows x64 e macOS Apple Silicon.
+Consulte o [guia de instalação e requisitos](docs/obs.md), baixe os pacotes na
+[release oficial](https://github.com/Quevenapp/Quall/releases/tag/obs-v1.0.0) ou visite
+[o site do Quall](https://queven.com.br/quall/obs/).
+A release identifica a fonte correspondente e os limites de validação de cada plataforma.
+
 ## Recursos
 
 | Recurso | Alcance |
