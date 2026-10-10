@@ -5,6 +5,17 @@ a API libobs e incorpora o núcleo Rust; não é uma aplicação independente do
 de build desta árvore são para Windows e macOS. Este pacote de fontes não certifica execução,
 compatibilidade com uma instalação OBS específica, assinatura ou testes em aparelhos.
 
+## Instalar a versão publicada
+
+Para usar o plugin, baixe o pacote **Quall Studio OBS 1.0.0** para Windows x64 ou
+macOS Apple Silicon na [release oficial](https://github.com/Quevenapp/Quall/releases/tag/obs-v1.0.0).
+O [guia de instalação](../../docs/obs.md) reúne os downloads, caminhos de instalação,
+pareamento, requisitos e limites de validação.
+
+A fonte correspondente aos binários publicados é o
+[commit `f5e2d64f`](https://github.com/Quevenapp/Quall/tree/f5e2d64f1cf8f5c51352ebd55b93ea87806cbdd1),
+também disponível como arquivo completo na release. Use esse snapshot para reproduzir a versão.
+
 ## Licença
 
 O plugin e sua combinação são **GPL-3.0-or-later**, conforme [LICENSE-SCOPE.md](LICENSE-SCOPE.md)
