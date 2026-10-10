@@ -6,10 +6,8 @@
 	     separados. É por aqui que passam o pedido (PIN, porta, nome), o estado que a tela de
 	     espera mostra, o recado do Cancelar e o pareamento persistido.
 
-	     NÃO acrescentar com.apple.developer.networking.multicast aqui antes de o App ID mostrar a
-	     chave habilitada: se acrescentar antes, a falha vira erro de compilação e parece
-	     regressão. O pedido está com a Apple; enquanto isso vale o IP digitado, que é o fallback
-	     obrigatório do fluxo. -->
+	     A descoberta atual usa DNS-SD pelas APIs públicas; o endereço digitado continua
+	     disponível como alternativa. Este arquivo contém somente o App Group registrado. -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.br.com.queven.quall</string>

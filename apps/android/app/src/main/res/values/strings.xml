@@ -60,4 +60,6 @@
     <!-- Shared by several screens, and the screen labels in the manifest. -->
     <string name="ajustes">Settings</string>
     <string name="voltar">Back</string>
+    <string name="esp_pin_renovado">The pairing attempt ended. Enter the new PIN shown here to connect.</string>
+    <string name="esp_pin_geracao_falhou">Could not generate a new PIN. Stop and start sharing to try again.</string>
 </resources>

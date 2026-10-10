@@ -408,6 +408,7 @@ class ManipuladorDeTela: RPBroadcastSampleHandler {
     private func subirSessao(_ pedido: PedidoDeEspelhamento) {
         let thread = Thread { [weak self] in
             guard let self else { return }
+            var pedidoDaEspera = pedido // PIN mutável pertence só à thread do host
             var tentativa = 0
             var recuo: Double = 0
             /// Último instante em que **alguém apareceu** — mesmo que para errar o PIN. O teto de
@@ -450,7 +451,7 @@ class ManipuladorDeTela: RPBroadcastSampleHandler {
                 let candidato = Nucleo()
                 let conhecidos = Compartilhado.lerPares()
                 let subiu = candidato.hospedar(
-                    pin: pedido.pin,
+                    pin: pedidoDaEspera.pin,
                     porta: pedido.porta,
                     deviceId: pedido.deviceId,
                     nome: pedido.nome,
@@ -464,6 +465,18 @@ class ManipuladorDeTela: RPBroadcastSampleHandler {
                 guard subiu else {
                     let erro = candidato.ultimoMotivo
                     let gastou = CFAbsoluteTimeGetCurrent() - inicioDaTentativa
+                    let renovarPin = RenovacaoDoPin.exigida(apos: candidato.statusDaEspera)
+                    if renovarPin {
+                        guard let novo = RenovacaoDoPin.novo(diferenteDe: pedidoDaEspera.pin, sortear: Nucleo.sortearPin) else {
+                            self.desistir(tr("Não foi possível sortear o PIN da sessão."))
+                            return
+                        }
+                        guard Compartilhado.renovarPinDoPedido(esperado: pedidoDaEspera, novo: novo) else {
+                            self.desistir(tr("A transmissão foi encerrada pelo sistema."))
+                            return
+                        }
+                        pedidoDaEspera.pin = novo
+                    }
                     Diagnostico.nota("APPEX quall_host tentativa=\(tentativa) sem sessão"
                         + String(format: " em %.1f s", gastou) + " status=\(candidato.statusDaEspera.rawValue) erro=\(SanitizacaoDoLog.causaExterna(erro))")
 
@@ -471,8 +484,10 @@ class ManipuladorDeTela: RPBroadcastSampleHandler {
                     // Ele não vira erro na tela; vira mais uma volta do laço, na hora. Qualquer
                     // outro motivo a pessoa precisa ler — em especial o do ICE, que é a permissão
                     // de Rede Local negada e ela consegue consertar sozinha.
-                    if !erro.hasPrefix("tempo esgotado:") && !erro.isEmpty {
-                        conselhoVigente = Nucleo.conselho(para: erro)
+                    if renovarPin || (!erro.hasPrefix("tempo esgotado:") && !erro.isEmpty) {
+                        conselhoVigente = renovarPin
+                            ? tr("Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou.")
+                            : Nucleo.conselho(para: erro)
                         // Alguém apareceu — errando o PIN, desistindo no meio, seja o que for. O
                         // relógio do teto de espera reinicia: quem está tentando entrar não pode
                         // ser punido pela própria tentativa.

@@ -101,6 +101,7 @@ pub struct Painel {
     pub par: String,
     pub mensagem: String,
     pub anunciando: bool,
+    pub alias_da_descoberta: String,
     pub tentativas: u32,
     pub ja_houve_sessao: bool,
     pub ligacao: Ligacao,
@@ -117,6 +118,7 @@ impl Painel {
             par: String::new(),
             mensagem: String::new(),
             anunciando: false,
+            alias_da_descoberta: String::new(),
             tentativas: 0,
             ja_houve_sessao: false,
             ligacao: Ligacao::SemSessao,
@@ -634,18 +636,27 @@ impl Sessao {
             None
         };
         let anunciando = anunciante.is_some();
+        let alias_da_descoberta = anunciante.as_ref().map(|a| a.discovery_label().to_owned()).unwrap_or_default();
         self.registrar(&format!(
             "mdns: anunciou={anunciando} porta={porta} papel=teleprompter endereco={}",
             endereco.as_deref().unwrap_or("sem rede") // i18n: fora (diário)
         ));
 
-        let mut pin = match cfg.pin.as_deref().map(Pin::parse) {
-            Some(Ok(p)) => p,
+        let pin = match cfg.pin.as_deref().map(Pin::parse) {
+            Some(Ok(p)) => Some(p),
             Some(Err(e)) => {
                 self.registrar(&format!("!! o PIN da bancada não vale (status={}); sorteando", Codigo::de(&e).nome())); // i18n: fora (diário)
-                sortear_pin()
+                self.receber_pin_sorteado(Pin::generate())
             }
-            None => sortear_pin(),
+            None => self.receber_pin_sorteado(Pin::generate()),
+        };
+        let Some(mut pin) = pin else {
+            if let Some(a) = anunciante {
+                let _ = a.stop();
+            }
+            drop(servidor);
+            self.marcar_fim();
+            return;
         };
         let mut tentativa = 0u32;
         let mut falhando_desde: Option<Instant> = None;
@@ -663,6 +674,7 @@ impl Sessao {
                     p.porta = porta;
                     p.endereco = endereco;
                     p.anunciando = anunciando;
+                    p.alias_da_descoberta = alias_da_descoberta.clone();
                     p.tentativas = tentativa;
                 });
             }
@@ -740,7 +752,10 @@ impl Sessao {
                         }
                         Decisao::TentarDeNovo { pin: escolha, depois_ms } => {
                             if escolha == EscolhaDoPin::Novo {
-                                pin = sortear_pin();
+                                let Some(novo) = self.receber_pin_sorteado(Pin::generate()) else {
+                                    break;
+                                };
+                                pin = novo;
                                 trava(&self.medidas).pins_trocados += 1;
                                 self.evento(&format!("pin trocado depois de {}", codigo.nome())); // i18n: fora (diário)
                             }
@@ -759,6 +774,7 @@ impl Sessao {
         let parando = self.parando();
         self.publicar(|p| {
             p.anunciando = false;
+            p.alias_da_descoberta.clear();
             if parando {
                 p.fase = Fase::Parada;
             }
@@ -900,6 +916,24 @@ impl Sessao {
         self.marcar_fim();
     }
 
+    /// Falhar sem entropia não oferece um PIN fixo nem conserva um PIN velho na tela.
+    fn receber_pin_sorteado(&self, sorteio: quall_core::error::Result<Pin>) -> Option<Pin> {
+        match sorteio {
+            Ok(pin) => Some(pin),
+            Err(_) => {
+                self.registrar("!! não foi possível gerar PIN seguro; espera encerrada"); // i18n: fora (diário)
+                self.publicar(|p| {
+                    p.fase = Fase::Parada;
+                    p.pin.clear();
+                    p.anunciando = false;
+                    p.alias_da_descoberta.clear();
+                    p.mensagem = crate::idioma::t("Não foi possível gerar um PIN seguro. Feche e abra a tela para tentar de novo.").to_string();
+                });
+                None
+            }
+        }
+    }
+
     /// Dorme até `ms`, acordando antes se a tela pedir para parar.
     fn dormir(&self, ms: u64) {
         let fim = Instant::now() + Duration::from_millis(ms);
@@ -907,13 +941,6 @@ impl Sessao {
             std::thread::sleep(Duration::from_millis(20));
         }
     }
-}
-
-fn sortear_pin() -> Pin {
-    // `Pin::generate` só falha sem fonte de aleatoriedade do sistema; aí não há PIN seguro a
-    // oferecer, e um PIN fixo seria pior que parar — mas parar aqui deixaria a tela sem nada.
-    // O núcleo nunca falhou nisto em nenhuma plataforma; o registro diz se falhar.
-    Pin::generate().unwrap_or_else(|_| Pin::parse("000000").expect("seis dígitos"))
 }
 
 fn trava<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -983,6 +1010,85 @@ mod testes {
 
     fn replica(id: &str, papel: Papel) -> Arc<Teleprompter> {
         Arc::new(Teleprompter::nova(id, papel).expect("réplica"))
+    }
+
+    #[test]
+    fn falha_de_entropia_para_sem_pin_e_sem_detalhes_no_diario() {
+        let linhas = Arc::new(Mutex::new(Vec::<String>::new()));
+        let gravadas = Arc::clone(&linhas);
+        let mut amb = ambiente("falha-pin", Arc::new(Mutex::new(PairedPeers::new())));
+        Arc::get_mut(&mut amb).unwrap().registrar = Box::new(move |l| trava(&gravadas).push(l.to_string()));
+        let s = Sessao::nova(Lado::Prompter, replica("falha-pin", Papel::Teleprompter), amb);
+        s.publicar(|p| {
+            p.pin = "872913".into();
+            p.anunciando = true;
+        });
+        let resultado = s.receber_pin_sorteado(Err(quall_core::error::Error::Pairing("detalhe-sensivel-872913".into())));
+        assert!(resultado.is_none(), "sem entropia não há PIN substituto");
+        let p = s.painel();
+        assert_eq!(p.fase, Fase::Parada);
+        assert!(p.pin.is_empty(), "o PIN velho também deixa a tela");
+        assert!(!p.anunciando);
+        assert!(!p.mensagem.is_empty(), "a falha precisa aparecer na tela");
+        let mensagem = p.mensagem.clone();
+        drop(p);
+        s.marcar_fim();
+        assert!(s.terminou());
+        assert_eq!(s.painel().mensagem, mensagem, "o fim preserva o erro visível");
+        let diario = trava(&linhas).join("\n");
+        assert!(diario.contains("PIN seguro"));
+        assert!(!diario.contains("detalhe-sensivel"));
+        assert!(!diario.contains("872913"));
+        assert!(!diario.contains("000000"));
+    }
+
+    #[test]
+    fn sorteio_valido_preserva_o_pin_e_o_painel_normal() {
+        let s = Sessao::nova(
+            Lado::Prompter,
+            replica("pin-valido", Papel::Teleprompter),
+            ambiente("pin-valido", Arc::new(Mutex::new(PairedPeers::new()))),
+        );
+        let esperado = Pin::parse("012345").unwrap();
+        let recebido = s.receber_pin_sorteado(Ok(esperado.clone())).expect("PIN válido");
+        assert_eq!(recebido, esperado, "todos os seis dígitos seguem para o pareamento");
+        // A fronteira do app entrega o mesmo PIN à máquina real de pareamento, sem rede.
+        use quall_core::pairing::{Pairing, Role};
+        use quall_core::protocol::DeviceId;
+        let mut guest = Pairing::new(Role::Guest, DeviceId("teste-guest".into()), Some(esperado), None).unwrap();
+        let mut host = Pairing::new(Role::Host, DeviceId("teste-host".into()), Some(recebido), None).unwrap();
+        // O aperto de mão v3: o papel de cada lado amarrado (como o teste do núcleo faz), e então
+        // sonda, desafio, olá, confirmação e aceite.
+        guest.bind_local_role(2).unwrap();
+        host.bind_local_role(1).unwrap();
+        let desafio = host.step(guest.open().unwrap()).unwrap().reply.unwrap();
+        let ola = guest.step(desafio).unwrap().reply.unwrap();
+        let ack = host.step(ola).unwrap().reply.unwrap();
+        let confirm = guest.step(ack).unwrap().reply.unwrap();
+        let aceito = host.step(confirm).unwrap();
+        let rg = guest.step(aceito.reply.unwrap()).unwrap().done.unwrap();
+        let rh = aceito.done.unwrap();
+        assert!(guest.is_done() && host.is_done());
+        assert!(rg.secret == rh.secret, "os dois lados concluíram com o mesmo segredo");
+        let p = s.painel();
+        assert_eq!(p.fase, Fase::Abrindo);
+        assert!(p.mensagem.is_empty());
+    }
+
+    #[test]
+    fn falha_de_pin_continua_visivel_em_ingles_apos_o_fim() {
+        crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
+            let s = Sessao::nova(
+                Lado::Prompter,
+                replica("pin-en", Papel::Teleprompter),
+                ambiente("pin-en", Arc::new(Mutex::new(PairedPeers::new()))),
+            );
+            assert!(s.receber_pin_sorteado(Err(quall_core::error::Error::Pairing("sem entropia".into()))).is_none());
+            s.marcar_fim();
+            assert!(s.terminou());
+            assert_eq!(s.painel().fase, Fase::Parada);
+            assert_eq!(s.painel().mensagem, "Couldn't generate a secure PIN. Close and reopen this screen to try again.");
+        });
     }
 
     /// Espera uma condição, até `prazo`.

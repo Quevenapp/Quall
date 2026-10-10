@@ -895,10 +895,10 @@ class MirrorService : LifecycleService() {
         } else null
 
         val eu = DeviceIdentity.load(this)
-        // O PIN é sorteado **uma vez** por consentimento/tentativa e vale para todas as tentativas
-        // de espera: o usuário não deveria ter de reler um número novo porque o receptor errou de
-        // digitar.
-        val pin = QuallNative.generatePin()
+        // WRONG_PIN/PAIRING renovam o PIN antes da próxima espera por política conservadora,
+        // sem inferir fase ou modo pelo status. Outros erros preservam o valor; os pares
+        // salvos e o segredo forte usado na retomada permanecem intactos.
+        var pin = QuallNative.generatePin()
         val porta = Bancada.porta(this)
         Log.i(TAG, "bancada: ${Bancada.resumo(this)}")
         // Antes de a câmera abrir: é na volta ao app, com a sessão já no ar, que a guarda age.
@@ -995,6 +995,7 @@ class MirrorService : LifecycleService() {
             // multicast, e é o mesmo caminho de código do mDNS do outro lado.
             Log.w(TAG, "anúncio mDNS não subiu status=${QuallNative.lastStatus()}: ${Log.erroExterno(QuallNative.lastError())} — só o IP digitado vai funcionar")
         }
+        val aliasNaRede = if (anunciante != 0L) QuallNative.advertiserLabel(anunciante) else ""
 
         val canceller = QuallNative.cancellerNew()
         synchronized(cancelLock) { cancellerHandle = canceller }
@@ -1133,13 +1134,14 @@ class MirrorService : LifecycleService() {
                         mensagem = buildString {
                             append(
                                 if (anunciante == 0L) tx(R.string.esp_sem_anuncio)
-                                else tx(R.string.esp_anunciando, eu.displayName, QuallNative.serviceType())
+                                else tx(R.string.esp_anunciando, aliasNaRede, QuallNative.serviceType())
                             )
                             ultimaRecusa?.let { append('\n').append(tx(R.string.esp_ultima_recusa, it)) }
                         },
                         // Estado, não aviso; e o anúncio dito por campo (a frase é traduzida).
                         mensagemEhAnuncio = true,
                         anunciando = anunciante != 0L,
+                        aliasNaRede = aliasNaRede,
                     )
                 )
                 atualizarNotificacao(tx(R.string.esp_notif_esperando, pin), fonteRotulo)
@@ -1171,7 +1173,32 @@ class MirrorService : LifecycleService() {
                     // interpretar o motivo — cancelamento não é uma falha para relatar.
                     if (cancelado || cameraDvCaiu) break
                     // `lastError` é por thread; esta é a mesma thread que chamou `hostStart`.
+                    val status = QuallNative.lastStatus()
                     val motivo = QuallNative.lastError()
+                    val proximoPin = pinDepoisDaFalhaDaEspera(pin, status) { QuallNative.generatePin() }
+                    if (proximoPin == null) {
+                        val erro = tx(R.string.esp_pin_geracao_falhou)
+                        // Retirar o PIN também da notificação antes de liberar a captura:
+                        // o finally externo pode precisar aguardar o fechamento da gravação.
+                        atualizarNotificacao(erro, fonteRotulo)
+                        publicarErro(erro)
+                        // Executa ambos os finally, preservando ERRO em vez do PARADO abaixo.
+                        return
+                    }
+                    val pinRenovado = proximoPin != pin
+                    if (pinRenovado) {
+                        pin = proximoPin
+                        ultimaRecusa = tx(R.string.esp_pin_renovado)
+                        // Estado e notificação mudam antes de atender outra tentativa.
+                        // O aviso não contém o PIN recusado nem dados da conexão.
+                        MirrorBus.atualizar {
+                            it.copy(pin = pin, fase = MirrorBus.Fase.ESPERANDO,
+                                mensagem = ultimaRecusa.orEmpty(), mensagemEhAnuncio = false)
+                        }
+                        atualizarNotificacao(tx(R.string.esp_notif_esperando, pin), fonteRotulo)
+                        Log.w(TAG, "pareamento encerrado (${QuallNative.Status.nome(status)}); PIN renovado")
+                    }
+                    // A rotação não isenta a falha do teto/recuo que já existia.
                     if (decorrido < FALHA_IMEDIATA_MS) {
                         falhasImediatas++
                         Log.w(TAG, "hostStart falhou em ${decorrido}ms: ${Log.erroExterno(motivo)}")
@@ -1182,23 +1209,15 @@ class MirrorService : LifecycleService() {
                         Thread.sleep(400)
                     } else {
                         falhasImediatas = 0
-                        // **Este ramo era mudo, e isso escondeu um defeito por dois dias.** Ele
-                        // roda quando alguém completou o handshake e foi recusado por decisão
-                        // (PIN errado, prova de retomada inválida, versão incompatível) — ver
-                        // `session.rs:e_acidente_do_candidato`, que só reespera em Io/Closed/
-                        // Signaling e devolve todo o resto. Sem log, a única testemunha era a
-                        // mensagem no `MirrorBus`, que a publicação da volta seguinte
-                        // sobrescreve antes de qualquer olho ver (`docs/bancada.md` §8.36).
-                        //
-                        // E o contador que a tela mostra não é o que desiste: `tentativa` conta
-                        // todas as voltas, `falhasImediatas` só as de menos de 1 s — e é zerado
-                        // aqui. Ou seja, **este laço gira para sempre**, sem nunca chegar a
-                        // `FALHAS_IMEDIATAS_ATE_DESISTIR`.
+                        // Outras recusas mantêm o PIN. A razão permanece na próxima volta
+                        // para a UI não apagar o diagnóstico antes de ele poder ser lido.
                         Log.w(TAG, "hostStart voltou em ${decorrido}ms sem sessão (tentativa " +
                             "$tentativa, alguém conectou e foi recusado): ${Log.erroExterno(motivo)}")
-                        ultimaRecusa = motivo
-                        MirrorBus.atualizar {
-                            it.copy(fase = MirrorBus.Fase.ESPERANDO, mensagem = tx(R.string.esp_tentativa_anterior, motivo), mensagemEhAnuncio = false)
+                        if (!pinRenovado) {
+                            ultimaRecusa = motivo
+                            MirrorBus.atualizar {
+                                it.copy(fase = MirrorBus.Fase.ESPERANDO, mensagem = tx(R.string.esp_tentativa_anterior, motivo), mensagemEhAnuncio = false)
+                            }
                         }
                     }
                     continue
@@ -1318,7 +1337,21 @@ class MirrorService : LifecycleService() {
         // caminho (`Fonte.Camera.dv` é "vídeo USB").
         val dvd = transmissaoDvd.takeIf { fonte is Fonte.Dvd }
         // O DVD anda na taxa do disco (29,97 ou 25), como a DV.
-        val fpsEscolhido = if (dv) 30 else dvd?.fps ?: com.quall.android.core.Resolucao.quadros(this)
+        val fpsPedido = if (dv) 30 else dvd?.fps ?: com.quall.android.core.Resolucao.quadros(this)
+        val cameraIdDoCardapio = when (fonte) {
+            is Fonte.Camera -> fonte.cameraId.takeUnless { fonte.dv }
+            is Fonte.CameraDoPrompter -> fonte.cameraId
+            is Fonte.Tela, is Fonte.Dvd -> null
+        }
+        val cardapioDaCamera = cameraIdDoCardapio?.let { id ->
+            com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = com.quall.android.capture.CameraXSource.tetosPorResolucao(this, id),
+                escolhida = escolhida, fps = fpsPedido)
+        }
+        // A preferência continua como pedido/relato. Encoder, orçamento e teto usam a mesma
+        // escolha efetiva da câmera; tela/DV/DVD conservam suas regras anteriores.
+        var fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido) ?: fpsPedido
+        val tamanhoEscolhido = cardapioDaCamera?.resolucaoPara(escolhida) ?: escolhida
         // O tamanho da DV: o exibido pelo aspecto da câmera na abertura (854x480 em 16:9, 640x480
         // em 4:3), ou 848 se o codec não aceitar 854 (854 não é múltiplo de 16; a revisão, B9). O
         // da placa: o do quadro negociado (640x480), sem tarja e sem o aspecto da DV (o `disp_169`
@@ -1357,7 +1390,7 @@ class MirrorService : LifecycleService() {
                 ?.takeIf { escolhida.maxFs > com.quall.android.core.TransmissaoLeve.TETO.maxFs }
         } else null
         val resolucao = com.quall.android.core.Resolucao.entries.first {
-            it.maxFs == com.quall.android.core.TransmissaoLeve.maxFs(escolhida, motivoLeve != null)
+            it.maxFs == com.quall.android.core.TransmissaoLeve.maxFs(tamanhoEscolhido, motivoLeve != null)
         }
         if (resolucao != escolhida) Log.i(TAG, "transmissão leve: a rede da câmera em ${resolucao.rotulo}, e não ${escolhida.rotulo} ($motivoLeve)")
         val donoR5 = if (fonte is Fonte.CameraDoPrompter || comumPeloDono) {
@@ -1373,6 +1406,10 @@ class MirrorService : LifecycleService() {
                 return
             }
         } else null
+        donoR5?.let { d ->
+            fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido, d.quadrosNegociados ?: d.fpsPedido)
+                ?: fpsEscolhido
+        }
         // **A rotação da rede**: na tela R5, a da tela (e um giro no meio vira tarja); na câmera comum,
         // a do APARELHO no pareamento, congelada pela sessão (a revisão de 24/09, B1) — o app fica
         // atrás no tripé, e a tela do momento é a de outro app, a do bloqueio, ou retrato fixo.
@@ -1386,8 +1423,8 @@ class MirrorService : LifecycleService() {
                 "${if (comumPeloDono) ", fixa pela sessão" else ""}), rede em ${g.first}x${g.second}")
             g
         }
-        Log.i(TAG, "resolução escolhida: ${resolucao.rotulo} (maxFs=${resolucao.maxFs}) " +
-            "a ${fpsEscolhido} fps")
+        Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} a $fpsPedido fps; " +
+            "configuração da rede: ${resolucao.rotulo} (maxFs=${resolucao.maxFs}) a $fpsEscolhido fps")
 
         // **Um segundo de vídeo, e não trinta quadros.** `TrackFrameSink` documenta o limiar
         // como "um segundo"; passá-lo como a constante 30 só era verdade a 30 fps. A 60 já vale
@@ -1477,7 +1514,7 @@ class MirrorService : LifecycleService() {
         // lido já — é característica do aparelho, não da sessão.
         var negociadaDaCamera: android.util.Size? = null
         val capacidadeDaCamera = (fonte as? Fonte.Camera)?.takeIf { !it.dv }?.let {
-            com.quall.android.capture.CameraXSource.capacidadeNoTamanho(this, it.cameraId, resolucao.pedido)
+            com.quall.android.capture.CameraXSource.capacidadeNoTamanho(this, it.cameraId, escolhida.pedido)
         }
         if (fonte is Fonte.CameraDoPrompter) negociadaDaCamera = android.util.Size(larguraDaFonte, alturaDaFonte)
         // A câmera comum pelo dono: o que a câmera entrega (o tamanho do buffer), para a frase da entrega.
@@ -1574,6 +1611,8 @@ class MirrorService : LifecycleService() {
                 // caminho de uma fase e sem prévia, porque um segundo fluxo saindo da mesma câmera
                 // mudaria o que ele mede.
                 val src = subirFonteDaCamera(fonte.cameraId)
+                fpsEscolhido = cardapioDaCamera?.quadrosParaCodificar(fpsPedido, src.quadrosNegociados)
+                    ?: fpsEscolhido
                 if (!src.timestampSourceRealtime) {
                     // Achado em bancada (A07): sem REALTIME, `encode_latency_us` desta câmera não
                     // é comparável a relógio de sistema nenhum — ver H264CameraEncoder. Fica só no
@@ -1656,7 +1695,7 @@ class MirrorService : LifecycleService() {
                         pedido = tx(if (placaDeCaptura) R.string.esp_pedido_placa else R.string.esp_pedido_filmadora),
                         largura = larguraDaFonte, altura = alturaDaFonte, quadros = if (placaDeCaptura) 30.0 else 29.97,
                     ) else com.quall.android.core.Entrega.daCamera(
-                        textos, escolhida, fpsEscolhido,
+                        textos, escolhida, fpsPedido,
                         negociadaDaCamera?.let { it.width to it.height },
                         if (fonte.peloDono) donoR5?.quadrosNegociados else cameraSource?.quadrosNegociados,
                         capacidadeDaCamera ?: com.quall.android.core.Entrega.Camera(true, null),
@@ -1708,7 +1747,7 @@ class MirrorService : LifecycleService() {
                         falhasDeEnvio = sink.falhas,
                         pedidosDeIdr = sink.pedidosDeIdr,
                         idrsEnviados = i.idrs,
-                        fpsPedido = fpsEscolhido,
+                        fpsPedido = fpsPedido,
                         fpsObtido = i.fpsObtido,
                         latenciaP50Ms = i.p50Us / 1000.0,
                         latenciaP95Ms = i.p95Us / 1000.0,
@@ -1971,7 +2010,7 @@ class MirrorService : LifecycleService() {
             Log.i(
                 TAG,
                 "sessão encerrada ($fonteRotulo): enviados=${sink.enviados} falhas=${sink.falhas} " +
-                    "pedidos_de_idr=${sink.pedidosDeIdr} fps_pedido=$fpsEscolhido " +
+                    "pedidos_de_idr=${sink.pedidosDeIdr} fps_pedido=$fpsPedido fps_configurado=$fpsEscolhido " +
                     "fps_obtido=${"%.1f".format(r.achievedFps)} " +
                     "p50=${r.encodeLatencyP50Us / 1000.0}ms p95=${r.encodeLatencyP95Us / 1000.0}ms " +
                     "idr_com_csd_colado=${r.idrsComParametrosColados} " +

@@ -96,7 +96,7 @@ struct PainelDaCamera<Modelo: ModeloDoPainelDaCamera>: View {
 
     @ViewBuilder
     private var linhaDoAlto: some View {
-        if let t = controles.bloqueio ?? controles.aviso ?? controles.divergencia {
+        if let t = controles.bloqueio ?? controles.aviso ?? controles.divergencia ?? controles.poucaLuz {
             Text(t)
                 .font(Self.letra(11, .semibold))
                 .foregroundColor(Estilo.aguardandoTexto)
@@ -135,16 +135,34 @@ struct PainelDaCamera<Modelo: ModeloDoPainelDaCamera>: View {
         }
     }
 
+    /// O pé: "Restaurar automático", "Usar meus ajustes" quando há o que recuperar (§2, 07/10: a
+    /// câmera abre no automático e o último manual fica guardado), e o "Pronto". Os dois textos
+    /// encolhem a letra antes de quebrar: o pé tem a altura contada (32 pt), e no iPhone 7 em pé, ou na
+    /// metade do texto da R5 deitada, os três juntos encostam na largura.
     private var pe: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button(action: { controles.restaurar() }) {
                 Text(tr("Restaurar automático"))
                     .font(Self.letra(13, .semibold))
                     .foregroundColor(Estilo.acentoClaro)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .frame(minHeight: 32)
             }
             .buttonStyle(.toque)
             .disabled(apagado)
+            if controles.meusAjustesDisponiveis {
+                Button(action: { controles.usarMeusAjustes() }) {
+                    Text(tr("Usar meus ajustes"))
+                        .font(Self.letra(13, .semibold))
+                        .foregroundColor(Estilo.acentoClaro)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(minHeight: 32)
+                }
+                .buttonStyle(.toque)
+                .disabled(apagado)
+            }
             Spacer(minLength: 8)
             Button(action: fechar) {
                 Text(tr("Pronto"))
@@ -155,6 +173,7 @@ struct PainelDaCamera<Modelo: ModeloDoPainelDaCamera>: View {
                     .background(Capsule().fill(Estilo.acento))
             }
             .buttonStyle(.toque)
+            .fixedSize()
         }
     }
 
@@ -377,6 +396,14 @@ enum AbaDoPainelDaCamera: String, CaseIterable {
 /// **O que o painel precisa de quem ele mostra** (R9b): o filmador (`ControlesDaCamera`, a câmera
 /// deste aparelho) e o receptor (`ControleRemotoDaCamera`, a câmera do outro, por pedido). As ações
 /// têm o nome das do R9; no receptor cada uma vira um pedido com **só** o que a pessoa mexeu.
+extension ModeloDoPainelDaCamera {
+    var poucaLuz: String? { nil }
+    /// O receptor não mostra "Usar meus ajustes": os ajustes guardados são do aparelho que filma, e
+    /// quem os recupera é ele (§2, 07/10).
+    var meusAjustesDisponiveis: Bool { false }
+    func usarMeusAjustes() {}
+}
+
 protocol ModeloDoPainelDaCamera: ObservableObject {
     /// O registro mostrado (no receptor: o aplicado, com o pendente por cima).
     var ajustes: AjustesDaCamera { get }
@@ -389,6 +416,8 @@ protocol ModeloDoPainelDaCamera: ObservableObject {
     var leitura: RegrasDosControles.Leitura { get }
     var divergencia: String? { get }
     var aviso: String? { get }
+    /// "Pouca luz: 15 fps…" (§3.1). Só o filmador sabe; no receptor, nula.
+    var poucaLuz: String? { get }
     /// Tudo apagado, **com os valores**, e esta linha no alto (o receptor com o controle remoto não
     /// permitido pelo aparelho que filma). Sempre nula no filmador.
     var bloqueio: String? { get }
@@ -400,6 +429,11 @@ protocol ModeloDoPainelDaCamera: ObservableObject {
     func escolherFoco(_ f: AjustesDaCamera.Foco)
     func escolherBalanco(_ b: AjustesDaCamera.Balanco)
     func restaurar()
+    /// "Usar meus ajustes" (§2, 07/10): há guardado diferente do padrão e do registro de agora. Só o
+    /// filmador; no receptor, sempre `false` (a implementação padrão).
+    var meusAjustesDisponiveis: Bool { get }
+    /// Aplica o guardado desta câmera pelo caminho de um gesto. No receptor, nada.
+    func usarMeusAjustes()
     /// A leitura de volta de 4 Hz, com o painel aberto (§3.6).
     func lerDeVolta(_ sim: Bool)
 }

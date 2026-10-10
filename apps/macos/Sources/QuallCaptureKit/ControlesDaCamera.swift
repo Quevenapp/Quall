@@ -71,6 +71,17 @@ public struct AjustesDaCamera: Equatable, Sendable {
         "exposicao=\(exposicao.rawValue) travaExposicao=\(travaExposicao ? "sim" : "não") "
             + "balanco=\(balanco.rawValue) travaBalanco=\(travaBalanco ? "sim" : "não") foco=\(foco.rawValue)"
     }
+
+    /// O mesmo resumo **num campo só** (`chave=valor` do diário, até o próximo espaço):
+    /// `exposicao:auto,travaExposicao:sim,balanco:auto,travaBalanco:não,foco:travado`. É o que a linha
+    /// "capacidades" do `montar` leva em `ajuste=` e `guardado=`, e o que `Bancada/provar-ajustes-da-camera.sh`
+    /// lê. **Não é o JSON** de propósito: o registro seguro (preparação pública, 05/10,
+    /// `docs/distribuicao/seguranca-diagnostico.md`) tirou o JSON de câmera desse callsite e deixou os
+    /// estados; isto são só os estados.
+    public var resumoDeUmCampo: String {
+        "exposicao:\(exposicao.rawValue),travaExposicao:\(travaExposicao ? "sim" : "não"),"
+            + "balanco:\(balanco.rawValue),travaBalanco:\(travaBalanco ? "sim" : "não"),foco:\(foco.rawValue)"
+    }
 }
 
 extension AjustesDaCamera: Codable {
@@ -133,14 +144,51 @@ public struct GuardaDosAjustes {
         return a
     }
 
-    /// Grava; o padrão **apaga a chave** ("Restaurar automático" zera o registro daquela câmera, e só
-    /// dela).
+    /// Grava pela regra de "meus ajustes" (`MeusAjustes.paraGravar`): só um registro diferente do padrão
+    /// entra. O padrão **não apaga a chave** (decisão de 07/10): "Restaurar automático" volta a câmera ao
+    /// automático e deixa o guardado onde está, para o "Usar meus ajustes" trazê-lo de volta. Até 07/10 o
+    /// padrão removia a chave — com a câmera abrindo sempre no automático, isso jogaria fora o único ajuste
+    /// que a pessoa tinha.
     public func gravar(_ a: AjustesDaCamera, _ uniqueID: String) {
-        if a.ehPadrao {
-            defaults.removeObject(forKey: GuardaDosAjustes.chave(uniqueID))
-        } else {
-            defaults.set(a.json, forKey: GuardaDosAjustes.chave(uniqueID))
-        }
+        guard let g = MeusAjustes.paraGravar(a) else { return }
+        defaults.set(g.json, forKey: GuardaDosAjustes.chave(uniqueID))
+    }
+}
+
+/// **"Abrir no automático e lembrar o último manual"** (decisão de produto, 07/10), a parte pura. Até ali o
+/// Mac reaplicava o guardado ao montar, e uma câmera que ficou travada abria travada no dia seguinte —
+/// numa cena e numa luz que não eram mais as da trava. Agora:
+///
+/// - **Abrir** (`aoAbrir`): a câmera monta sempre no padrão (tudo automático), na câmera comum e na R5. O
+///   guardado não entra sozinho.
+/// - **Gravar** (`paraGravar`): só o registro diferente do padrão vira "meus ajustes", na mesma chave
+///   `camera.ajustes.<uniqueID>` de sempre. Voltar ao automático não apaga nada.
+/// - **Recuperar** (`oferecer`, `recuperar`): o painel mostra "Usar meus ajustes" quando o guardado
+///   (cortado pelo que a câmera faz agora) traz algo e não é o que já está valendo; tocar aplica pelo
+///   caminho do painel.
+public enum MeusAjustes {
+    /// O registro com que a câmera monta. O guardado é recebido só para deixar explícito que ele **não**
+    /// decide: abrir é sempre no automático.
+    public static func aoAbrir(guardado _: AjustesDaCamera) -> AjustesDaCamera { .padrao }
+
+    /// O que gravar depois de uma mudança do registro corrente: ele mesmo, se diferente do padrão; `nil`
+    /// (não grava, e o guardado fica) quando é o padrão.
+    public static func paraGravar(_ corrente: AjustesDaCamera) -> AjustesDaCamera? {
+        corrente.ehPadrao ? nil : corrente
+    }
+
+    /// O guardado como ele valeria nesta câmera agora: cortado pelas capacidades (uma trava que a câmera
+    /// não aceita mais não entra), como qualquer pedido do painel.
+    public static func recuperar(_ guardado: AjustesDaCamera, _ c: CapacidadesDaCamera) -> AjustesDaCamera {
+        guardado.cortado(por: c)
+    }
+
+    /// Mostrar "Usar meus ajustes": o guardado, cortado pela câmera de agora, é diferente do padrão (tem o
+    /// que trazer) e diferente do corrente (o botão mudaria algo). O corte vale aqui também: um guardado
+    /// cuja única trava a câmera não aceita mais viraria o padrão, e o botão não faria nada.
+    public static func oferecer(guardado: AjustesDaCamera, corrente: AjustesDaCamera, _ c: CapacidadesDaCamera) -> Bool {
+        let r = recuperar(guardado, c)
+        return !r.ehPadrao && r != corrente
     }
 }
 
@@ -251,12 +299,57 @@ public enum TextosDosAjustes {
     public static var travarExposicao: String { T("Travar exposição") }
     public static var travarBalanco: String { T("Travar balanço") }
     public static var restaurar: String { T("Restaurar automático") }
+    public static var usarMeus: String { T("Usar meus ajustes") }
     public static var notaDoToque: String { T("Toque na imagem para focar e medir naquele ponto.") }
     public static var travadoDeNovo: String { T("Travado de novo depois de medir a cena.") }
     public static var pilulaDasDuas: String { T("Exposição e foco travados") }
     public static var pilulaDaExposicao: String { T("Exposição travada") }
     public static var pilulaDoFoco: String { T("Foco travado") }
     public static var passeParaManual: String { T("Passe a exposição para Manual para escolher ISO e obturador.") }
+}
+
+// MARK: - pouca luz: imagem clara, e o aviso (§3.1)
+
+/// **A pouca luz** (decisão de produto, 06/10): o automático pode baixar o fps para clarear a imagem, até a
+/// metade do fps escolhido (nunca abaixo de 10), e a tela avisa. O Mac não lê exposição nem ISO
+/// (`API_UNAVAILABLE(macos)`), então o vigia olha o **fps que chega** da câmera. E o Mac não tem
+/// exposição manual: o conselho é a luz do ambiente.
+public enum PoucaLuz {
+    public static let pisoMinimo = 10.0
+
+    /// O piso do `activeVideoMaxFrameDuration` (1/piso): a metade do [fps], nunca abaixo de
+    /// [pisoMinimo], limitada pelo menor `minFrameRate` das faixas do formato que alcançam [fps]. Sem
+    /// faixa que desça, o próprio [fps]. A mesma regra do iOS.
+    public static func piso(faixas: [(minimo: Double, maximo: Double)], fps: Double) -> Double {
+        let mins = faixas.filter { $0.maximo >= fps - 0.01 && $0.minimo < fps }.map(\.minimo)
+        guard let menor = mins.min() else { return fps }
+        return min(fps, max(menor, pisoMinimo, fps / 2))
+    }
+
+    /// Acende depois de 1 s seguido com o fps medido abaixo de 87 % do pedido, e apaga depois de 2 s
+    /// seguidos de volta. `observar` devolve o fps medido (arredondado) enquanto acesa, ou `nil`.
+    public struct Vigia {
+        public private(set) var acesa = false
+        private var desde: Double?
+        public init() {}
+
+        public mutating func observar(fpsMedido: Double, fps: Double, agora: Double) -> Int? {
+            let lento = fps > 0 && fpsMedido > 0 && fpsMedido < fps * 0.87
+            if lento != acesa {
+                if desde == nil { desde = agora }
+                if agora - (desde ?? agora) >= (lento ? 1 : 2) { acesa = lento; desde = nil }
+            } else {
+                desde = nil
+            }
+            guard acesa else { return nil }
+            return min(max(Int(fpsMedido.rounded()), 1), Int(fps.rounded()))
+        }
+    }
+
+    /// "Pouca luz: 15 fps para clarear a imagem. Mais luz no ambiente devolve os 30 fps."
+    public static func texto(fpsAgora: Int, fps: Int) -> String {
+        T("Pouca luz: %@ fps para clarear a imagem. Mais luz no ambiente devolve os %@ fps.", fpsAgora, fps)
+    }
 }
 
 // MARK: - o painel (§4.3)

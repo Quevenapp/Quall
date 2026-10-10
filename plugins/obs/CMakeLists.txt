@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(quall-obs VERSION 0.1.0 LANGUAGES C)
+project(quall-obs VERSION 1.0.0 LANGUAGES C)
 
 # =================================================================================================
 # Fonte nativa de OBS que embute o receptor do Quall.

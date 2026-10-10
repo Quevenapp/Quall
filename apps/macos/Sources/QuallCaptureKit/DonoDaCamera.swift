@@ -113,12 +113,18 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
 
     /// O que a câmera declara (`isXModeSupported`, ponto de interesse). `nil` antes de montar.
     public private(set) var capacidades: CapacidadesDaCamera?
-    /// O registro desta câmera (§2): o guardado, e o que a pessoa muda.
+    /// O registro corrente desta câmera (§2): o padrão ao montar (`MeusAjustes.aoAbrir`, decisão de
+    /// 07/10), e o que a pessoa (ou um receptor) muda.
     public private(set) var ajustes: AjustesDaCamera = .padrao
+    /// "Meus ajustes": o último registro diferente do padrão guardado para esta câmera (§2). Lido ao montar
+    /// e acompanhado a cada gravação; **não** é aplicado sozinho — o painel o oferece ("Usar meus ajustes").
+    public private(set) var meusAjustes: AjustesDaCamera = .padrao
     /// A pílula do ⌥-clique (§4.4): "Exposição e foco travados", "Exposição travada" ou "Foco travado".
     public private(set) var pilula: String?
     /// O recado de 3 s depois de reaplicar uma trava (§2.1): "Travado de novo depois de medir a cena."
     public private(set) var recadoDosAjustes: String?
+    /// "Pouca luz: 15 fps…" (§3.1) enquanto o fps que chega está abaixo do pedido, ou `nil`.
+    public private(set) var poucaLuz: String?
     /// O dono que a janela "Ajustes da câmera" ajusta: o último montado e ainda não fechado. A R5 e a
     /// câmera comum nunca estão abertas juntas ("um papel por vez"). Só na principal.
     public private(set) static weak var vigente: DonoDaCamera?
@@ -178,6 +184,11 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
     private var formatoEscolhido: AVCaptureDevice.Format?
     private var observadores: [NSObjectProtocol] = []
     private var relogio: DispatchSourceTimer?
+    /// O tique da pouca luz (§3.1), a cada 0,5 s, e o que ele lembra entre um e outro. Só na fila dele.
+    private var relogioDaLuz: DispatchSourceTimer?
+    private var vigiaDaLuz = PoucaLuz.Vigia()
+    private var entraramNoTique: UInt64 = 0
+    private var tiqueEm: Double = 0
     /// O dono foi fechado: um `ligar` que chegue depois não sobe a câmera. Só na `fila`.
     private var fechado = false
     /// A cópia do registro que a `fila` aplica. Só na `fila`.
@@ -281,12 +292,20 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
         observar(escolhido)
         subirSupervisao()
         // **Os ajustes (R9)**: as capacidades e o registro desta câmera; a aplicação vai para a `fila`,
-        // depois do formato (§2.2: "o fim do `montar`").
+        // depois do formato (§2.2: "o fim do `montar`"). **Abre no automático** (decisão de 07/10,
+        // `MeusAjustes`): o guardado só é lido para o painel oferecê-lo. Aplicar o padrão ainda vale a
+        // pena — devolve os modos contínuos que outro app (ou o dono anterior) tenha deixado travados.
         let caps = DonoDaCamera.capacidades(de: escolhido)
         capacidades = caps
-        ajustes = guardaDosAjustes.ler(escolhido.uniqueID)
+        meusAjustes = guardaDosAjustes.ler(escolhido.uniqueID)
+        ajustes = MeusAjustes.aoAbrir(guardado: meusAjustes)
         pilula = nil
-        registrar("APP CAMERA ajustes: capacidades atualizadas; ajuste=\(ajustes.resumo)")
+        // A linha que `Bancada/provar-ajustes-da-camera.sh` lê: as capacidades (`exp=… bal=… foco=…`, bits do
+        // que a câmera declara), o registro corrente (o padrão) e o guardado, cada um num campo só. Os
+        // estados, e não o JSON: o registro seguro (05/10) tirou o JSON de câmera desta linha, e o
+        // `uniqueID` e o nome da câmera da "captura montada"; nada disso volta aqui.
+        registrar("APP CAMERA ajustes: capacidades \(caps.resumo) ajuste=\(ajustes.resumoDeUmCampo)"
+                  + " guardado=\(meusAjustes.resumoDeUmCampo)")
         let registro = ajustes
         fila.async { [weak self] in self?.aplicarAjustes(registro, reaplicando: true, origem: "montar") }
         DonoDaCamera.vigente = self
@@ -354,6 +373,13 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
     public func fechar(fim: (() -> Void)? = nil) {
         relogio?.cancel()
         relogio = nil
+        relogioDaLuz?.cancel()
+        relogioDaLuz = nil
+        naPrincipal { [weak self] in
+            guard let self, self.poucaLuz != nil else { return }
+            self.poucaLuz = nil
+            self.avisarAjustes()
+        }
         // O controle remoto primeiro: os receptores escondem o painel antes de a câmera parar, e o registro
         // de um pedido remoto ainda adiado vai para o disco agora.
         aoFechar?()
@@ -422,7 +448,14 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
         }) else { return }
         guard (try? a.lockForConfiguration()) != nil else { return }
         a.activeVideoMinFrameDuration = alvo
+        // **O piso, para o automático clarear em pouca luz** (§3.1, 06/10): o quadro pode durar até
+        // 1/piso. O padrão do sistema vai ao diário, porque é o "antes".
+        let padrao = CMTimeGetSeconds(a.activeVideoMaxFrameDuration)
+        let piso = PoucaLuz.piso(faixas: a.activeFormat.videoSupportedFrameRateRanges.map { (minimo: $0.minFrameRate, maximo: $0.maxFrameRate) }, fps: 30)
+        a.activeVideoMaxFrameDuration = CMTime(value: 1000, timescale: CMTimeScale(max(1, (piso * 1000).rounded())))
         a.unlockForConfiguration()
+        registrar("APP CAMERA piso do automático: \(String(format: "%.1f", piso)) fps (padrão do sistema era "
+                  + "\(padrao.isFinite && padrao > 0 ? String(format: "%.1f", 1 / padrao) : "?") fps)")
     }
 
     static func descrever(_ a: AVCaptureDevice) -> String {
@@ -583,6 +616,33 @@ public final class DonoDaCamera: NSObject, @unchecked Sendable {
         t.setEventHandler { [weak self] in self?.relatar() }
         t.resume()
         relogio = t
+        let luz = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        luz.schedule(deadline: .now() + 1, repeating: 0.5)
+        luz.setEventHandler { [weak self] in self?.tiqueDaLuz() }
+        luz.resume()
+        relogioDaLuz = luz
+    }
+
+    /// O fps que chegou no último meio segundo contra o teto do formato: o automático baixou o fps para
+    /// clarear (§3.1)? O Mac não lê a exposição, então o sinal é o fps.
+    private func tiqueDaLuz() {
+        travaDosContadores.lock()
+        let entraram = _entraram
+        travaDosContadores.unlock()
+        let agora = ProcessInfo.processInfo.systemUptime
+        defer { entraramNoTique = entraram; tiqueEm = agora }
+        guard tiqueEm > 0, agora > tiqueEm, let a = aparelho else { return }
+        let medido = Double(entraram &- entraramNoTique) / (agora - tiqueEm)
+        let dur = a.activeVideoMinFrameDuration
+        let fps = dur.value > 0 ? Double(dur.timescale) / Double(dur.value) : 30
+        let texto = vigiaDaLuz.observar(fpsMedido: medido, fps: fps, agora: agora)
+            .map { PoucaLuz.texto(fpsAgora: $0, fps: Int(fps.rounded())) }
+        naPrincipal { [weak self] in
+            guard let self, self.poucaLuz != texto else { return }
+            self.poucaLuz = texto
+            self.registrar("APP CAMERA pouca luz " + (texto == nil ? "apagada" : "acesa: \(String(format: "%.1f", medido)) fps de \(Int(fps.rounded()))"))
+            self.avisarAjustes()
+        }
     }
 
     private func relatar() {
@@ -1071,7 +1131,9 @@ extension DonoDaCamera: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureA
 /// - **Toda mudança na `fila`**, com `lockForConfiguration` curto e uma guarda `isXModeSupported` (ou
 ///   `is…PointOfInterestSupported`) antes de cada escrita: sem a guarda, o AVFoundation levanta
 ///   exceção do Objective-C, que derruba o app.
-/// - **Reaplicar** (§2.1, caso "sem manual"): no fim do `montar` e no `ligar`, depois do formato. Uma
+/// - **Reaplicar** (§2.1, caso "sem manual"): no fim do `montar` e no `ligar`, depois do formato. Desde
+///   07/10 o `montar` aplica sempre o padrão (`MeusAjustes.aoAbrir`): a trava só chega aqui reaplicada
+///   quando foi ligada na sessão, antes de um `ligar`. Uma
 ///   trava não é "trave no que estiver agora": vai como `.autoExpose`/`.autoWhiteBalance`/`.autoFocus`,
 ///   que medem e travam sozinhos ao convergir; onde a câmera trava mas não tem o modo "uma vez", espera
 ///   parar de ajustar (de 0,5 s a 3 s) e trava.
@@ -1100,8 +1162,16 @@ extension DonoDaCamera {
         fila.async { [weak self] in self?.aplicarAjustes(novo, reaplicando: false, origem: origem) }
     }
 
-    /// "Restaurar automático": zera o registro desta câmera (e só dela), tira a pílula, volta os modos
-    /// contínuos e o ponto ao centro.
+    /// **"Usar meus ajustes"**: o guardado desta câmera, cortado pelo que ela faz agora, pelo mesmo
+    /// caminho de um gesto do painel (grava, apaga a pílula que não vale mais, aplica na hora).
+    public func usarMeusAjustes(origem: String) {
+        guard montado, let c = capacidades else { return }
+        mudarAjustes(MeusAjustes.recuperar(meusAjustes, c), origem: origem + " (meus ajustes)")
+    }
+
+    /// "Restaurar automático": a câmera volta ao automático, tira a pílula, volta os modos contínuos e o
+    /// ponto ao centro. O guardado fica (`GuardaDosAjustes.gravar` não grava o padrão): o painel passa a
+    /// oferecer "Usar meus ajustes".
     public func restaurarAutomatico(origem: String) {
         guard montado else { return }
         let antes = ajustes
@@ -1209,6 +1279,7 @@ extension DonoDaCamera {
         gravacaoAdiada?.cancel()
         gravacaoAdiada = nil
         guardaDosAjustes.gravar(a, uniqueID)
+        if let g = MeusAjustes.paraGravar(a) { meusAjustes = g }
     }
 
     /// Grava 500 ms depois da última mudança remota (contrato §6.3).
@@ -1219,8 +1290,11 @@ extension DonoDaCamera {
         // O vigente **no disparo** (`a` só se o dono já se foi): uma mudança local no meio já gravou e
         // cancelou esta, mas a guarda não custa nada.
         let item = DispatchWorkItem { [weak self] in
-            guarda.gravar(self?.ajustes ?? a, id)
+            let vigente = self?.ajustes ?? a
+            guarda.gravar(vigente, id)
+            if let g = MeusAjustes.paraGravar(vigente) { self?.meusAjustes = g }
             self?.gravacaoAdiada = nil
+            self?.avisarAjustes()
         }
         gravacaoAdiada = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)

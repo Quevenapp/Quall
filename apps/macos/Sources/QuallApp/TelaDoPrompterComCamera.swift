@@ -280,7 +280,7 @@ private struct FaixaDaTelaComCamera: View {
             : (tp.fase == .semPar ? T("controle sumido") : (tp.fase == .formulario ? T("a espera parou") : T("esperando o controle")))
         return chip(cor: cor, titulo: T("Texto"), pin: tp.pin, estado: estado, aberto: $enderecoDoTexto) {
             painelDoEndereco(titulo: T("Controle do texto (Quall Studio → Teleprompter → Controlar)"), pin: tp.pin,
-                             endereco: tp.endereco, anuncia: tp.anunciandoPorMDNS,
+                             endereco: tp.endereco, anuncia: tp.anunciandoPorMDNS, alias: tp.nomeNaDescoberta,
                              acao: tp.fase == .formulario ? (T("Esperar de novo"), { tp.esperarPeloControle() }) : nil)
         }
     }
@@ -296,7 +296,7 @@ private struct FaixaDaTelaComCamera: View {
         }
         return chip(cor: cor, titulo: T("Câmera"), pin: espera.pin, estado: estado, aberto: $enderecoDaCamera) {
             painelDoEndereco(titulo: T("Receber a câmera (Quall Studio → Exibir, ou o OBS)"), pin: espera.pin,
-                             endereco: espera.endereco, anuncia: espera.anunciandoPorMDNS, acao: nil)
+                             endereco: espera.endereco, anuncia: espera.anunciandoPorMDNS, alias: espera.nomeNaDescoberta, acao: nil)
         }
     }
 
@@ -318,7 +318,7 @@ private struct FaixaDaTelaComCamera: View {
         .help(T("O PIN e o endereço desta sessão, em letra grande"))
     }
 
-    private func painelDoEndereco(titulo: String, pin: String, endereco: String?, anuncia: Bool,
+    private func painelDoEndereco(titulo: String, pin: String, endereco: String?, anuncia: Bool, alias: String?,
                                   acao: (String, () -> Void)?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(titulo).font(.headline)
@@ -328,7 +328,7 @@ private struct FaixaDaTelaComCamera: View {
             Text(T("ENDEREÇO")).font(.caption2).fontWeight(.semibold).foregroundColor(Estilo.texto2)
             Text(endereco ?? T("sem rede")).font(.system(size: 24, weight: .semibold, design: .monospaced))
                 .textSelection(.enabled).foregroundColor(endereco == nil ? Estilo.aguardandoTexto : Estilo.texto)
-            Text(anuncia ? T("Aparecendo na lista dos outros aparelhos.") : T("Sem anúncio na rede — digite o endereço."))
+            Text(anuncia ? T("Aparecendo na lista dos outros aparelhos como %@.", alias ?? "Quall") : T("Sem anúncio na rede — digite o endereço."))
                 .font(.caption).foregroundColor(Estilo.texto2)
             if let acao { Button(acao.0, action: acao.1).buttonStyle(.borderedProminent) }
         }
@@ -437,9 +437,7 @@ struct BotaoDeGravar: View {
                     if dono?.microfone.ligado != true {
                         Text(T("SEM SOM")).font(.system(size: 11, weight: .heavy))
                     }
-                    if let l = gravador.espacoLivre {
-                        Text(String(format: "%.1f GB", Double(l) / 1_000_000_000)).font(.system(size: 11))
-                    }
+
                 }
             }
             .foregroundColor(.white)

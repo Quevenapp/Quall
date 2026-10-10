@@ -92,7 +92,7 @@ public enum PermissaoDeTela {
             return (.concedida, false, T("Gravação de Tela concedida agora, no diálogo do sistema."))
         }
         return (.faltando, false,
-                T("Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela **e** o "
+                T("Falta a permissão de Gravação de Tela — a mesma concessão cobre a tela e o "
                 + "áudio do sistema. O pedido foi feito, então o Quall Studio passa a aparecer em "
                 + "Ajustes do Sistema > Privacidade e Segurança > Gravação do Áudio do Sistema e "
                 + "da Tela. Marque a caixinha e abra o app de novo."))

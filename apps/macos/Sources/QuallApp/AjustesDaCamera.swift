@@ -30,7 +30,9 @@ struct JanelaDosAjustesDaCamera: View {
                     aba: $aba,
                     aoMudar: { d.mudarAjustes($0, origem: "painel") },
                     aoRestaurar: { d.restaurarAutomatico(origem: "painel") },
-                    aoEfeitos: { DonoDaCamera.mostrarEfeitosDeVideoDoSistema() })
+                    aoEfeitos: { DonoDaCamera.mostrarEfeitosDeVideoDoSistema() },
+                    oferecerMeus: MeusAjustes.oferecer(guardado: d.meusAjustes, corrente: d.ajustes, caps),
+                    aoUsarMeus: { d.usarMeusAjustes(origem: "painel") })
             } else {
                 VStack(spacing: 10) {
                     Text(TextosDosAjustes.titulo).font(Estilo.titulo(20)).foregroundColor(Estilo.texto)
@@ -90,6 +92,10 @@ struct PainelDosAjustesDaCamera: View {
     let aoMudar: (AjustesDaCamera) -> Void
     let aoRestaurar: () -> Void
     let aoEfeitos: () -> Void
+    /// "Usar meus ajustes" (decisão de 07/10, `MeusAjustes.oferecer`): a câmera abre no automático, e o
+    /// botão traz de volta o último ajuste guardado dela. Desligado por padrão (os retratos antigos).
+    var oferecerMeus = false
+    var aoUsarMeus: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -133,6 +139,10 @@ struct PainelDosAjustesDaCamera: View {
                 Button(TextosDosAjustes.restaurar, action: aoRestaurar)
                     .buttonStyle(.quall(.secundario, altura: 32))
                     .disabled(ajustes.ehPadrao && pilula == nil)
+                if oferecerMeus {
+                    Button(TextosDosAjustes.usarMeus, action: aoUsarMeus)
+                        .buttonStyle(.quall(.secundario, altura: 32))
+                }
                 Spacer(minLength: 0)
                 Button(T("Efeitos de vídeo do sistema…"), action: aoEfeitos)
                     .buttonStyle(.plain)
@@ -307,11 +317,12 @@ struct LinhaDoControleRemoto: View {
 
 extension DonoDaCamera {
     /// **O que vai sobre a prévia**, na ordem: "Controlado por <aparelho>" (R9b, enquanto o núcleo disser),
-    /// o recado de 3 s (§2.1) e a pílula do ⌥-clique (§4.4).
+    /// o recado de 3 s (§2.1), a pílula do ⌥-clique (§4.4) e a pouca luz (§3.1).
     var pilulaSobreAPrevia: (texto: String, icone: String)? {
         if let nome = controladoPor { return (TextosDaCameraRemota.controladoPor(nome), "dot.radiowaves.left.and.right") }
         if let r = recadoDosAjustes { return (r, "lock.fill") }
         if let p = pilula { return (p, "lock.fill") }
+        if let l = poucaLuz { return (l, "sun.min") }
         return nil
     }
 }
@@ -346,12 +357,15 @@ struct PilulaDaCamera: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icone).font(.system(size: 10, weight: .bold))
-            Text(texto).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+            // A da pouca luz (§3.1) é uma frase inteira: até duas linhas.
+            Text(texto).font(.system(size: 11, weight: .semibold)).lineLimit(2)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .foregroundColor(Estilo.texto)
         .padding(.horizontal, 10)
-        .frame(height: 24)
-        .background(Capsule().fill(Color.black.opacity(0.85)))
+        .padding(.vertical, 4)
+        .frame(minHeight: 24)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.black.opacity(0.85)))
         .accessibilityElement(children: .combine)
     }
 }

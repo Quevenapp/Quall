@@ -17,7 +17,7 @@
   `buttonIdrTest` (na seção de diagnóstico, embaixo do botão de Espelhar).
 
   A tela de espera/espelhamento é a peça central do fluxo de `docs/fluxo-de-uso.md`: depois do
-  consentimento de gravação, o usuário precisa ver PIN, nome na rede, IP e um Cancelar que funciona. O
+  consentimento de gravação, o usuário precisa ver PIN, alias na rede, IP e um Cancelar que funciona. O
   estado vem inteiro do `MirrorBus` e a tela é uma função dele.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -429,7 +429,7 @@
     <!-- ============================ [B] Espelhar ============================
 
          Voltar · "Espelhar" · engrenagem; "O que vamos espelhar?"; as origens em ladrilhos (a origem é
-         escolhida antes do PIN, `docs/fluxo-de-uso.md`, e fica fixa pela sessão); o nome na lista; a
+         escolhida antes do PIN, `docs/fluxo-de-uso.md`, e fica fixa pela sessão); o nome após conectar; a
          linha da rede com o chip da qualidade; os avisos; e o botão (§6.2). A qualidade foi para a
          folha de Ajustes. -->
     <ScrollView

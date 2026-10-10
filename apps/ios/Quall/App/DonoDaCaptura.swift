@@ -289,7 +289,7 @@ final class DonoDaCaptura: NSObject, ObservableObject {
 
     static var textoDeNegada: String {
         tr("O Quall não tem acesso à câmera deste iPhone. Abra %@ e ligue, "
-           + "depois escolha a câmera e toque em Espelhar de novo.", trSistema("Ajustes → Quall → Câmera"))
+           + "depois escolha a câmera e toque em Espelhar de novo.", trSistema("Ajustes → Quall Studio → Câmera"))
     }
 
     /// **Pede**, e não só lê (`docs/regras-de-frente.md`, "Ler o estado de uma permissão não é
@@ -653,15 +653,11 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         }
         sessao.addInput(nova)
         entrada = nova
-        // R9: o registro desta câmera (`camera.ajustes.<uniqueID>`), antes da primeira aplicação. A
-        // bancada pode trocá-lo (`--camera-ajustes`).
-        if let j = BancadaDosControles.opcoes.ajustes {
-            let a = AjustesDaCamera.de(json: Data(j.utf8))
-            if a == .padrao { UserDefaults.standard.removeObject(forKey: AjustesDaCamera.chave(id)) }
-            else if let d = a.json() { UserDefaults.standard.set(d, forKey: AjustesDaCamera.chave(id)) }
-            Diagnostico.nota("APP CAMERA controles bancada: --camera-ajustes gravou o registro")
-        }
-        controles.carregar(uniqueID: id)
+        // R9: a câmera abre **no automático** (§2, decisão de 07/10), e o guardado desta câmera
+        // (`camera.ajustes.<uniqueID>`) só é lido, para o "Usar meus ajustes". A bancada pode abrir
+        // com outro registro (`--camera-ajustes`), em memória, sem tocar no guardado.
+        let daBancada = BancadaDosControles.opcoes.ajustes.map { AjustesDaCamera.de(json: Data($0.utf8)) }
+        controles.carregar(uniqueID: id, bancada: daBancada)
 
         // **A melhor imagem (tela R5, que grava)**: o maior formato 16:9 que **esta** câmera
         // oferece à taxa do cardápio, aplicado por `activeFormat` + `.inputPriority` — nunca um
@@ -674,6 +670,11 @@ final class DonoDaCaptura: NSObject, ObservableObject {
 
         var presetAplicado: AVCaptureSession.Preset?
         if !formatoDaMelhorImagem { presetAplicado = aplicarPresetDoCardapio() }
+        // Os tetos do cardápio desta câmera (o que a folha de Ajustes apaga, 06/10), para a prova pelo diário.
+        let tetos = TetosDaCamera.tetos(cameraID: id)
+        Diagnostico.nota("APP CAMERA tetos do cardápio: " + Resolucao.allCases.map { r in
+            "\(r.rotulo)=" + ((tetos[r.rawValue] ?? nil).map { "\($0)" } ?? "não oferece")
+        }.joined(separator: " "))
         Diagnostico.nota("APP CAMERA cardápio: \(escolhida.rotulo) a \(Resolucao.quadros) fps"
             + (formatoDaMelhorImagem
                 ? " · melhor imagem por formato (preset=\(sessao.sessionPreset.rawValue))"
@@ -684,7 +685,8 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         // **A taxa NÃO é fixada aqui.** Ver `limitarTaxa`: `activeVideoMinFrameDuration` é
         // redefinido quando o preset da sessão muda, e o `commitConfiguration` do `defer` no topo
         // deste método ainda vai rodar. Escrever agora é escrever para ser apagado.
-        // **Se o cardápio pede 60, o preset não serve e o formato é escolhido na mão.**
+        // **O formato segue o mesmo contrato da folha**, inclusive a 30: uma resolução salva que
+        // esta câmera não faz recua sem mudar a preferência, e 2K pode vir de 4K reduzido.
         //
         // Medido em 07/09/2026 nos dois aparelhos que existem para testar: iPhone 15 pedindo
         // 4K@60 e iPad A16 pedindo 1080p@60 receberam, os dois, um formato com
@@ -695,8 +697,11 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         // Escrever `activeFormat` é o caminho documentado, e ele **substitui** o preset: a sessão
         // passa a `.inputPriority`, que é o que a Apple manda usar quando quem escolhe é o app.
         // Com a melhor imagem aplicada, a taxa já entrou na escolha do formato.
-        if !formatoDaMelhorImagem && Resolucao.quadros != 30 {
-            escolherFormato(para: aparelho, alvo: Resolucao.escolhida, fps: Resolucao.quadros)
+        if !formatoDaMelhorImagem {
+            let plano = TetosDaCamera.estado(cameraID: id)
+            escolherFormato(para: aparelho,
+                             alvo: TetosDaCamera.resolucao(para: plano, preferida: Resolucao.escolhida),
+                             fps: plano.fpsEfetivo ?? Resolucao.quadros)
         }
         melhorImagemAplicada = formatoDaMelhorImagem
         aparelhoParaTaxa = aparelho
@@ -783,36 +788,17 @@ final class DonoDaCaptura: NSObject, ObservableObject {
     /// que ninguém pediu.
     /// Escolhe o `activeFormat` que atende geometria **e** taxa, quando o preset não atende.
     ///
-    /// A regra de escolha, em ordem: descarta o que não tem a taxa pedida; entre os que têm,
-    /// prefere o **maior** que ainda cabe no alvo; e desempata pelo que tem menos área, para não
-    /// pegar um formato de foto gigante quando um de vídeo serve.
+    /// A mesma regra pura do cardápio: cobre o alvo e faz a taxa; prefere a menor área suficiente,
+    /// reduzindo no encoder quando preciso. Um formato 4K60 pode servir a 1080p/2K60, sem escolher
+    /// 720p60 e anunciar um tamanho que a captura não entregou.
     ///
     /// **Não força nada.** Se nenhum formato tiver a taxa, o preset já escolhido continua valendo
     /// e `limitarTaxa` cai para o que o formato dá — que é o comportamento certo e o que o
     /// relato de 1 Hz vai mostrar.
     private func escolherFormato(para aparelho: AVCaptureDevice, alvo: Resolucao, fps: Int) {
-        let teto = alvo.teto
-        let alvoMaior = max(teto.maior, teto.menor)
-        let alvoMenor = min(teto.maior, teto.menor)
-        let pedido = Double(fps)
-
-        let candidatos = aparelho.formats.filter { f in
-            guard f.videoSupportedFrameRateRanges.contains(where: {
-                $0.maxFrameRate >= pedido && $0.minFrameRate <= pedido
-            }) else { return false }
-            let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
-            let maior = max(Int(d.width), Int(d.height))
-            let menor = min(Int(d.width), Int(d.height))
-            return maior <= alvoMaior && menor <= alvoMenor
-        }
-
-        func area(_ f: AVCaptureDevice.Format) -> Int {
-            let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
-            return Int(d.width) * Int(d.height)
-        }
-        guard let melhor = candidatos.max(by: { area($0) < area($1) }) else {
-            Diagnostico.nota("APP CAMERA formato: nenhum com \(fps) fps até"
-                + " \(alvoMaior)x\(alvoMenor) — fica o preset")
+        guard let melhor = TetosDaCamera.formato(em: aparelho, alvo: alvo, fps: fps) else {
+            Diagnostico.nota("APP CAMERA formato: nenhum com \(fps) fps cobrindo"
+                + " \(alvo.teto.maior)x\(alvo.teto.menor) — fica o preset")
             return
         }
         guard (try? aparelho.lockForConfiguration()) != nil else { return }
@@ -824,7 +810,7 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         let d = CMVideoFormatDescriptionGetDimensions(melhor.formatDescription)
         Diagnostico.nota("APP CAMERA formato escolhido: \(d.width)x\(d.height)"
             + " faixas=\(melhor.videoSupportedFrameRateRanges.map { "\(Int($0.minFrameRate))-\(Int($0.maxFrameRate))" })"
-            + " (de \(candidatos.count) candidatos com \(fps) fps)")
+            + " (cobre \(alvo.rotulo) a \(fps) fps)")
     }
 
     /// **O preset do cardápio** (o caminho comum, e a queda da melhor imagem). Com a entrada já na
@@ -850,8 +836,10 @@ final class DonoDaCaptura: NSObject, ObservableObject {
     /// Por isso a lista começa no preset do cardápio e desce, e `.high` é o último recurso.
     @discardableResult
     private func aplicarPresetDoCardapio() -> AVCaptureSession.Preset? {
+        let plano = TetosDaCamera.estado(cameraID: entrada?.device.uniqueID)
+        let resolucao = TetosDaCamera.resolucao(para: plano, preferida: Resolucao.escolhida)
         let candidatos: [AVCaptureSession.Preset] =
-            [Resolucao.escolhida.preset, .hd1920x1080, .hd1280x720, .high]
+            [resolucao.preset, .hd1920x1080, .hd1280x720, .high]
         for p in candidatos where sessao.canSetSessionPreset(p) {
             sessao.sessionPreset = p
             return p
@@ -941,7 +929,8 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         // mesmo sensor, e aqui vale a mesma coisa — `videoSupportedFrameRateRanges` é do
         // `activeFormat`, que já foi escolhido pelo preset. Pedir 60 num formato que não faz 60
         // não vira erro: vira o que o formato dá, e o log diz qual foi.
-        let pedido = Double(Resolucao.quadros)
+        let plano = TetosDaCamera.estado(cameraID: aparelho.uniqueID)
+        let pedido = Double(melhorImagemAplicada ? Resolucao.quadros : (plano.fpsEfetivo ?? Resolucao.quadros))
         let faixas = aparelho.activeFormat.videoSupportedFrameRateRanges
         let cabe = faixas.contains { $0.maxFrameRate >= pedido && $0.minFrameRate <= pedido }
         let efetivo = cabe ? pedido : (faixas.map(\.maxFrameRate).max() ?? 30)
@@ -950,7 +939,25 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         guard (try? aparelho.lockForConfiguration()) != nil else { return }
         aparelho.activeVideoMinFrameDuration =
             CMTime(value: 1, timescale: CMTimeScale(max(1, Int(efetivo))))
+        // **O piso, para o automático clarear a imagem em pouca luz** (§3.1, decisão de 06/10): o
+        // quadro pode durar até 1/piso, e a exposição manual não é afetada (o obturador dela é cortado
+        // em 1/fps). O padrão do sistema fica no diário: é o "antes" que não foi medido no iOS.
+        let padrao = CMTimeGetSeconds(aparelho.activeVideoMaxFrameDuration)
+        let piso = RegrasDosControles.pisoDoAutomatico(
+            faixas: faixas.map { (minimo: $0.minFrameRate, maximo: $0.maxFrameRate) }, fps: efetivo)
+        aparelho.activeVideoMaxFrameDuration = CMTime(value: 1000, timescale: CMTimeScale(max(1, (piso * 1000).rounded())))
         aparelho.unlockForConfiguration()
+        // O teto de taxa configurado no formato ativo alimenta também o encoder; não se configura
+        // 60 quando esta câmera recuou para 30. Não é a medição dos quadros entregues: pouca luz
+        // pode baixar a taxa. Publicado antes de startRunning e sob a trava dos contadores.
+        let duracao = CMTimeGetSeconds(aparelho.activeVideoMinFrameDuration)
+        if duracao.isFinite && duracao > 0 {
+            travaDosContadores.lock()
+            _quadrosDoEspelhamento = max(1, Int((1 / duracao).rounded()))
+            travaDosContadores.unlock()
+        }
+        Diagnostico.nota("APP CAMERA piso do automático: \(String(format: "%.1f", piso)) fps"
+            + " (padrão do sistema era \(padrao.isFinite && padrao > 0 ? String(format: "%.1f", 1 / padrao) : "?") fps)")
     }
 
     // --- interrupções ---------------------------------------------------------------------------
@@ -1000,9 +1007,10 @@ final class DonoDaCaptura: NSObject, ObservableObject {
             self.sessao.beginConfiguration()
             // O preset substitui o formato escolhido à mão (a sessão sai de `.inputPriority`).
             let p = self.aplicarPresetDoCardapio()
-            if Resolucao.quadros != 30 {
-                self.escolherFormato(para: aparelho, alvo: Resolucao.escolhida, fps: Resolucao.quadros)
-            }
+            let plano = TetosDaCamera.estado(cameraID: aparelho.uniqueID)
+            self.escolherFormato(para: aparelho,
+                                 alvo: TetosDaCamera.resolucao(para: plano, preferida: Resolucao.escolhida),
+                                 fps: plano.fpsEfetivo ?? Resolucao.quadros)
             self.sessao.commitConfiguration()
             // Depois do commit, pelo mesmo motivo de `fixarTaxaDepoisDoCommit`.
             self.limitarTaxa(de: aparelho)
@@ -1477,6 +1485,12 @@ final class DonoDaCaptura: NSObject, ObservableObject {
         return _entraram
     }
 
+    private var _quadrosDoEspelhamento = Resolucao.quadros
+    var quadrosDoEspelhamento: Int {
+        travaDosContadores.lock(); defer { travaDosContadores.unlock() }
+        return _quadrosDoEspelhamento
+    }
+
     private func supervisionar() {
         voltasAteRelatar -= 1
         guard voltasAteRelatar <= 0 else { return }
@@ -1723,7 +1737,7 @@ extension DonoDaCaptura {
 
     static var textoDoMicrofoneNegado: String {
         tr("O Quall não tem acesso ao microfone. Abra %@ e ligue; "
-           + "a câmera continua sem som enquanto isso.", trSistema("Ajustes → Quall → Microfone"))
+           + "a câmera continua sem som enquanto isso.", trSistema("Ajustes → Quall Studio → Microfone"))
     }
 
     static var textoDoMicrofoneRestrito: String {

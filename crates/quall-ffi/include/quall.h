@@ -552,7 +552,7 @@ typedef struct QuallDeviceDesc {
      */
     const char *device_id;
     /**
-     * Nome exibido na lista de aparelhos.
+     * Nome real exibido ao par depois da autenticação, sem anunciar em mDNS.
      */
     const char *display_name;
     bool screen_source;
@@ -902,6 +902,17 @@ struct QuallAdvertiser *quall_advertiser_start(const struct QuallDeviceDesc *me,
                                                uint16_t signaling_port);
 
 /**
+ * Rótulo público efêmero do anunciante (`Quall <prefix8>`), igual ao mostrado na descoberta.
+ * Padrão `(buf, cap)`: tamanho UTF-8 incluindo NUL; não escreve se não couber; `-1` em erro.
+ * O nome real do aparelho só é enviado depois da autenticação.
+ *
+ * # Safety
+ * `a` precisa vir de `quall_advertiser_start`/`_with_role` e continuar vivo durante a chamada.
+ * `buf` precisa ser nulo ou apontar para `cap` bytes graváveis.
+ */
+intptr_t quall_advertiser_label(const struct QuallAdvertiser *a, char *buf, uintptr_t cap);
+
+/**
  * Para de anunciar e libera. Nulo é ignorado.
  *
  * # Dívida 3: isto não desregistrava nada
@@ -961,6 +972,8 @@ int32_t quall_browser_collect(const struct QuallBrowser *b, uint32_t ms);
  * Formato: um array de objetos com `device_id`, `display_name`, `protocol_version`,
  * `capabilities` (`screen_source`, `camera_source`, `sink`) e `endpoint` (`"ip:porta"` ou
  * `null` quando o aparelho não anunciou endereço utilizável).
+ * `identity_authenticated` é `false`: o ID e nome desta lista são placeholders efêmeros,
+ * não servem para consultar ou persistir pareamentos. Use o peer da sessão após autenticar.
  *
  * # Safety
  *
@@ -1133,13 +1146,16 @@ struct QuallSession *quall_connect_with_screen(const char *endpoint,
 
 /**
  * O aparelho do outro lado, como JSON (`device_id`, `display_name`, `protocol_version`,
- * `capabilities`). Padrão `(buf, cap)`.
+ * `capabilities`, `identity_authenticated: true`). Padrão `(buf, cap)`.
+ * ID e nome reais vêm do anúncio autenticado e cifrado; substituem a linha efêmera da descoberta.
  *
  * # Safety
  *
  * `s` precisa vir de [`quall_host`] ou [`quall_connect`].
  */
-intptr_t quall_session_peer_json(const struct QuallSession *s, char *buf, uintptr_t cap);
+intptr_t quall_session_peer_json(const struct QuallSession *s,
+                                 char *buf,
+                                 uintptr_t cap);
 
 /**
  * **Quantos candidatos caíram antes deste**, sem derrubar a espera. `0` no receptor, e `0` é o
@@ -2294,6 +2310,16 @@ enum QuallStatus quall_teto_ajustar_para(uint32_t largura,
  * inteira da tela preta no primeiro dia.
  */
 uint8_t quall_teto_nivel_anunciado(void);
+
+/**
+ * Existe algum vínculo autenticado pela revisão segura v3? Registros legados não contam.
+ *
+ * Retorna `1`/`0`, ou `-1` se o JSON é inválido. Não identifica o aparelho remoto da descoberta.
+ *
+ * # Safety
+ * `known_json` precisa ser nulo ou apontar para uma string UTF-8 terminada em zero.
+ */
+int32_t quall_known_peers_has_secure(const char *known_json);
 
 /**
  * **Esquece um par.** Devolve o estado de pareamento sem ele, no padrão `(buf, cap)`.

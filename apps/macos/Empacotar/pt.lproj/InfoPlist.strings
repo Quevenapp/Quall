@@ -1,6 +1,6 @@
 /* As frases dos diálogos de permissão em português — as mesmas do Info.plist (o teste
    `testOInfoPlistTemAsDuasLinguas` confere). O macOS escolhe a língua pelo idioma do app
    (`AppleLanguages`, que o seletor PT | EN grava), na abertura seguinte. */
-"NSCameraUsageDescription" = "O Quall Studio transmite a imagem da câmera que você escolher para o outro aparelho na sua rede local.";
-"NSMicrophoneUsageDescription" = "O Quall Studio manda o som do microfone junto da câmera, quando você liga o botão do microfone, e o grava junto quando você grava.";
-"NSLocalNetworkUsageDescription" = "O Quall Studio encontra e conversa com os outros aparelhos direto na sua rede local. Nada é enviado para a internet.";
+"NSCameraUsageDescription" = "O Quall Studio usa a câmera para mostrar a prévia, gravar vídeo e transmitir a imagem para os aparelhos que você escolher.";
+"NSMicrophoneUsageDescription" = "O Quall Studio usa o microfone para incluir áudio na transmissão e na gravação quando você liga o botão do microfone.";
+"NSLocalNetworkUsageDescription" = "O Quall Studio usa a rede local para descobrir e conectar os aparelhos que você escolher, enviar a tela e a imagem da câmera e receber conteúdo de outro aparelho.";

@@ -1,23 +1,38 @@
-# Assets de exemplo
+# Ícones e marca da distribuição
 
-Este pacote de fontes usa ícones geométricos de exemplo gerados por `gerar.py`.
-O ícone de aplicativo é uma grade de quatro quadrados; os controles Android usam
-linhas e polígonos simples. São desenhos originais cobertos por MPL-2.0, assim como
-o gerador. Não representam a identidade visual aprovada para uma distribuição.
+Os 46 controles `ic_q_*` Android deste pacote são desenhos geométricos próprios,
+sem paths dos antigos Material Icons, sob MPL-2.0. O gerador `gerar.py` produz
+os placeholders neutros da seleção pública de fontes, inclusive a grade de
+quatro quadrados para o launcher.
 
-Para recriar PNG, ICO, ICNS, catálogo iOS e vetores Android:
+A distribuição oficial Quall Studio 1.0.0 usa a marca Q branca com luz vermelha
+sobre azul-marinho. Seus quatro arquivos Android estão preservados em
+`overlays/quall-studio-1.0.0/`, com destinos e hashes no `manifesto.json`.
+`marca.py` contém a geometria original aprovada para gerar variantes de tamanho;
+seu código tem MPL-2.0. Os direitos da marca e seus assets estão separados em
+`DIREITOS-DA-MARCA.txt`; não há concessão automática de marca pelo código aberto.
+
+Para gerar os placeholders e aplicar novamente os assets exatos da distribuição
+oficial, executar na raiz do repositório:
 
 ```sh
 python3 tools/icones/gerar.py
+python3 tools/icones/aplicar-marca-oficial.py
 ```
 
-O gerador utiliza apenas a biblioteca padrão do Python 3. Não lê imagens, fontes,
-dados do usuário ou arquivos de ícones externos. Os arquivos são determinísticos
-para a mesma versão de Python/zlib. Os nomes e tamanhos preservam os contratos das
-receitas de compilação; os rótulos de acessibilidade dos controles continuam no
-código de interface. Os recursos `ic_q_coelho` e `ic_q_tartaruga` usam setas para
-representar os controles de velocidade.
+O segundo comando verifica cada SHA256 antes de copiar somente os três vetores
+de launcher e `tools/icones/loja/play-512.png`. Não troca controles de interface.
+O PNG fornecido é o insumo exato da versão; desenhar novamente com outra versão
+de Pillow/zlib pode mudar a codificação do PNG, embora a geometria seja a mesma.
+Para obter uma nova variante quadrada a partir da geometria (Pillow instalado):
 
-Os vetores `ic_q_*` deste snapshot foram desenhados novamente e não incorporam os
-paths dos Material Icons. Licenças e avisos dos outros componentes terceiros
-continuam aplicáveis, conforme o inventário geral.
+```python
+import sys
+sys.path.insert(0, 'tools/icones')
+import marca
+marca.desenhar(1024).convert('RGB').save('Quall-1024.png', optimize=True)
+```
+
+A marca desta receita é um insumo explícito, não um material privado omitido do
+build. As licenças e avisos de terceiros continuam no inventário geral. Usar
+arte própria/placeholders ao distribuir uma versão com outra identidade.

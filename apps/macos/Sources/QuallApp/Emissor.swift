@@ -75,6 +75,7 @@ final class Emissor: ObservableObject, @unchecked Sendable {
     @Published private(set) var conselho = ""
     @Published private(set) var ofereceDesparear = false
     @Published private(set) var anunciandoPorMDNS = false
+    @Published private(set) var nomeNaDescoberta: String?
     @Published private(set) var resumoDaTransmissao = ""
 
     /// **Transmitir o som do sistema junto da tela? Desligado por padrão.**
@@ -811,14 +812,15 @@ final class Emissor: ObservableObject, @unchecked Sendable {
             defer { trava.withLock { anunciosPendentes -= 1 } }
             anunciante.parar()
             guard let porta else {
-                naMain { self.anunciandoPorMDNS = false }
+                naMain { self.anunciandoPorMDNS = false; self.nomeNaDescoberta = nil }
                 Registro.compartilhado.linha("mdns: parado")
                 return
             }
             let anunciou = anunciante.comecar(deviceId: deviceId, nome: nomeDoAparelho, porta: porta,
                                               emiteTela: emiteTela, emiteCamera: !emiteTela)
             Registro.compartilhado.linha("mdns: anunciou=\(anunciou) porta=\(porta)")
-            naMain { self.anunciandoPorMDNS = anunciou }
+            let alias = anunciou ? anunciante.nomePublico : nil
+            naMain { self.anunciandoPorMDNS = anunciou; self.nomeNaDescoberta = alias }
         }
     }
 
@@ -1011,6 +1013,18 @@ final class Emissor: ObservableObject, @unchecked Sendable {
             voltarAoInicio()
             return
         }
+        let pinDaProximaEspera: String
+        if RenovacaoDoPin.exigida(apos: status) {
+            guard let novo = RenovacaoDoPin.novo(diferenteDe: s.pin, sortear: NucleoDeRede.sortearPin) else {
+                conselho = T("Não foi possível sortear o PIN da sessão.")
+                anunciar(porta: nil, fonte: nil)
+                publicar()
+                return
+            }
+            pinDaProximaEspera = novo
+        } else {
+            pinDaProximaEspera = s.pin
+        }
         if dono != nil, Date().timeIntervalSince(s.criadaEm) < 3 {
             falhasDaCamera += 1
             guard falhasDaCamera < EsperaDaCamera.tetoDeFalhas else {
@@ -1023,7 +1037,7 @@ final class Emissor: ObservableObject, @unchecked Sendable {
             }
             // Uma falha rápida não vira laço: a espera volta depois de um respiro.
             s.registrar("!! a espera da câmera falhou em menos de 3 s — reabro em 1 s")
-            let porta = s.porta, pin = status == QUALL_STATUS_WRONG_PIN ? nil : s.pin
+            let porta = s.porta, pin = pinDaProximaEspera
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
                 guard let self, !self.encerrandoTudo, self.dono != nil, self.espera() == nil else { return }
                 self.abrirEspera(porta: porta, pin: pin)
@@ -1045,7 +1059,7 @@ final class Emissor: ObservableObject, @unchecked Sendable {
             publicar()
             return
         }
-        abrirEspera(porta: s.porta, pin: status == QUALL_STATUS_WRONG_PIN ? nil : s.pin)
+        abrirEspera(porta: s.porta, pin: pinDaProximaEspera)
         publicar()
     }
 
@@ -1066,6 +1080,10 @@ final class Emissor: ObservableObject, @unchecked Sendable {
                       + "novos — cada PIN vale uma tentativa por conexão.")
                     : T("Um aparelho tentou entrar com o PIN errado. Toque em Espelhar de novo e passe os "
                       + "seis dígitos novos — cada PIN vale uma tentativa por conexão."), false)
+        case QUALL_STATUS_PAIRING:
+            return (reabre
+                    ? T("Alguém tentou entrar e o pareamento não fechou. Por segurança, o PIN mudou.")
+                    : T("Não foi possível concluir o pareamento. Toque em Espelhar de novo e passe o novo PIN."), false)
         case QUALL_STATUS_NO_ROUTE:
             return (T("O pareamento fechou, mas os dois aparelhos não acharam caminho um para o outro. "
                     + "Quase sempre é a rede: Wi-Fi de hóspede, isolamento entre aparelhos ou redes "

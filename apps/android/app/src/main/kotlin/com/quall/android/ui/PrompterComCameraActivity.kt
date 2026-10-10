@@ -1120,7 +1120,9 @@ class PrompterComCameraActivity : PrompterActivity() {
             }
             is SessaoDoPrompter.Fase.Erro -> Cores.LARANJA to f.mensagem
         }
-        chipDoTexto.atualizar(cor, pinEEnderecoDoTexto().first, estado)
+        val estadoComAlias = if (f is SessaoDoPrompter.Fase.Esperando && f.aliasNaRede.isNotBlank())
+            "${f.aliasNaRede} · $estado" else estado
+        chipDoTexto.atualizar(cor, pinEEnderecoDoTexto().first, estadoComAlias)
     }
 
     /** O chip da Câmera, pelo `MirrorBus` (`corDaCamera`/`textoDaCamera` do iOS, os estados que o Android tem). */
@@ -1135,7 +1137,9 @@ class PrompterComCameraActivity : PrompterActivity() {
             e.fase == MirrorBus.Fase.ERRO -> Cores.VERMELHO to getString(R.string.r5_camera_parou)
             else -> Cores.AMARELO to getString(R.string.r5_camera_abrindo)
         }
-        chipDaCamera.atualizar(cor, if (videoPedido) e.pin else "", estado)
+        val estadoComAlias = if (e.fase == MirrorBus.Fase.ESPERANDO && e.aliasNaRede.isNotBlank())
+            "${e.aliasNaRede} · $estado" else estado
+        chipDaCamera.atualizar(cor, if (videoPedido) e.pin else "", estadoComAlias)
     }
 
     // --- a gravação -------------------------------------------------------------------------------

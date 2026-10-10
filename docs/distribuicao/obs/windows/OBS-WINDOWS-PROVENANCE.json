@@ -1,0 +1,189 @@
+{
+  "scope": "Local technical Windows OBS 1.0.0 preparation; not release or catalog eligibility",
+  "build_utc": "2026-10-06T02:58:35.1552622Z",
+  "project_version": "1.0.0",
+  "windows_version": "10.0.26200",
+  "architecture": "x64",
+  "source": {
+    "source_archive": "obs-fonte-1.0.0.tar.gz",
+    "sha256": "c30165c86812167fc8333390c9e8b3ba91c7833e388531e500f22a55b15d4182",
+    "bytes": 44680239,
+    "base_public_commit": "3172b188c29a010cd161c56bbeeb2cbcefbb220a",
+    "source_changes": [
+      {
+        "path": "plugins/obs/CMakeLists.txt",
+        "change": "project version 1.0.0"
+      },
+      {
+        "path": "plugins/obs/src/fonte.c",
+        "change": "pairing PIN OBS_TEXT_PASSWORD"
+      }
+    ],
+    "archive_created_before_native_build": true
+  },
+  "source_patch": "obs-1.0.0-contra-publico.patch",
+  "source_patch_sha256": "5f235cbbbf9cba95ea8b03a1942ec7300686b9adfd56238e7d53916397d00ff5",
+  "core_inputs_byte_verified": 3218,
+  "prior_cached_core_accepted_as_final": false,
+  "build": {
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+    "cmake": "cmake version 4.4.2",
+    "ninja": "1.12.0",
+    "msvc": "19.44.35228 x64",
+    "windows_sdk": "10.0.26100.0",
+    "jobs": 2,
+    "release_lto": false,
+    "core_sha256": "e43f5911e8c1afacc54ee7c638fa20daf421181de3554d31db2d79d17d380211",
+    "warnings": {
+      "core.stderr": {
+        "warning LNK4099": 886
+      },
+      "plugin.stdout": {},
+      "plugin.stderr": {},
+      "pthread-build.stdout": {},
+      "substituicao-build.stdout": {}
+    },
+    "binary_determinism_proven": false
+  },
+  "obs": {
+    "runtime_version": "32.2.1",
+    "headers_tag": "32.2.1",
+    "headers_commit": "0052d024fd6a5ff1aa04c76cbdffd3085a5dfacc",
+    "runtime_and_header_api": "0x20020001",
+    "sdk_source_url": "https://github.com/obsproject/obs-studio/tree/32.2.1",
+    "runtime_dlls": [
+      {
+        "name": "obs.dll",
+        "file_version": "32.2.1",
+        "sha256": "fa75071d5493912f3dd4a53ed05c367cd0106fbebd35d0b88abdce9632f8a02f"
+      },
+      {
+        "name": "w32-pthreads.dll",
+        "file_version": "32.2.1",
+        "sha256": "590f6468a76163095e7406beb1bd3bd521358c7d87659543159ad2964b12880d"
+      }
+    ],
+    "pthread_header_version": "2.9.1.0",
+    "importlibs_from_actual_installed_exports": true
+  },
+  "plugin": {
+    "name": "quall-obs.dll",
+    "sha256": "52d79a50d9afd9f32de50394cb809f344dd8d307caa84b85df620b94f8212936",
+    "bytes": 16815616,
+    "exports": [
+      "obs_module_description",
+      "obs_module_free_locale",
+      "obs_module_get_string",
+      "obs_module_load",
+      "obs_module_name",
+      "obs_module_set_locale",
+      "obs_module_set_pointer",
+      "obs_module_unload",
+      "obs_module_ver"
+    ],
+    "dynamic_dependencies": [
+      "obs.dll",
+      "w32-pthreads.dll",
+      "kernel32.dll",
+      "ws2_32.dll",
+      "iphlpapi.dll",
+      "api-ms-win-core-synch-l1-2-0.dll",
+      "ntdll.dll",
+      "bcryptprimitives.dll",
+      "MFPlat.DLL",
+      "ole32.dll",
+      "OLEAUT32.dll",
+      "bcrypt.dll",
+      "CRYPT32.dll",
+      "ADVAPI32.dll",
+      "USER32.dll",
+      "USERENV.dll",
+      "KERNEL32.dll",
+      "MSVCP140.dll",
+      "VCRUNTIME140.dll",
+      "VCRUNTIME140_1.dll",
+      "api-ms-win-crt-string-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-utility-l1-1-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-convert-l1-1-0.dll",
+      "api-ms-win-crt-environment-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-time-l1-1-0.dll",
+      "api-ms-win-crt-filesystem-l1-1-0.dll"
+    ],
+    "core_linkage": "static",
+    "windows_pe_product_version_resource": false
+  },
+  "package": {
+    "name": "quall-studio-plugin-1.0.0-windows-x64.zip",
+    "sha256": "d568c7e765fb52d951e83c4ad1a88e766e7975175b9f69ca6cab7f6d6de7b9aa",
+    "bytes": 5622342,
+    "native_windows_zip_extraction_passed": true,
+    "legal_and_locale_matches": [
+      {
+        "source": "plugins/obs/LICENSE",
+        "payload": "LICENSE",
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+      },
+      {
+        "source": "plugins/obs/LICENSE-SCOPE.md",
+        "payload": "LICENSE-SCOPE.md",
+        "sha256": "1e7cb28bacb710d67e6a1512d27c624922944d809e9e66de2128a1b287ed1a39"
+      },
+      {
+        "source": "LICENSE",
+        "payload": "LICENSE-MPL-2.0.txt",
+        "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+      },
+      {
+        "source": "THIRD_PARTY_NOTICES.txt",
+        "payload": "THIRD_PARTY_NOTICES.txt",
+        "sha256": "965559bb30bb29fb3d7b0391da717ec3f6b60306d6d66c3be28fd0bcbee64aa9"
+      },
+      {
+        "source": "plugins/obs/data/locale/pt-BR.ini",
+        "payload": "locale/pt-BR.ini",
+        "sha256": "5b3a04754db4404ffa69ad441d90b296da157192374eef3121c47c3ce8931017"
+      },
+      {
+        "source": "plugins/obs/data/locale/en-US.ini",
+        "payload": "locale/en-US.ini",
+        "sha256": "284c8f74ea2001adbfa990f178b10b438980567eb82d49beb5e61950290c7e35"
+      }
+    ]
+  },
+  "tests": {
+    "headless_real_loader_checks": 13,
+    "headless_real_loader_failures": 0,
+    "modified_pthreads_substitution_checks": 14,
+    "modified_pthreads_substitution_failures": 0,
+    "modified_pthreads_sha256": "9097441ec65872d94a513196e774b1ac8b577b32cd48fef07eeb3ce14780c2ba",
+    "modification": "Added diagnostic export quall_pthread_rebuild_probe returning 1000; original algorithms unchanged",
+    "substitution_loaded_from_isolated_executable_directory": true,
+    "installed_runtime_hashes_unchanged_after_test": true,
+    "libobs_allocations_remaining": 0,
+    "frontend_started": false,
+    "source_created": false,
+    "media_received": false
+  },
+  "distribution": {
+    "installed": false,
+    "signed": false,
+    "uploaded": false,
+    "catalog_eligibility_proven": false,
+    "catalog_submission_ready": false,
+    "ai_use_disclosed": true,
+    "ai_generated_proportion_independently_quantified": false,
+    "source_repository": "https://github.com/Quevenapp/Quall",
+    "catalog_policy": "https://obsproject.com/forum/threads/forum-resource-and-ip-policy.178569/",
+    "remaining": [
+      "real frontend/media/audio/reconnect/shutdown test and screenshots",
+      "publish corresponding covered source/dependencies and release instructions",
+      "verify OBS catalog AI eligibility; disclosure/testing is insufficient",
+      "final maintainer review and publication"
+    ]
+  }
+}

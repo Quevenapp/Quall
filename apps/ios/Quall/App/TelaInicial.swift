@@ -52,7 +52,7 @@ struct TelaInicial: View {
     @State private var temPares = Compartilhado.haParesConhecidos
     @State private var ajustes = false
     /// Relido quando a folha de Ajustes fecha: o chip mostra o que está escolhido lá.
-    @State private var qualidade = TelaInicial.qualidadeEscolhida
+    @State private var qualidade = TelaInicial.qualidade(para: .tela)
 
     var body: some View {
         VistaDeEspelhar(origens: origensNaTela,
@@ -80,10 +80,12 @@ struct TelaInicial: View {
                         aoAbrirAjustes: { ajustes = true },
                         aoTocarNoTitulo: revelarDiagnostico)
             .onAppear(perform: enumerarOrigens)
-            .sheet(isPresented: $ajustes, onDismiss: { qualidade = TelaInicial.qualidadeEscolhida }) {
+            .sheet(isPresented: $ajustes, onDismiss: { qualidade = TelaInicial.qualidade(para: escolhida) }) {
                 FolhaDaEngrenagem(fechar: { ajustes = false },
-                                  aoEsquecerPares: { temPares = Compartilhado.haParesConhecidos })
+                                  aoEsquecerPares: { temPares = Compartilhado.haParesConhecidos },
+                                  cameraID: TelaInicial.cameraID(de: escolhida))
             }
+            .onChange(of: escolhida) { qualidade = TelaInicial.qualidade(para: $0) }
             // `item:` e não `isPresented:` de propósito: a câmera escolhida vai **junto** com a
             // apresentação, e a tela nunca pode subir sem saber qual é. Com uma bandeira booleana e
             // uma variável à parte, existe o instante em que uma está certa e a outra não.
@@ -100,9 +102,17 @@ struct TelaInicial: View {
         return .nenhuma
     }
 
-    /// "1080p · 30": o cardápio gravado (`Resolucao`), que a folha de Ajustes muda.
-    private static var qualidadeEscolhida: String {
-        "\(Resolucao.escolhida.rotulo) · \(Resolucao.quadros)"
+    /// "1080p · 30": a qualidade prevista pelo mesmo contrato da montagem. A câmera pode recuar
+    /// resolução/taxa sem regravar a preferência; calor e pouca luz ainda podem reduzir a entrega.
+    private static func qualidade(para origem: Origem) -> String {
+        let estado = TetosDaCamera.estado(cameraID: cameraID(de: origem))
+        let resolucao = TetosDaCamera.resolucao(para: estado, preferida: Resolucao.escolhida)
+        return "\(resolucao.rotulo) · \(estado.fpsEfetivo ?? Resolucao.quadros)"
+    }
+
+    private static func cameraID(de origem: Origem) -> String? {
+        if case .camera(let id, _) = origem { return id }
+        return nil
     }
 
     /// O ladrilho de cada origem: o nome de sempre e o ícone do que ela é (tela, câmera, rosto). A
@@ -281,7 +291,7 @@ struct VistaDeEspelhar: View {
 
     private var nomeNaLista: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RotuloDeSecao(tr("Aparecer na lista como"))
+            RotuloDeSecao(tr("Nome após conectar"))
             HStack(spacing: 10) {
                 TextField(tr("Nome do aparelho"), text: $nome)
                     .disableAutocorrection(true)

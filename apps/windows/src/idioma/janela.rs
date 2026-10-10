@@ -12,7 +12,7 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("Exibir", "Receive"),
     ("Teleprompter", "Teleprompter"),
     ("Ajustes", "Settings"),
-    ("Este computador aparece como", "This computer appears as"),
+    ("Nome deste computador", "This computer's name"),
     ("O que vamos espelhar?", "What should we mirror?"),
     ("Uma tela existente ou uma câmera. Quem exibe escolhe este computador na lista.", "An existing screen or a camera. The receiving device picks this computer from the list."),
     #[cfg(any(test, feature = "tela-estendida-futura"))]
@@ -64,7 +64,8 @@ pub const TEXTOS: &[(&str, &str)] = &[
     ("ou pelo endereço", "or by address"),
     ("Aparelhos pareados entram direto.", "Paired devices connect right away."),
     ("Aparelho novo? PIN ", "New device? PIN "),
-    ("Anunciando na rede — este nome aparece na lista dos outros aparelhos.", "Visible on the network — this name shows in other devices' lists."),
+    ("O nome deste computador aparece após conectar.", "This computer's name appears after connecting."),
+    ("Câmera virtual para outros apps requer um componente externo, não incluído nesta edição.", "Virtual camera for other apps requires an external component, which is not included in this edition."),
     ("Sem anúncio na rede: use o endereço acima.", "Not announcing on the network: use the address above."),
     ("No ar", "Live"),
     ("Espelhando para", "Mirroring to"),

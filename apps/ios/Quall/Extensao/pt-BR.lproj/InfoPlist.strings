@@ -1,4 +1,4 @@
 /* Os textos da appex em português: os mesmos do Info.plist. O nome aparece no seletor de
    transmissão do sistema, que segue o idioma do sistema, não o botão PT | EN. */
 "CFBundleDisplayName" = "Quall Studio Tela";
-"NSLocalNetworkUsageDescription" = "O Quall precisa da rede local para enviar a tela deste iPhone ao aparelho que vai exibi-la. Nada sai da sua rede.";
+"NSLocalNetworkUsageDescription" = "O Quall Studio usa a rede local para conectar os aparelhos que você escolher e enviar a tela deste aparelho ao receptor.";

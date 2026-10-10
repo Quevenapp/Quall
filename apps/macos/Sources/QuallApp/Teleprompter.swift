@@ -74,6 +74,7 @@ final class Teleprompter: ObservableObject, @unchecked Sendable {
     @Published private(set) var par = ""
     @Published private(set) var mensagem = ""
     @Published private(set) var anunciandoPorMDNS = false
+    @Published private(set) var nomeNaDescoberta: String?
     @Published private(set) var prompters: [PrompterAchado] = []
     /// O navegador do mDNS está pedido (o "procurando" do formulário do controle): liga com a lista,
     /// desliga ao conectar e ao fechar a tela.
@@ -1200,7 +1201,9 @@ final class Teleprompter: ObservableObject, @unchecked Sendable {
             anunciante.parar()
             let ok = anunciante.comecarComoTeleprompter(deviceId: id, nome: nomeDoAparelho, porta: porta)
             Registro.compartilhado.linha("teleprompter: mdns: anunciou=\(ok) porta=\(porta) papel=teleprompter")
+            let alias = ok ? anunciante.nomePublico : nil
             DispatchQueue.main.async {
+                self?.nomeNaDescoberta = alias
                 self?.anunciandoPorMDNS = ok
                 self?.anunciosPendentes -= 1
                 self?.recalcularOcioso()
@@ -1215,6 +1218,7 @@ final class Teleprompter: ObservableObject, @unchecked Sendable {
             Registro.compartilhado.linha("teleprompter: mdns: parado")
             DispatchQueue.main.async {
                 self?.anunciandoPorMDNS = false
+                self?.nomeNaDescoberta = nil
                 self?.anunciosPendentes -= 1
                 self?.recalcularOcioso()
             }

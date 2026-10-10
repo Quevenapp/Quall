@@ -659,7 +659,8 @@ pub fn gesto(c: ControleDosAjustes, e: &EstadoRemoto, degrau: Option<i32>) -> Op
         C::Foco(i) => pedido("foco", json!(*OPCOES_DO_FOCO.get(i)?)),
         C::FocoPosicao => numero("focoPosicao"),
         C::Restaurar => Some(GestoRemoto::Restaurar),
-        C::PermitirRemoto => None,
+        // "Usar meus ajustes" é do filmador: o receptor não o oferece (07/10).
+        C::PermitirRemoto | C::UsarMeusAjustes => None,
     }
 }
 

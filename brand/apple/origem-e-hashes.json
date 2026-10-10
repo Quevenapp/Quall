@@ -1,0 +1,50 @@
+{
+  "base": "3172b188c29a010cd161c56bbeeb2cbcefbb220a",
+  "license": "Code patch and marca.py MPL-2.0; PNG/ICNS and trademarks reserved with technical reproduction/relink permission and no endorsement",
+  "files": [
+    {
+      "path": "apps/ios/Quall/App/Estilo.swift",
+      "overlay_sha256": "692f62bd92af7a59e0fdb04bfeb2f8ea2ba1547b51a5e05aa3028c150610f74e",
+      "public_base_sha256": "8dad9bf1637805b51c96b701b94fafb04a8031d181fa85dc207d4cf3bfdc9e8c",
+      "scope": "brand geometry only for Estilo, literal approved brand helpers/tests for menu"
+    },
+    {
+      "path": "apps/macos/Sources/QuallApp/Estilo.swift",
+      "overlay_sha256": "6a87a9eda7fa2a76289b5e01d397891690d446827112cda007a5ad88c574cf33",
+      "public_base_sha256": "0a8a266071d9728437f811e17c0042cdd89b1e5bf928e2f6656a278f93855804",
+      "scope": "brand geometry only for Estilo, literal approved brand helpers/tests for menu"
+    },
+    {
+      "path": "apps/macos/Sources/QuallBarraDeMenusKit/MarcaNaBarra.swift",
+      "overlay_sha256": "5c41668c40c98c1c851171919c78d6e1f2e3714f7ddaab7b60db57e93a3a1be6",
+      "public_base_sha256": "f38b9c37f46d9373659e9db919569563ee2caf4391977a6bc3cde2204e3cc776",
+      "scope": "brand geometry only for Estilo, literal approved brand helpers/tests for menu"
+    },
+    {
+      "path": "apps/macos/Tests/QuallBarraDeMenusKitTests/TestesDaMarcaNaBarra.swift",
+      "overlay_sha256": "dbed46c0b8b43bc7d9ab30d8b4bc310f85b25a3a53c01f2f4d7c15e058bedeb5",
+      "public_base_sha256": "24be96316f29b4c1435be0b21cf1cb3c169cb3ace76d8cc350ce607b2d27b09e",
+      "scope": "brand geometry only for Estilo, literal approved brand helpers/tests for menu"
+    },
+    {
+      "overlay_file": "AppIcon-1024.png",
+      "target_relative": "apps/ios/Quall/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png",
+      "sha256": "28a72896c050fc9d1bcbe140b6d73ba23f1ec783703c71fb5bb31338931b8a20"
+    },
+    {
+      "overlay_file": "Quall.icns",
+      "target_relative": "apps/macos/Empacotar/Quall.icns",
+      "sha256": "a4d25fa345376bee7369235718a4043c62cf155887acba6e5764b183ea43c24a"
+    },
+    {
+      "overlay_file": "marca-ui.patch",
+      "target_relative": "marca-ui.patch",
+      "sha256": "2d7d7e80cd34fdecd89da5bce31dff15f9c4e5b1765d0d78cbde26daeceec31c"
+    },
+    {
+      "overlay_file": "marca.py",
+      "target_relative": "marca.py",
+      "sha256": "072e560aa62ae14a8b95feb1434f76a49a820015ae941a311575f9fdcb5b3825"
+    }
+  ]
+}

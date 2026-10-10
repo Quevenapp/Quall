@@ -1,6 +1,6 @@
 /* Os textos de permissão em português: os mesmos do Info.plist (o texto-fonte).
    O iOS escolhe entre este arquivo e o en.lproj pelo idioma do sistema, não pelo botão PT | EN. */
-"NSCameraUsageDescription" = "O Quall usa a câmera para enviá-la ao aparelho que vai exibi-la.";
-"NSMicrophoneUsageDescription" = "O Quall só usa o microfone quando você liga o botão do microfone na tela da câmera, para enviar o som junto com a imagem ao aparelho que vai exibi-la. Desligado o botão, o microfone fecha.";
-"NSPhotoLibraryAddUsageDescription" = "O Quall salva no rolo da câmera o vídeo que você grava na tela do teleprompter com câmera. Ele só adiciona vídeos; não lê as suas fotos.";
-"NSLocalNetworkUsageDescription" = "O Quall precisa da rede local para enviar a tela e a câmera deste aparelho a quem vai exibi-las, e para receber a tela de outro aparelho. Nada sai da sua rede.";
+"NSCameraUsageDescription" = "O Quall Studio usa a câmera para mostrar a prévia, gravar vídeo e transmitir a imagem para os aparelhos que você escolher.";
+"NSMicrophoneUsageDescription" = "O Quall Studio usa o microfone para incluir áudio na transmissão e na gravação quando você liga o botão do microfone.";
+"NSPhotoLibraryAddUsageDescription" = "O Quall Studio salva no rolo da câmera o vídeo que você grava na tela do teleprompter com câmera. Ele só adiciona vídeos; não lê as suas fotos.";
+"NSLocalNetworkUsageDescription" = "O Quall Studio usa a rede local para descobrir e conectar os aparelhos que você escolher, enviar a tela e a imagem da câmera e receber conteúdo de outro aparelho.";

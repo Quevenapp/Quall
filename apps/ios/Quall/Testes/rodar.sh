@@ -46,8 +46,8 @@ CONFERE="$AQUI/confere-h264.py"
 # porque é dele a subtração guardada de `UInt64` — a conta cuja versão sem guarda matou a corrida
 # de 464 s do degrau 4, e que este arquivo não vai reescrever por conta própria.
 #
-# As três contas puras do teleprompter (F6b) entram pela mesma porta: `NomeDaInstancia` (o nome
-# mDNS em 63 bytes), `LinkDePareamento` (o endereço digitado) e `GeometriaDoRoteiro` (a
+# As três contas puras do teleprompter (F6b) entram pela mesma porta: `NomeDaInstancia` (o alias
+# mDNS efêmero v3, sem identidade pessoal), `LinkDePareamento` (o endereço digitado) e `GeometriaDoRoteiro` (a
 # posição do contrato em pontos). Nenhuma fala com sistema, núcleo ou UIKit. Em 14/09 vieram mais
 # duas, do tranco do layout: `LinhasDoRoteiro` (no mesmo arquivo da geometria: o ponto de leitura
 # que sobrevive ao layout novo) e `MedidorDoRoteiro` (os quadros perdidos pelo relógio da tela).
@@ -71,11 +71,13 @@ TELEPROMPTER="$AQUI/../Teleprompter"
 swiftc -O \
   "$COMUM/Carimbo.swift" \
   "$COMUM/Idioma.swift" \
+  "$COMUM/SanitizacaoDoLog.swift" \
   "$AQUI/DiagnosticoDeMesa.swift" \
   "$COMUM/CodificadorH264.swift" \
   "$COMUM/Enderecos.swift" \
   "$COMUM/RemendoDeSPS.swift" \
   "$COMUM/NomeDaInstancia.swift" \
+  "$COMUM/TetosDoCardapio.swift" \
   "$RECEBER/Medidas.swift" \
   "$RECEBER/Fluidez.swift" \
   "$TELEPROMPTER/LinkDePareamento.swift" \

@@ -774,7 +774,12 @@ class LetreiroDoPin @JvmOverloads constructor(
     /** O PIN a mostrar (vazio antes de ele existir: nenhum marcador, que a bancada leria como PIN). */
     fun mostrar(pin: String) {
         val t = pinEspacado(pin)
-        if (text.toString() != t) text = t
+        if (text.toString() != t) {
+            text = t
+            // O modo de casas mede/desenha sem o Layout do TextView. setText sozinho
+            // pode não invalidar esse desenho; o próximo frame deve mostrar o PIN novo.
+            invalidate()
+        }
         contentDescription = if (pin.isEmpty()) "PIN" else "PIN " + pin.toCharArray().joinToString(" ") // i18n-fora: PIN é igual nos dois idiomas
     }
 

@@ -12,9 +12,12 @@ import AVFoundation
 /// que produz não é a testemunha). Os passos, em ordem: a base; o EV nos dois sentidos; o ISO baixo
 /// e alto com o obturador fixo; o obturador curto e no teto de 1/fps com o ISO fixo; três Kelvin;
 /// o foco no perto e no longe; as três travas; o degrau forçado (`reduzirCaptura`) e a volta (prova
-/// 3, a sobrevivência). O completo **termina com as travas de pé**, de propósito: o roteiro reabre o
-/// app com `--roteiro-dos-controles reabertura`, que mede a trava depois de fechar e reabrir e só
-/// então restaura o automático.
+/// 3, a sobrevivência dentro da sessão). O completo **termina com as travas de pé**, de propósito:
+/// elas ficam como "meus ajustes" da câmera, e o roteiro reabre o app com
+/// `--roteiro-dos-controles reabertura`, que prova a regra de 07/10 (§2): a câmera reabre **no
+/// automático** (`reaberta`, com o "Usar meus ajustes" oferecido), o botão traz as travas de volta
+/// (`meus-ajustes`), e o "Restaurar automático" volta ao automático **sem apagar** o guardado
+/// (`restaurado`, com o botão ainda oferecido).
 ///
 /// Precisa de `--luma-media` junto (sem ela, `luma=?`). **A câmera filma a sala**: quem roda é a
 /// sessão principal, com o sim do Pessoa Exemplo. Nenhum quadro é salvo nem aberto: só números.
@@ -50,7 +53,7 @@ final class RoteiroDosControles {
         }
         guard i < passos.count else {
             Diagnostico.nota("APP CAMERA roteiro fim: modo=\(modo)"
-                + (modo == "reabertura" ? " (automático restaurado)" : " (travas de pé, para a reabertura)"))
+                + (modo == "reabertura" ? " (automático restaurado, meus ajustes guardados)" : " (travas de pé, para a reabertura)"))
             return
         }
         let p = passos[i]
@@ -66,11 +69,14 @@ final class RoteiroDosControles {
                 let (luma, n) = dono.janelaDeLuma()
                 let fps = Double(dono.quadrosQueEntraram &- q0) / max(0.001, CFAbsoluteTimeGetCurrent() - t0)
                 let pedido = String(data: dono.controles.registro.json() ?? Data(), encoding: .utf8) ?? "?"
+                // O botão "Usar meus ajustes" à vista (na principal, onde o painel o lê).
+                let oferece = dono.controles.meusAjustesDisponiveis
                 dono.fila.async { [self] in
                     let lido = (dono.entrada?.device).map(AjustesNaCamera.linhaLida) ?? "sem câmera"
                     Diagnostico.nota("APP CAMERA roteiro passo=\(p.nome)"
                         + " luma=\(luma.map { String(format: "%.1f", $0) } ?? "?") n=\(n)"
                         + String(format: " fps=%.1f", fps)
+                        + " meus_ajustes=\(oferece ? "sim" : "nao")"
                         + " pedido=\(pedido) lido=\(lido)")
                     DispatchQueue.main.async { [self] in rodar(passos, i + 1) }
                 }
@@ -151,9 +157,12 @@ final class RoteiroDosControles {
         return Array(lista[..<i]) + extras + Array(lista[i...])
     }
 
+    /// A reabertura (§2, 07/10): abriu no automático; "Usar meus ajustes" recupera as travas que o
+    /// completo deixou; "Restaurar automático" volta ao automático e o guardado fica (o botão continua).
     private func passosDaReabertura() -> [Passo] {
         [
             ("reaberta", { _, _ in }),
+            ("meus-ajustes", { c, _ in c.usarMeusAjustes() }),
             ("restaurado", { c, _ in c.restaurar() }),
         ]
     }

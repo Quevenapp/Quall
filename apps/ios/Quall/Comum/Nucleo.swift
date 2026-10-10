@@ -494,7 +494,7 @@ final class Nucleo {
             return tr("Este iPhone não conseguiu falar com a rede local. "
                 + "Abra %@ e ligue, depois tente de novo. "
                 + "Se já estiver ligada, confira se os dois aparelhos estão na mesma rede Wi‑Fi.",
-                trSistema("Ajustes → Quall → Rede Local"))
+                trSistema("Ajustes → Quall Studio → Rede Local"))
         }
         // **O beco sem saída da dívida 22, e a única frase que dá saída dele.**
         //

@@ -288,7 +288,7 @@ enum Retratos {
                                          "som: 2210 quadros · 44.2 s capturados"], gravando: true),
                        microfone: .ligado, gravacao: .gravando(desde: ProcessInfo.processInfo.systemUptime - 768),
                        avisos: [ItemDeAviso(id: "r", texto: T("Gravando na pasta de gravações."), tipo: .info)],
-                       espacoLivre: String(format: T("%.1f GB livres"), 212.4), detalhes: true)
+                       espacoLivre: nil, detalhes: true)
             }),
             retrato("14-camera-gravando-sem-som", estudio(.espelhar, sessao: sessao(.esperando)) {
                 camera(dados(haPares: true, origem: "Câmera integrada", tela: false, imagem: "1920×1080", gravando: true),
@@ -353,6 +353,10 @@ enum Retratos {
                     tamanho: tamanhoDosAjustesDaCamera),
             retrato("40-camera-remota-nao-permitido", cameraRemota(.exposicao, Retratos.estadoDoIphone(situacao: "nao_permitido",
                                                                                                          auto: true)),
+                    tamanho: tamanhoDosAjustesDaCamera),
+            // 07/10: a câmera abriu no automático e há um ajuste guardado — "Usar meus ajustes" ao lado do
+            // "Restaurar automático".
+            retrato("41-ajustes-da-camera-meus-ajustes", ajustesDaCamera(.exposicao, .padrao, oferecerMeus: true),
                     tamanho: tamanhoDosAjustesDaCamera),
         ]
     }
@@ -446,7 +450,7 @@ enum Retratos {
     }
 
     private static func ajustesDaCamera(_ aba: AbaDosAjustes, _ a: AjustesDaCamera, completa: Bool = false,
-                                        pilula: String? = nil) -> AnyView {
+                                        pilula: String? = nil, oferecerMeus: Bool = false) -> AnyView {
         let caps = completa
             ? CapacidadesDaCamera(exposicaoContinua: true, exposicaoUmaVez: true, exposicaoTravada: true, pontoDeExposicao: true,
                                   balancoContinuo: true, balancoUmaVez: true, balancoTravado: true, focoContinuo: true,
@@ -455,7 +459,7 @@ enum Retratos {
                                   balancoContinuo: true, balancoTravado: true)
         return AnyView(PainelDosAjustesDaCamera(nome: "Câmera integrada", plano: PlanoDoPainel.doMac(caps), ajustes: a,
                                                 pilula: pilula, recado: nil, aba: .constant(aba), aoMudar: { _ in },
-                                                aoRestaurar: {}, aoEfeitos: {})
+                                                aoRestaurar: {}, aoEfeitos: {}, oferecerMeus: oferecerMeus)
             .background(Estilo.fundo))
     }
 }

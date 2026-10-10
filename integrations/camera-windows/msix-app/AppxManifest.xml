@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PROTOTIPO: app real; identidade existente. Versao e MaxVersionTested sao valores
+     de trabalho e devem ser fornecidos explicitamente ao helper. Sem registro COM:
+     incluir a DLL no payload nao torna a camera instalavel/funcional por si so. -->
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap10 rescap">
+  <Identity Name="Quven.Quall" Publisher="CN=4EAB9D59-8495-46DE-A09A-46666F12757F"
+    Version="1.0.0.0" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>Quall Studio</DisplayName>
+    <PublisherDisplayName>Quéven</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0"
+      MaxVersionTested="10.0.22000.0" />
+    <PackageDependency Name="Microsoft.VCLibs.140.00.UWPDesktop" MinVersion="14.0.33728.0"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="pt-BR" />
+    <Resource Language="en-US" />
+  </Resources>
+  <Applications>
+    <Application Id="QuallStudio" Executable="quall-app.exe"
+      uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
+      <uap:VisualElements DisplayName="Quall Studio"
+        Description="Transmissão de tela e câmera na rede local, áudio e teleprompter."
+        BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <DeviceCapability Name="webcam" />
+    <DeviceCapability Name="microphone" />
+  </Capabilities>
+</Package>

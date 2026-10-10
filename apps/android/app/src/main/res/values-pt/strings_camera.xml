@@ -17,6 +17,8 @@
     <string name="cam_foco_fixo">Esta câmera tem foco fixo.</string>
     <string name="cam_sem_calibracao">Esta câmera não publica a calibração de cor que o Kelvin precisa.</string>
     <string name="cam_travado_de_novo">Travado de novo depois de medir a cena.</string>
+    <string name="cam_pouca_luz">Pouca luz: %1$d fps para clarear a imagem. Para %2$d fps, use a exposição manual na engrenagem.</string>
+    <string name="cam_pouca_luz_sem_manual">Pouca luz: %1$d fps para clarear a imagem. Mais luz no ambiente devolve os %2$d fps.</string>
     <!-- A pílula do toque longo na prévia (§4.4). -->
     <string name="cam_pilula_exposicao_e_foco">Exposição e foco travados</string>
     <string name="cam_pilula_exposicao">Exposição travada</string>
@@ -34,6 +36,7 @@
     <string name="cam_aba_foco">Foco</string>
     <string name="cam_aba_escolhida">%1$s, aba escolhida</string>
     <string name="cam_restaurar_automatico">Restaurar automático</string>
+    <string name="cam_usar_meus_ajustes">Usar meus ajustes</string>
     <string name="cam_pronto">Pronto</string>
     <string name="cam_ainda_nao_abriu">A câmera ainda não abriu.</string>
     <string name="cam_auto">Auto</string>

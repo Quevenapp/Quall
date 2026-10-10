@@ -83,8 +83,8 @@ android {
         // (`-PquallVersionCode=7 -PquallVersionName=0.1.0`); os valores abaixo são o padrão de
         // bancada. O número de uma release não é propriedade do código-fonte: ele muda a cada
         // publicação e não deveria produzir diff.
-        versionCode = (findProperty("quallVersionCode") as String?)?.toInt() ?: 1
-        versionName = (findProperty("quallVersionName") as String?) ?: "0.0.1"
+        versionCode = (findProperty("quallVersionCode") as String?)?.toInt() ?: 4
+        versionName = (findProperty("quallVersionName") as String?) ?: "1.0.0"
 
         // O A10s é `armeabi-v7a` (32 bits, 1,79 GB). O A07 e o tablet são `arm64-v8a`. As duas
         // ABIs são obrigatórias: uma `.so` faltando quebra **só** no A10s, e só em execução.

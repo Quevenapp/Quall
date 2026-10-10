@@ -338,13 +338,31 @@ class CameraXSource private constructor(
          * as chaves desta tabela (a do `docs/controles-de-camera.md` §4.5, em
          * `RegrasDosControles.plano`).
          */
-        private fun <T> pedirQuadros(builder: androidx.camera.core.ExtendableBuilder<T>, fps: Int) {
-            val alvo = android.util.Range(fps, fps)
+        private fun <T> pedirQuadros(
+            builder: androidx.camera.core.ExtendableBuilder<T>,
+            fps: Int,
+            faixas: List<android.util.Range<Int>>,
+        ) {
+            val alvo = faixaDoAutomatico(faixas, fps)
             when (builder) {
                 is Preview.Builder -> builder.setTargetFrameRate(alvo)
                 is VideoCapture.Builder<*> -> builder.setTargetFrameRate(alvo)
                 else -> Log.w(TAG, "não sei pedir fps a ${builder.javaClass.simpleName}")
             }
+        }
+
+        /**
+         * **A faixa pedida: até [fps], descendo até onde a câmera deixa o automático alongar a
+         * exposição** (`RegrasDosControles.pisoDoAutomatico`). Pedida **sempre**, inclusive a 30: sem
+         * pedido, o modelo de gravação do HAL fixa `[30,30]`, e o AE fica preso a 33 ms numa sala
+         * escura (medido no tablet em 06/10). A exposição manual não é afetada: com `AE_MODE OFF` vale
+         * o `SENSOR_FRAME_DURATION` do plano, que é 1/fps.
+         */
+        fun faixaDoAutomatico(faixas: List<android.util.Range<Int>>, fps: Int): android.util.Range<Int> {
+            val pares = faixas.map { it.lower to it.upper }
+            // Um fps que nenhuma faixa alcança (60 no A07) virava `[60,60]` e o CameraX recuava para a fixa.
+            val teto = RegrasDosControles.tetoAlcancavel(pares, fps)
+            return android.util.Range(RegrasDosControles.pisoDoAutomatico(pares, teto), teto)
         }
 
         /**
@@ -354,7 +372,7 @@ class CameraXSource private constructor(
          * taxa negociada foi a que foi; mas ela é **por câmera**, e o teto que decide é **por
          * tamanho**, então decidir por ela seria decidir pela tabela errada.
          */
-        private fun faixasDeQuadros(context: Context, cameraId: String): List<android.util.Range<Int>> {
+        fun faixasDeQuadros(context: Context, cameraId: String): List<android.util.Range<Int>> {
             val cm = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return emptyList()
             val chars = runCatching { cm.getCameraCharacteristics(cameraId) }.getOrNull() ?: return emptyList()
             return chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
@@ -391,6 +409,27 @@ class CameraXSource private constructor(
             val fps = duracaoNs?.takeIf { it > 0 }
                 ?.let { kotlin.math.round(1_000_000_000.0 / it).toInt() }
             return com.quall.android.core.Entrega.Camera(true, fps)
+        }
+
+        /**
+         * **O fps máximo de cada resolução do cardápio nesta câmera** (`SeletorDeResolucao`): o menor
+         * entre o teto do tamanho ([capacidadeNoTamanho]) e o maior teto das faixas de AE ([faixasDeQuadros]);
+         * `null` quando a câmera não oferece o tamanho. Uma resolução sem nada legível fica de fora do
+         * mapa, que quer dizer "não se sabe" e mantém o botão disponível.
+         */
+        fun tetosPorResolucao(context: Context, cameraId: String): Map<com.quall.android.core.Resolucao, Int?> {
+            val maiorFaixa = faixasDeQuadros(context, cameraId).maxOfOrNull { it.upper }
+            val tetos = LinkedHashMap<com.quall.android.core.Resolucao, Int?>()
+            for (r in com.quall.android.core.Resolucao.entries) {
+                val c = capacidadeNoTamanho(context, cameraId, r.pedido)
+                if (!c.ofereceOTamanhoPedido) {
+                    tetos[r] = null
+                    continue
+                }
+                val teto = listOfNotNull(c.quadrosNoTamanhoPedido, maiorFaixa).minOrNull() ?: continue
+                tetos[r] = teto
+            }
+            return tetos
         }
 
         // **As duas APIs internas do CameraX que o Quall usa de propósito** (`@RestrictTo`, do grupo
@@ -517,16 +556,19 @@ class CameraXSource private constructor(
             timeoutMs: Long = TIMEOUT_PADRAO_MS,
         ): CameraXSource {
             val base = preparar(context, cameraId, timeoutMs)
-            // **A geometria é a que o usuário escolheu**, e não mais um literal. Ver
-            // `core/Resolucao.kt` e `docs/fluxo-de-uso.md`. Sem escolha vale 1080p, que é o que
-            // esta linha pedia antes do cardápio.
-            val escolhida = com.quall.android.core.Resolucao.escolhida(context)
-            val fps = com.quall.android.core.Resolucao.quadros(context)
+            // A mesma decisão do cardápio e do dono normal: tamanho oferecido/teto da câmera,
+            // sem mudar o salvo. Prévia e codificador conservam juntos esse pedido efetivo.
+            val salva = com.quall.android.core.Resolucao.escolhida(context)
+            val fpsSalvo = com.quall.android.core.Resolucao.quadros(context)
+            val cardapio = com.quall.android.core.SeletorDeResolucao.estado(false,
+                tetos = tetosPorResolucao(context, cameraId), escolhida = salva, fps = fpsSalvo)
+            val escolhida = cardapio.resolucaoPara(salva)
+            val fps = cardapio.quadrosPara(fpsSalvo)
             val faixas = faixasDeQuadros(context, cameraId)
             Log.i(TAG, "resolução escolhida: ${escolhida.rotulo} (${escolhida.pedido}) a $fps fps; " +
                 "faixas anunciadas: $faixas")
             val previewBuilder = Preview.Builder().setResolutionSelector(seletorPara(escolhida.pedido))
-            if (fps != 30) pedirQuadros(previewBuilder, fps)
+            pedirQuadros(previewBuilder, fps, faixas)
             val preview = previewBuilder.build()
 
             val main = Handler(Looper.getMainLooper())
@@ -799,9 +841,9 @@ class CameraXSource private constructor(
         // **A taxa é pedida aqui e no `Preview`, e nos dois pelo mesmo motivo.** O bind é
         // conjunto; um use case pedindo 60 e o outro calado é o tipo de descasamento que já fez o
         // CameraX subir um `StreamSharing` sozinho neste app (ver o comentário de
-        // [GEOMETRIA_ESTRITA]). `fpsEscolhido == 30` não pede nada: é o padrão do CameraX, e não
-        // escrever é mais seguro que escrever o mesmo valor.
-        if (fpsEscolhido != 30) pedirQuadros(vcBuilder, fpsEscolhido)
+        // [GEOMETRIA_ESTRITA]). A 30 também se pede: o "padrão do CameraX" era o `[30,30]` do HAL, que
+        // escurece a imagem em pouca luz ([faixaDoAutomatico]).
+        pedirQuadros(vcBuilder, fpsEscolhido, faixasDeFps)
         // **A taxa negociada é relatada, e não presumida.** O CameraX clampa o pedido pelo teto
         // do tamanho escolhido e pela interseção com os outros use cases, sem avisar; sem esta
         // linha, "pedi 60" e "estão saindo 60" seriam a mesma frase no log — e no S24 elas não

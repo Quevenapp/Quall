@@ -1,0 +1,20 @@
+--- a/plugins/obs/CMakeLists.txt
++++ b/plugins/obs/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.22)
+-project(quall-obs VERSION 0.1.0 LANGUAGES C)
++project(quall-obs VERSION 1.0.0 LANGUAGES C)
+ 
+ # =================================================================================================
+ # Fonte nativa de OBS que embute o receptor do Quall.
+--- a/plugins/obs/src/fonte.c
++++ b/plugins/obs/src/fonte.c
+@@ -280,7 +280,7 @@
+ 			obs_data_release(cfg);
+ 		}
+ 	}
+-	obs_properties_add_text(props, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_DEFAULT);
++	obs_properties_add_text(props, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_PASSWORD);
+ 
+ 	// **O botão vem colado no PIN, e a linha de estado vai DEPOIS dele.**
+ 	//

@@ -77,7 +77,7 @@ fi
 [ -x "$RAIZ/target/release/quall-probe" ] || (cd "$RAIZ" && cargo build --release -p quall-probe) || exit 1
 
 echo "==> 2. o app (sem instalar em ~/Applications — este é um worktree)"
-QUALL_DESTINO= "$MACOS/Empacotar/empacotar.sh" > "$SAIDA/empacotar.log" 2>&1 || {
+QUALL_DESTINO= "$MACOS/Empacotar/empacotar-dev.sh" > "$SAIDA/empacotar.log" 2>&1 || {
     echo "!! empacotar falhou; ver $SAIDA/empacotar.log"; exit 1; }
 APP="$MACOS/.build/Quall.app"
 

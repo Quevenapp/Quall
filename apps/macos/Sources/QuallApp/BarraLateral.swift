@@ -106,7 +106,7 @@ struct BarraLateral: View {
     private var pe: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(T("Este Mac aparece como"))
+                Text(T("Nome deste Mac"))
                     .font(.system(size: 11))
                     .foregroundColor(Estilo.texto3)
                 // Até duas linhas: na primeira janela de verdade (30/09) "MacBook Air de Pessoa Exemplo" saiu

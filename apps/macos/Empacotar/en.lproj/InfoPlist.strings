@@ -1,4 +1,4 @@
 /* As frases dos diálogos de permissão em inglês (`docs/traducao.md`, "macOS"). */
-"NSCameraUsageDescription" = "Quall Studio sends the picture from the camera you choose to the other device on your local network.";
-"NSMicrophoneUsageDescription" = "Quall Studio sends microphone audio along with the camera when you turn on the microphone button, and records it too when you record.";
-"NSLocalNetworkUsageDescription" = "Quall Studio finds and talks to your other devices directly on your local network. Nothing is sent to the internet.";
+"NSCameraUsageDescription" = "Quall Studio uses the camera to show a preview, record video, and send the image to the devices you choose.";
+"NSMicrophoneUsageDescription" = "Quall Studio uses the microphone to add audio to streaming and recording when you turn on the microphone button.";
+"NSLocalNetworkUsageDescription" = "Quall Studio uses the local network to discover and connect to the devices you choose, send screen and camera video, and receive content from another device.";

@@ -9,7 +9,7 @@
 
 /* Conselhos de falha da sessão (Nucleo.conselho) — escritos pela appex no App Group e pelo app */
 "Este iPhone não conseguiu falar com a rede local. Abra %@ e ligue, depois tente de novo. Se já estiver ligada, confira se os dois aparelhos estão na mesma rede Wi‑Fi." = "This iPhone couldn't reach the local network. Open %@ and turn it on, then try again. If it's already on, check that both devices are on the same Wi‑Fi network.";
-"Ajustes → Quall → Rede Local" = "Settings → Quall → Local Network";
+"Ajustes → Quall Studio → Rede Local" = "Settings → Quall Studio → Local Network";
 "O outro aparelho acha que já está pareado com este, mas este não o reconhece mais. Toque em “%@” e peça para ele entrar de novo digitando o PIN." = "The other device thinks it's already paired with this one, but this one no longer recognizes it. Tap “%@” and ask it to join again by entering the PIN.";
 "Esquecer aparelhos pareados" = "Forget Paired Devices";
 "Alguém tentou entrar e errou o PIN. O PIN continua o mesmo — peça para conferir os seis dígitos e tentar de novo." = "Someone tried to join and got the PIN wrong. The PIN is still the same — ask them to check the six digits and try again.";

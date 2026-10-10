@@ -188,6 +188,8 @@ pub mod tocador;
 #[cfg(feature = "net")]
 pub mod identidade;
 #[cfg(feature = "net")]
+pub mod decoracao;
+#[cfg(feature = "net")]
 pub mod janela;
 // **A janela "Ajustes da câmera"** (R9): a coluna das abas, com a prévia na câmera comum.
 #[cfg(feature = "net")]

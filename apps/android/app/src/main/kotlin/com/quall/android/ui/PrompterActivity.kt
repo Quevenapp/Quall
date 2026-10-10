@@ -656,14 +656,16 @@ open class PrompterActivity : AppCompatActivity() {
             is SessaoDoPrompter.Fase.Erro -> Cores.LARANJA to f.mensagem
         }
         val (pin, endereco) = pinEEnderecoDaSessao()
-        val chave = "$cor|$texto|$pin|$endereco"
+        val textoComAlias = if (f is SessaoDoPrompter.Fase.Esperando && f.aliasNaRede.isNotBlank())
+            "${f.aliasNaRede} · $texto" else texto
+        val chave = "$cor|$textoComAlias|$pin|$endereco"
         if (chave == faixaDesenhada) return
         faixaDesenhada = chave
         b.bolinhaPrompter.background = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(cor)
         }
-        b.textEstadoPrompter.text = texto
+        b.textEstadoPrompter.text = textoComAlias
         // "sem rede" só com a sessão de pé e sem endereço; parado ou em erro não há PIN nem endereço
         // a mostrar, e "sem rede" seria falso (a revisão do código, 28/09).
         val comSessao = f is SessaoDoPrompter.Fase.Esperando || f is SessaoDoPrompter.Fase.ComControle

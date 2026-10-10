@@ -449,33 +449,26 @@ enum Testes {
     /// As três contas puras do teleprompter (F6b): o nome da instância mDNS, o link de
     /// pareamento, e a geometria que liga a posição do contrato aos pontos da vista.
     static func rodarTeleprompter() {
-        print("NomeDaInstancia — a regra do núcleo (`discovery::nome_da_instancia`)")
-        conferir(NomeDaInstancia.montar(nome: "iPad A16", deviceId: "ios-1a2b3c4d", papel: nil) == "iPad A16",
-                 "sem papel, o nome de antes, inteiro")
-        conferir(NomeDaInstancia.montar(nome: "iPad A16", deviceId: "ios-1a2b3c4d", papel: "teleprompter")
-                 == "iPad A16 teleprompter 2b3c4d",
-                 "com papel: nome, papel e os seis últimos do id")
-        conferir(NomeDaInstancia.sufixoCurto("MacBook do Pessoa Exemplo — ÁÉÍ 12AB34") == "12ab34",
-                 "sufixo: só ASCII alfanumérico, minúsculo")
-        conferir(NomeDaInstancia.sufixoCurto("——") == "anon", "id sem alfanumérico vira anon")
-        let longo = "Teleprompter do estúdio de gravação — câmera à esquerda, Ângulo B"
-        let n = NomeDaInstancia.montar(nome: longo, deviceId: "ios-abc123", papel: "teleprompter")
-        conferir(n.utf8.count <= 63, "nome longo e acentuado cabe em 63 bytes (\(n.utf8.count))")
-        conferir(n.hasSuffix(" teleprompter abc123"), "e termina com o papel e o sufixo: \(n)")
-        conferir(longo.hasPrefix(String(n.dropLast(" teleprompter abc123".count))),
-                 "o começo é um prefixo do nome inteiro")
-        var todosCabem = true
-        for tamanho in 0...80 {
-            let nome = String(repeating: "ã", count: tamanho)
-            let m = NomeDaInstancia.montar(nome: nome, deviceId: "ios-abc123", papel: "teleprompter")
-            if m.utf8.count > 63 || String(data: Data(m.utf8), encoding: .utf8) == nil { todosCabem = false }
-            let s = NomeDaInstancia.montar(nome: nome, deviceId: "ios-abc123", papel: nil)
-            if s.utf8.count > 63 { todosCabem = false }
+        print("NomeDaInstancia — alias efêmero público v3")
+        let token = "0123456789abcdef0123456789abcdef"
+        conferir(NomeDaInstancia.montar(token: token) == "Quall \(token)",
+                 "instância pública contém apenas a marca e o token")
+        conferir(NomeDaInstancia.host(token: token) == "quall-\(token).local.",
+                 "SRV usa alias local efêmero, sem o hostname do aparelho")
+        conferir(NomeDaInstancia.montar(token: token)!.utf8.count == 38,
+                 "instância válida cabe nos 63 bytes DNS-SD")
+        for invalido in ["", "abc", token.uppercased(), token + "0", String(token.dropLast()),
+                         "0123456789abcdef0123456789abcdeg", "0000000000000000000000000000000ã"] {
+            conferir(!NomeDaInstancia.tokenValido(invalido)
+                     && NomeDaInstancia.montar(token: invalido) == nil
+                     && NomeDaInstancia.host(token: invalido) == nil,
+                     "token fora do contrato é recusado sem tentar publicar")
         }
-        conferir(todosCabem, "todos os cortes, com acento no caminho: sempre UTF-8, sempre ≤ 63")
-        conferir(NomeDaInstancia.montar(nome: String(repeating: "a", count: 70), deviceId: "x", papel: nil).utf8.count == 63,
-                 "sem papel, o nome longo é cortado em 63 (antes, o registro não valia)")
-        conferir(NomeDaInstancia.cortar("abc   def", cabe: 5) == "abc", "o espaço que sobra no corte sai")
+        let primeiro = NomeDaInstancia.novoToken()
+        let segundo = NomeDaInstancia.novoToken()
+        conferir(NomeDaInstancia.tokenValido(primeiro) && NomeDaInstancia.tokenValido(segundo),
+                 "tokens novos usam 32 bytes ASCII hexadecimais minúsculos")
+        conferir(primeiro != segundo, "cada início recebe um token novo")
 
         print("LinkDePareamento — o endereço digitado ou colado, e o link quall:// antigo")
         conferir(LinkDePareamento.ler("quall://424242@192.168.57.20:7979")

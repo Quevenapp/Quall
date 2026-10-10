@@ -683,6 +683,10 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
         return unsafe { DefWindowProcW(hwnd, msg, wp, lp) };
     };
     match msg {
+        WM_THEMECHANGED | WM_SETTINGCHANGE => {
+            crate::decoracao::aplicar(hwnd);
+            unsafe { DefWindowProcW(hwnd, msg, wp, lp) }
+        }
         WM_TIMER => {
             j.atualizar(hwnd);
             LRESULT(0)

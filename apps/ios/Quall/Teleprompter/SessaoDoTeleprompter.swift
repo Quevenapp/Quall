@@ -54,6 +54,7 @@ final class SessaoDoTeleprompter {
         /// Uma frase para a tela, que não é fase: "alguém errou o PIN", "ocupado, tentando de novo".
         var aviso: (String) -> Void = { _ in }
         var pin: (String) -> Void = { _ in }
+        var anuncio: (String?) -> Void = { _ in }
         /// Bits de `QuallTeleprompterChange` do que mudou por causa do outro lado. **Só os bits**:
         /// quem recebe relê estado e texto da réplica na hora de aplicar (ver `aplicar`).
         var mudou: (UInt32) -> Void = { _ in }
@@ -174,7 +175,8 @@ final class SessaoDoTeleprompter {
         anunciante.comecar(deviceId: Identidade.deviceId, nome: Identidade.nome, porta: porta,
                            emiteTela: false, emiteCamera: false, exibe: false,
                            papel: ReplicaDoTeleprompter.Papel.teleprompter.rawValue)
-        defer { anunciante.parar() }
+        ouvintes.anuncio(anunciante.nomePublico)
+        defer { anunciante.parar(); ouvintes.anuncio(nil) }
         DiarioDoTeleprompter.dizer("prompter: hospedando na porta \(porta)")
 
         var recuo = 0.0

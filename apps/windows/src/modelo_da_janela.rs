@@ -257,7 +257,9 @@ impl Controle {
         #[cfg(feature = "tela-estendida-futura")]
         v.push(Controle::DriverDaTelaEstendida);
         v.extend((0..4).map(Controle::Volume));
-        v.extend([Controle::SomComCamera, Controle::Detalhes, Controle::Gravar, Controle::Cancelar, Controle::AjustesDaCamera]);
+        #[cfg(not(feature = "loja"))]
+        v.push(Controle::SomComCamera);
+        v.extend([Controle::Detalhes, Controle::Gravar, Controle::Cancelar, Controle::AjustesDaCamera]);
         v.extend([Controle::Idioma(0), Controle::Idioma(1)]);
         v
     }
@@ -403,6 +405,9 @@ pub struct ControlesDaCamera {
     pub ajustes: bool,
     /// **R9b**: "Controlado por <aparelho>" (o nome; vazio fora dos 4 s depois de um pedido remoto).
     pub controlado_por: String,
+    /// **Pouca luz** (§3.1 dos controles): o automático baixou o fps para clarear. Na linha da
+    /// gravação: a primeira frase sozinha, a curta ao lado da gravação ou do "Controlado por".
+    pub pouca_luz: Option<crate::regras_dos_controles::PoucaLuz>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -768,7 +773,7 @@ fn barra(q: &mut Quadro, e: &EstadoDaTela) {
     if let Some(s) = &e.sessao {
         q.mais(texto(lugar::NOTA_DA_SESSAO, s.nota.clone(), F_LEGENDA, TEXTO3).quebra().item());
     }
-    q.mais(texto(lugar::NOME_ROTULO, t("Este computador aparece como"), F_LEGENDA_11, TEXTO3).meio().item());
+    q.mais(texto(lugar::NOME_ROTULO, t("Nome deste computador"), F_LEGENDA_11, TEXTO3).meio().item());
     q.mais(texto(lugar::NOME, e.nome_do_aparelho.clone(), F_CORPO_FORTE, TEXTO).meio().item());
     q.controle(Controle::Item(Painel::Ajustes), lugar::ITEM_AJUSTES);
 }
@@ -1008,7 +1013,7 @@ fn cena_esperando(q: &mut Quadro, e: &EstadoDaTela) {
         Some(c) => controles_da_camera(q, c),
         None => {
             let frase = if s.anunciando {
-                t("Anunciando na rede — este nome aparece na lista dos outros aparelhos.")
+                t("O nome deste computador aparece após conectar.")
             } else {
                 t("Sem anúncio na rede: use o endereço acima.")
             };
@@ -1022,11 +1027,17 @@ fn cena_esperando(q: &mut Quadro, e: &EstadoDaTela) {
 fn controles_da_camera(q: &mut Quadro, c: &ControlesDaCamera) {
     // R9b: "Controlado por <aparelho>" divide a linha da gravação (a gravação primeiro).
     let controlado = if c.controlado_por.is_empty() { String::new() } else { tf("Controlado por {}", &[&c.controlado_por]) };
-    let linha = match (c.linha_da_gravacao.is_empty(), controlado.is_empty()) {
+    let mut linha = match (c.linha_da_gravacao.is_empty(), controlado.is_empty()) {
         (false, false) => format!("{} · {controlado}", c.linha_da_gravacao),
         (false, true) => c.linha_da_gravacao.clone(),
         (true, _) => controlado,
     };
+    // Pouca luz (§3.1) por último. A frase inteira (com o conselho) não cabe numa linha do painel:
+    // sozinha vai a primeira frase, ao lado de outra coisa a curta ("Pouca luz: 15 fps"), e a
+    // inteira fica na janela dos ajustes e na faixa da R5.
+    if let Some(p) = &c.pouca_luz {
+        linha = if linha.is_empty() { p.sem_conselho() } else { format!("{linha} · {}", p.curto()) };
+    }
     if !linha.is_empty() {
         let cor = if c.gravando {
             PERIGO_TEXTO
@@ -1155,6 +1166,7 @@ fn cena_exibindo(q: &mut Quadro, e: &EstadoDaTela) {
             for (i, r) in lugar::segmentos().iter().enumerate() {
                 q.controle(Controle::Volume(i), *r);
             }
+            #[cfg(not(feature = "loja"))]
             q.controle(Controle::SomComCamera, lugar::SOM_COM_CAMERA);
         }
     }
@@ -1174,6 +1186,9 @@ fn cena_exibindo(q: &mut Quadro, e: &EstadoDaTela) {
     if s.encerrando {
         q.mais(texto(lugar::ENCERRANDO, t(ENCERRANDO), F_LEGENDA_13, TEXTO3).meio().item());
     }
+    #[cfg(feature = "loja")]
+    q.mais(texto(lugar::RODAPE_DA_SESSAO, t("Câmera virtual para outros apps requer um componente externo, não incluído nesta edição."), F_LEGENDA, TEXTO3).quebra().item());
+    #[cfg(not(feature = "loja"))]
     q.mais(texto(lugar::RODAPE_DA_SESSAO, t("Parar encerra a sessão nos dois lados."), F_LEGENDA, TEXTO3).meio().item());
     q.controle(Controle::Cancelar, lugar::PARAR);
 }
@@ -1516,12 +1531,12 @@ fn base_de_exemplo() -> EstadoDaTela {
             aviso: None,
             foco: None,
         },
-        ajustes: TelaAjustes { tem_pares: true, confirmando: false, pasta_do_diario: "%LOCALAPPDATA%\\Quall\\Logs".into(), versao: "0.1.0".into() },
+        ajustes: TelaAjustes { tem_pares: true, confirmando: false, pasta_do_diario: "%LOCALAPPDATA%\\Quall\\Logs".into(), versao: "1.0.0".into() },
         espera: TelaEspera {
             pin: "482719".into(),
             endereco: "192.168.57.2:7877".into(),
             ha_pares: false,
-            nome: "DELL-G3".into(),
+            nome: "Quall 1234abcd".into(),
             anunciando: true,
             origem: "Monitor 1".into(), // i18n: fora (dado de exemplo)
             com_som: Some(true),
@@ -1580,6 +1595,7 @@ fn camera_de_exemplo(gravando: bool) -> ControlesDaCamera {
         esquecer: false,
         ajustes: true,
         controlado_por: String::new(),
+        pouca_luz: None,
     }
 }
 
@@ -1874,7 +1890,7 @@ mod testes {
             let instrucao: String = instrucao_da_espera(&e.espera).iter().map(|x| x.texto.as_str()).collect();
             assert_eq!(
                 instrucao,
-                "On the other device, open Quall in Receive and pick DELL-G3 from the list, or type the address below. Sending Monitor 1, with this computer's audio."
+                "On the other device, open Quall in Receive and pick Quall 1234abcd from the list, or type the address below. Sending Monitor 1, with this computer's audio."
             );
             assert_eq!(legenda_do_microfone(true, Some("Com o som do microfone."), false), "Mic on", "a linha do emissor em português");
             assert_eq!(legenda_do_gravar("■ Stop recording (0:05)", true, "● RECORDING 0:05 · Recording with NO AUDIO — turn on the microphone"), "0:05 · NO AUDIO");
@@ -1923,7 +1939,7 @@ mod testes {
         assert!(q.lugar(Controle::Esquecer).is_some());
         assert!(habilitado(Controle::Esquecer, &achar("07-ajustes")), "§11.1: nos Ajustes o Esquecer fica sempre à mão");
         let q = compor(&achar("16-exibindo"));
-        assert!(q.lugar(Controle::SomComCamera).is_some(), "§11.5: \"tocar mesmo com a câmera\" no Exibindo");
+        assert_eq!(q.lugar(Controle::SomComCamera).is_some(), !cfg!(feature = "loja"), "só o desktop completo possui integração de câmera virtual");
         assert_eq!(q.controles.iter().filter(|(c, _)| matches!(c, Controle::Volume(_))).count(), 4);
         // R9b: a engrenagem da câmera de quem filma, quando ele responde ao controle remoto.
         assert!(q.lugar(Controle::AjustesDaCamera).is_some(), "R9b: os ajustes da câmera remota no Exibindo");
@@ -1935,6 +1951,19 @@ mod testes {
             c.controlado_por = "Pixel do Pessoa Exemplo".into(); // i18n: fora (exemplo)
         }
         assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Pessoa Exemplo"))));
+        // Pouca luz (§3.1): ao lado da gravação, a curta; sozinha, a primeira frase, em âmbar.
+        let luz = crate::regras_dos_controles::PoucaLuz { fps_agora: 15, fps: 30, com_manual: true };
+        if let Some(c) = controlada.camera.as_mut() {
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Pessoa Exemplo · Pouca luz: 15 fps"))));
+        let mut so_luz = achar("12-no-ar-camera-gravando");
+        if let Some(c) = so_luz.camera.as_mut() {
+            c.linha_da_gravacao = String::new();
+            c.gravando = false;
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&so_luz).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido() == "Pouca luz: 15 fps para clarear a imagem." && t.cor == AGUARDANDO_TEXTO)));
         let q = compor(&achar("07-ajustes"));
         assert!(q.lugar(Controle::SomComCamera).is_none(), "§11.5: saiu dos Ajustes");
         let q = compor(&achar("13-varios"));
@@ -2074,11 +2103,11 @@ mod testes {
 
     #[test]
     fn as_frases() {
-        let mut e = TelaEspera { nome: "DELL-G3".into(), anunciando: true, origem: "Monitor 1".into(), com_som: Some(true), ..Default::default() };
+        let mut e = TelaEspera { nome: "Quall 1234abcd".into(), anunciando: true, origem: "Monitor 1".into(), com_som: Some(true), ..Default::default() };
         let t: String = instrucao_da_espera(&e).iter().map(|x| x.texto.as_str()).collect();
         assert_eq!(
             t,
-            "No outro aparelho, abra o Quall em Exibir e escolha DELL-G3 na lista, ou digite o endereço abaixo. Vai Monitor 1, com o som deste computador."
+            "No outro aparelho, abra o Quall em Exibir e escolha Quall 1234abcd na lista, ou digite o endereço abaixo. Vai Monitor 1, com o som deste computador."
         );
         e.anunciando = false;
         e.com_som = None;

@@ -34,7 +34,7 @@ import Foundation
 /// **Os textos de permissão do sistema** (`InfoPlist.strings`: câmera, microfone, rede local, fotos)
 /// não passam por aqui: o iOS os escolhe pelo idioma do sistema (ou o do app em Ajustes › Quall ›
 /// Idioma), e o botão não os alcança. Pelo mesmo motivo, quando o texto do app **cita** um nome da
-/// interface do sistema ("Iniciar Transmissão", "Ajustes → Quall → Câmera"), esse nome vem de
+/// interface do sistema ("Iniciar Transmissão", "Ajustes → Quall Studio → Câmera"), esse nome vem de
 /// `trSistema`, que segue a língua do pacote e não o botão.
 public enum Idioma: String, CaseIterable {
     case pt

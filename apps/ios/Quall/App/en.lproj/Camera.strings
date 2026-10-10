@@ -44,12 +44,11 @@
 "a câmera não está aberta" = "the camera isn't open";
 "câmera interrompida: %@" = "camera interrupted: %@";
 "a câmera não está entregando imagem" = "the camera isn't delivering video";
-"sem espaço: sobram %ld MB (gravar pede 500 MB livres)" = "out of space: %ld MB left (recording needs 500 MB free)";
 "sem permissão para salvar no rolo da câmera" = "no permission to save to the camera roll";
 "sem permissão para salvar no rolo da câmera: %@" = "no permission to save to the camera roll: %@";
 "sem permissão para salvar no rolo da câmera: toque em Gravar uma vez neste aparelho para o iOS perguntar" = "no permission to save to the camera roll: tap Record once on this device so iOS asks";
 "sem permissão para salvar no rolo da câmera: bloqueado por Tempo de Uso ou por um perfil" = "no permission to save to the camera roll: blocked by Screen Time or a profile";
-"Ajustes → Quall → Fotos" = "Settings → Quall → Photos";
+"Ajustes → Quall Studio → Fotos" = "Settings → Quall Studio → Photos";
 "não foi possível criar a pasta das gravações" = "couldn't create the recordings folder";
 "Gravando em %@: o aparelho está quente." = "Recording at %@: the device is hot.";
 "A gravação não começou: %@" = "The recording didn't start: %@";
@@ -79,7 +78,7 @@
 
 /* O microfone (DonoDaCaptura) */
 "O Quall não tem acesso ao microfone. Abra %@ e ligue; a câmera continua sem som enquanto isso." = "Quall doesn't have access to the microphone. Open %@ and turn it on; the camera keeps going without audio meanwhile.";
-"Ajustes → Quall → Microfone" = "Settings → Quall → Microphone";
+"Ajustes → Quall Studio → Microfone" = "Settings → Quall Studio → Microphone";
 "O microfone está bloqueado neste aparelho por Tempo de Uso ou por um perfil de gerenciamento. Quem administra o aparelho precisa liberar; a câmera segue sem som." = "The microphone is blocked on this device by Screen Time or a management profile. Whoever manages the device needs to allow it; the camera keeps going without audio.";
 "A câmera já fechou." = "The camera has already closed.";
 "Este aparelho não tem microfone disponível." = "This device has no microphone available.";
@@ -110,6 +109,7 @@
 "Abrindo a câmera…" = "Opening the camera…";
 "A câmera está usando %@" = "The camera is using %@";
 "Restaurar automático" = "Reset to auto";
+"Usar meus ajustes" = "Use my settings";
 "Auto" = "Auto";
 "Manual" = "Manual";
 "Travar exposição" = "Lock exposure";
@@ -144,6 +144,8 @@
 "O iOS ajusta a cintilação sozinho." = "iOS handles flicker on its own.";
 "Esta câmera tem foco fixo." = "This camera has fixed focus.";
 "Travado de novo depois de medir a cena." = "Locked again after metering the scene.";
+"Pouca luz: %ld fps para clarear a imagem. Para %ld fps, use a exposição manual na engrenagem." = "Low light: %ld fps to brighten the picture. For %ld fps, use manual exposure in the gear menu.";
+"Pouca luz: %ld fps para clarear a imagem. Mais luz no ambiente devolve os %ld fps." = "Low light: %ld fps to brighten the picture. More light in the room brings back %ld fps.";
 "Destrave a exposição para compensar." = "Unlock exposure to compensate.";
 "Passe a exposição para Manual para escolher ISO e obturador." = "Switch exposure to Manual to choose ISO and shutter.";
 "Toque na imagem para focar e medir naquele ponto." = "Tap the picture to focus and meter at that point.";

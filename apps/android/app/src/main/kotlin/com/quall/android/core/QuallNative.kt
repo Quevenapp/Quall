@@ -227,6 +227,7 @@ object QuallNative {
      */
     external fun lastStatus(): Int
     private external fun generatePinBytes(): ByteArray
+    private external fun knownPeersHasSecureBytes(knownPeersJson: ByteArray): Int
 
     fun serviceType(): String = String(serviceTypeBytes(), Charsets.UTF_8)
 
@@ -238,6 +239,10 @@ object QuallNative {
      * qualidade do sorteio é o que segura o pareamento.
      */
     fun generatePin(): String = String(generatePinBytes(), Charsets.UTF_8)
+
+    /** Vínculos v3 aptos à retomada. Vínculos legados permanecem salvos para novo PIN. */
+    fun hasSecureKnownPeers(knownPeersJson: String): Boolean =
+        knownPeersHasSecureBytes(knownPeersJson.utf8()) > 0
 
     // --- anúncio mDNS ---------------------------------------------------------------------
 
@@ -251,6 +256,12 @@ object QuallNative {
     /** Enquanto o handle existir, o aparelho aparece na LAN. `0` em erro. */
     fun advertiserStart(deviceId: String, displayName: String, caps: Int, porta: Int): Long =
         advertiserStart(deviceId.utf8(), displayName.utf8(), caps, porta)
+
+    private external fun advertiserLabelBytes(handle: Long): ByteArray
+
+    /** Alias efêmero exato mostrado na lista LAN; consultar enquanto o anunciante está vivo. */
+    fun advertiserLabel(handle: Long): String =
+        String(advertiserLabelBytes(handle), Charsets.UTF_8)
 
     external fun advertiserStop(handle: Long)
 

@@ -1,6 +1,6 @@
 /* Permission texts in English. iOS picks this file or pt-BR.lproj by the system language
    (or Settings › Quall › Language), not by the in-app PT | EN switch. */
-"NSCameraUsageDescription" = "Quall uses the camera to send it to the device that will show it.";
-"NSMicrophoneUsageDescription" = "Quall only uses the microphone when you turn on the microphone button on the camera screen, to send the sound along with the picture to the device that will show it. When the button is off, the microphone closes.";
-"NSPhotoLibraryAddUsageDescription" = "Quall saves to your camera roll the video you record on the teleprompter with camera screen. It only adds videos; it doesn't read your photos.";
-"NSLocalNetworkUsageDescription" = "Quall needs the local network to send this device's screen and camera to whoever will show them, and to receive another device's screen. Nothing leaves your network.";
+"NSCameraUsageDescription" = "Quall Studio uses the camera to show a preview, record video, and send the image to the devices you choose.";
+"NSMicrophoneUsageDescription" = "Quall Studio uses the microphone to add audio to streaming and recording when you turn on the microphone button.";
+"NSPhotoLibraryAddUsageDescription" = "Quall Studio saves to your camera roll the video you record on the teleprompter with camera screen. It only adds videos; it doesn't read your photos.";
+"NSLocalNetworkUsageDescription" = "Quall Studio uses the local network to discover and connect to the devices you choose, send screen and camera video, and receive content from another device.";

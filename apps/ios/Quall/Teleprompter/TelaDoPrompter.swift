@@ -163,6 +163,9 @@ struct TelaDoPrompter: View {
                         .foregroundColor(modelo.enderecoParaDigitar == nil ? Estilo.aguardandoTexto : .white)
                 }
                 .lineLimit(1).minimumScaleFactor(0.6)
+                if let alias = modelo.nomeNaDescoberta {
+                    Text(tr("Na lista: %@", alias)).font(.caption).foregroundColor(.white.opacity(0.75))
+                }
             }
             Spacer(minLength: 0)
             if modelo.enderecoParaDigitar != nil, !modelo.pin.isEmpty {
@@ -305,6 +308,9 @@ struct FolhaDoEndereco: View {
                     .font(.system(size: 40, weight: .bold, design: .monospaced))
                     .lineLimit(1).minimumScaleFactor(0.4)
                     .accessibilityLabel("PIN " + modelo.pin.map { String($0) }.joined(separator: " ")) // sem-traducao
+            }
+            if let alias = modelo.nomeNaDescoberta {
+                Text(tr("Na lista: %@", alias)).font(.footnote).foregroundColor(.secondary)
             }
             Button(tr("Fechar"), action: fechar).buttonStyle(.bordered)
         }

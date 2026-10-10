@@ -14,7 +14,7 @@
 	     primeira a tocar a rede, é este `Info.plist` que o iOS consulta para escrever o texto do
 	     alerta — e um alerta sem texto é um alerta que não aparece. -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>O Quall precisa da rede local para enviar a tela deste iPhone ao aparelho que vai exibi-la. Nada sai da sua rede.</string>
+	<string>O Quall Studio usa a rede local para conectar os aparelhos que você escolher e enviar a tela deste aparelho ao receptor.</string>
 
 	<key>NSExtension</key>
 	<dict>

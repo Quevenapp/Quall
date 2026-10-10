@@ -44,8 +44,10 @@ import java.util.Locale
  * - **Não rola onde cabe.** Os quatro grupos são abas no alto: "Exposição", "ISO e obturador", "Balanço"
  *   e "Foco". Cada aba cabe sem rolar no A10s (720×1520, 280 dpi: 411 × 868 dp). As alturas são fixas e
  *   somadas em [ALTURA_MAXIMA_DP]: o cromo (leitura, abas, aviso e o pé) tem 148 dp e a aba mais alta, a
- *   Exposição, 222 dp — 370 dp, contra os ~386 dp da metade de baixo do A10s em pé, descontada a barra
- *   de navegação, e os ~387 dp da altura dele deitado, descontada a barra de status.
+ *   Exposição, 222 dp (200 desde 07/10, ver [abaExposicao]) — 370 dp, contra os ~386 dp da metade de baixo do A10s em pé, descontada a barra
+ *   de navegação, e os ~387 dp da altura dele deitado, descontada a barra de status. No A07 deitado (300 dpi,
+ *   ~350 dp descontada a barra de status; medido em 07/10) a conta não fechava com o aviso de pouca luz
+ *   aceso: a Exposição foi a 200 dp (348 com o aviso), e a linha do aviso só ocupa lugar quando há aviso.
  * - **Onde não cabe** (a R5 no celular deitado: a metade do texto do A10s tem 360 px, ~206 dp), **só o
  *   corpo rola**: a linha do alto (a leitura e o "Pronto") e as abas ficam fixas, sempre à vista, e
  *   "Restaurar automático" fica no fim da rolagem. Decisão da sessão principal de 01/10, depois da prova
@@ -134,6 +136,15 @@ class PainelDaCamera(
         background = fundoArredondado(Cores.SUPERFICIE_ALTA, dp(10).toFloat())
     }
 
+    /** "Usar meus ajustes" (07/10): a câmera abre no automático e lembra o último manual. */
+    private val meusAjustes = texto(s(R.string.cam_usar_meus_ajustes), 14f, Cores.ACENTO_CLARO, negrito = true).apply {
+        gravity = Gravity.CENTER
+        isClickable = true
+        isFocusable = true
+        background = fundoArredondado(Cores.SUPERFICIE_ALTA, dp(10).toFloat())
+        visibility = GONE
+    }
+
     /** A rolagem do corpo (só rola onde o painel não cabe). */
     private val rolagem: android.widget.ScrollView
 
@@ -188,7 +199,12 @@ class PainelDaCamera(
         conteudo.addView(corpo, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f).apply { topMargin = dp(6) })
         conteudo.addView(avisoTxt, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(16)))
         restaurar.setOnClickListener { fonteAgora()?.takeIf { it.vivo }?.restaurar(); atualizar() }
-        conteudo.addView(restaurar, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)).apply { topMargin = dp(4) })
+        meusAjustes.setOnClickListener { fonteAgora()?.takeIf { it.vivo }?.usarMeusAjustes(); atualizar() }
+        // "Restaurar automático" e "Usar meus ajustes" lado a lado; sem lembrança, o primeiro ocupa a linha.
+        val linhaDoPe = LinearLayout(contexto).apply { orientation = HORIZONTAL }
+        linhaDoPe.addView(restaurar, LayoutParams(0, dp(36), 1f))
+        linhaDoPe.addView(meusAjustes, LayoutParams(0, dp(36), 1f).apply { leftMargin = dp(8) })
+        conteudo.addView(linhaDoPe, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)).apply { topMargin = dp(4) })
         // A câmera comum tem esta opção à mão. Na R5 ela fica nos Ajustes do prompter.
         // O acréscimo fica na rolagem: a leitura, as abas e o Pronto continuam fixos no alto.
         manterTelaLigada?.let {
@@ -253,8 +269,10 @@ class PainelDaCamera(
         if (c == null) {
             mudarTexto(leituraTxt, s(R.string.cam_ainda_nao_abriu))
             mudarTexto(avisoTxt, "")
+            avisoTxt.visibility = GONE
             restaurar.isEnabled = false
             restaurar.alpha = 0.4f
+            meusAjustes.visibility = GONE
             if (chaveDoCorpo != listOf<Any?>("sem")) {
                 chaveDoCorpo = listOf("sem")
                 corpo.removeAllViews()
@@ -264,10 +282,13 @@ class PainelDaCamera(
         }
         restaurar.isEnabled = c.vivo
         restaurar.alpha = if (c.vivo) 1f else 0.4f
+        meusAjustes.visibility = if (c.vivo && c.ofereceMeusAjustes) VISIBLE else GONE
         val textos = t
         val (linha, aviso) = c.leitura(textos)
         mudarTexto(leituraTxt, linha)
         mudarTexto(avisoTxt, aviso ?: "")
+        // Sem aviso, a linha some: são os 16 dp que faltavam ao A07 deitado (07/10).
+        avisoTxt.visibility = if (aviso.isNullOrEmpty()) GONE else VISIBLE
         val a = c.ajuste
         val oferta = c.oferta(textos)
         val chave = listOf(c, oferta, c.vivo, aba, a.exposicao, a.travaExposicao, a.antiCintilacao, a.balanco, a.travaBalanco, a.foco)
@@ -312,7 +333,11 @@ class PainelDaCamera(
         }
     }
 
-    /** Exposição: Auto/Manual (36) · EV (20 + 32 + 16) · Travar (40) · Anti-cintilação (18 + 36), com 3 vãos de 8 = 222 dp. */
+    /**
+     * Exposição: Auto/Manual (36) · EV (20 + 32, e a linha de 16 só quando há o que dizer) · Travar (40) ·
+     * Anti-cintilação (18 + 36), com 3 vãos de 6 = 200 dp (216 com a linha). Era 222: com o aviso de pouca
+     * luz no cromo, a aba passava ~20 dp da altura do A07 deitado e rolava (07/10).
+     */
     private fun abaExposicao(c: FonteDoPainel, o: OfertaDoPainel) {
         val a = c.ajuste
         corpo.addView(segmentado(listOf(s(R.string.cam_auto), s(R.string.cam_manual)), if (a.exposicao == Exposicao.AUTO) 0 else 1,
@@ -324,11 +349,11 @@ class PainelDaCamera(
             }
         }, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36)))
         if (a.exposicao == Exposicao.MANUAL) {
-            vao()
+            vao(6)
             linha(o.limiteDaAbaIsoEObturador ?: s(R.string.cam_iso_na_aba_ao_lado))
             return
         }
-        vao()
+        vao(6)
         // O EV, só com Auto; apagado com a trava (§3.3).
         val evLivre = o.ev && !a.travaExposicao
         val evs = o.evs
@@ -336,14 +361,14 @@ class PainelDaCamera(
             posicao = { k -> indiceMaisPertoLinear(evs, k.ajuste.ev) },
             valor = { i -> evs.getOrNull(i)?.let { o.textoDoEv(t, it) } ?: "" },
         ) { i -> evs.getOrNull(i)?.let { c.ev(it) } }
-        linha(when {
+        when {
             !o.ev -> o.limite(Controle.EV)
             a.travaExposicao -> EscalasDaCamera.evComTrava(t)
             else -> null
-        } ?: "")
-        vao()
+        }?.let { linha(it) }
+        vao(6)
         interruptor(s(R.string.cam_travar_exposicao), a.travaExposicao, o.limite(Controle.TRAVA_EXPOSICAO), o.travaExposicao) { c.travarExposicao(it) }
-        vao()
+        vao(6)
         corpo.addView(texto(s(R.string.cam_anti_cintilacao), 13f, Cores.TEXTO, negrito = true), LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(18)))
         val limiteAnti = o.limite(Controle.ANTI_CINTILACAO)
         val opcoes = listOf(AjusteDaCamera.AntiCintilacao.AUTO, AjusteDaCamera.AntiCintilacao.HZ50,
@@ -477,7 +502,7 @@ class PainelDaCamera(
         includeFontPadding = false
     }
 
-    private fun vao() = corpo.addView(View(context), LayoutParams(1, dp(8)))
+    private fun vao(altura: Int = 8) = corpo.addView(View(context), LayoutParams(1, dp(altura)))
 
     /** Uma linha de legenda (16 dp; 30 com duas linhas): o limite do §3.5, a nota, a legenda. */
     private fun linha(t: String, linhas: Int = 1) {
@@ -618,6 +643,9 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         setTypeface(typeface, Typeface.BOLD)
         setPadding(context.dp(12), context.dp(5), context.dp(12), context.dp(5))
         background = fundoArredondado(Cores.comAlfa(0xFF000000.toInt(), 0.85f), context.dp(14).toFloat())
+        // A da pouca luz é uma frase inteira: quebra em duas linhas em vez de cruzar a prévia.
+        maxWidth = context.dp(440)
+        gravity = Gravity.CENTER
         visibility = GONE
     }
 
@@ -628,14 +656,14 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         /**
          * A pílula da câmera do dono da tela [daTelaR5]: **"Controlado por <aparelho>"** enquanto um pedido
          * remoto acabou de ser aplicado (R9b, contrato §6: `controlado_por`, por 4 s), e senão a do toque
-         * longo (§4.4). Sem dono aberto, nenhuma.
+         * longo (§4.4), e senão a da pouca luz (§3.1), se [comPoucaLuz]. Sem dono aberto, nenhuma.
          */
-        fun pilulaDaCamera(contexto: Context, daTelaR5: Boolean): String? {
+        fun pilulaDaCamera(contexto: Context, daTelaR5: Boolean, comPoucaLuz: Boolean = true): String? {
             val c = MirrorService.controlesDaCamera(daTelaR5) ?: return null
             com.quall.android.capture.FilmadorDaCamera.controladoPor()?.let {
                 return contexto.getString(R.string.cam_controlado_por, it)
             }
-            return c.pilula
+            return c.pilula ?: c.poucaLuz().takeIf { comPoucaLuz }
         }
     }
 
@@ -663,6 +691,23 @@ class MarcasDoToque(contexto: Context) : FrameLayout(contexto) {
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         addView(pilula, LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
             Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = context.dp(12) })
+    }
+
+    /**
+     * Na tela da câmera, a vista cobre a tela inteira: a pílula desce para baixo da barra de status e da
+     * linha do alto (status, câmera e engrenagem). Sem isto, a da pouca luz, de duas linhas, caía entre o
+     * relógio e o Wi-Fi e depois sobre o nome da câmera (tablet, 06/10). Na R5 a vista é a moldura da
+     * prévia, e a pílula fica onde sempre esteve.
+     */
+    fun ficarAbaixoDaLinhaDoAlto() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+            val topo = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                androidx.core.view.WindowInsetsCompat.Type.displayCutout()).top
+            (pilula.layoutParams as LayoutParams).topMargin = context.dp(64) + topo
+            pilula.requestLayout()
+            insets
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(this)
     }
 
     /** O quadrado em ([x], [y]) desta vista, por 1,5 s. */
