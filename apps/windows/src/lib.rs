@@ -106,6 +106,11 @@ pub mod placa;
 pub mod baia;
 // O registro de baias: qual aparelho tem qual câmera. Ver o cabeçalho do módulo.
 pub mod baias;
+// **A câmera virtual que o Quall instala** (o molde do driver da tela estendida): a fonte
+// registrada no sistema pelo `quall-camera.exe`. As regras puras e o Win32. Sem `net` e sem
+// `tela-estendida-futura`: o instalador avulso não puxa o núcleo.
+pub mod regras_da_instalacao_da_camera;
+pub mod instalador_da_camera;
 pub mod sps;
 // A régua de blocos lida do quadro decodificado. Não depende de rede nem de Windows — é
 // aritmética sobre um plano de luma — e por isso os testes dela rodam em qualquer máquina.

@@ -48,6 +48,15 @@ name = "quall-driver"
 path = "src/bin/quall_driver.rs"
 required-features = ["tela-estendida-futura"]
 
+# **O instalador avulso da câmera virtual** (`quall-camera.exe`): um arquivo só para baixar, com a
+# fonte da câmera embutida (`build.rs`, `QUALL_CAMERA_FONTE_DLL`) e o manifesto
+# `requireAdministrator` (`camera.manifest`). É o caminho de quem usa o Quall da Microsoft Store,
+# que não eleva. **Não** pede `net` nem `tela-estendida-futura`: compila com
+# `--no-default-features`, sem o núcleo. Ver `scripts/construir-quall-camera.ps1`.
+[[bin]]
+name = "quall-camera"
+path = "src/bin/quall_camera.rs"
+
 # **Instrumento de bancada da frente da quinta porta.** Mede recriar o encoder no meio da sessão:
 # custo em milissegundos, IDR no fluxo, conjunto de parâmetros antes/depois, e o que 20 repetições
 # fazem com handles e memória. Precisa de `net` porque `transmissao.rs` (a `Cadeia` do produto)
@@ -233,6 +242,9 @@ windows = { version = "0.62", features = [
     # compartilhada.
     "Win32_Security",
     "Win32_Security_Authorization",
+    # `BCryptGenRandom`: o nome aleatório do cano do andamento do instalador da câmera
+    # (`src/instalador_da_camera.rs`). Feature do mesmo crate: nada é baixado.
+    "Win32_Security_Cryptography",
     # **O driver da tela estendida que o Quall instala** (`src/driver_da_tela_estendida.rs`, 02/10,
     # noite): o certificado do SudoVDA nas lojas da máquina (`CertOpenStore`,
     # `CertAddEncodedCertificateToStore`), a assinatura do catálogo (`WinVerifyTrust`) e a

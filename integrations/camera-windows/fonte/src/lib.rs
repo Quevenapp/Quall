@@ -5,8 +5,14 @@
 //! instancia **não é o app do Quall** — é o Frame Server (`svchost.exe -k Camera`, conta
 //! `NT AUTHORITY\LocalService`), e também o processo do app que consome a câmera.
 //!
-//! Registro: `regsvr32 quall_camera_fonte.dll` (exige administrador — escreve em
-//! `HKLM\SOFTWARE\Classes\CLSID`).
+//! Registro: **um caminho só**, em `HKLM\SOFTWARE\Classes\CLSID\`[`CLSID_TEXTO`], com
+//! administrador — pelo instalador da câmera do Quall (o botão dos Ajustes do Quall do site e o
+//! `quall-camera.exe` avulso, `apps/windows/src/instalador_da_camera.rs`), ou por `regsvr32`
+//! (`scripts/instalar.ps1`). O Quall da loja (MSIX) usa a mesma classe registrada no sistema.
+//!
+//! O caminho do pacote (a classe declarada só no `com4:InProcessServer` do MSIX, com um segundo
+//! CLSID) foi medido e **não funciona**: `MFCreateVirtualCamera` devolve `0x80070003` porque o
+//! Frame Server não acha a classe, como a documentação da Microsoft avisa para MSIX comum.
 
 #![cfg(windows)]
 
@@ -37,6 +43,7 @@ use windows::Win32::System::Registry::{
 /// `CustomCaptureSourceClsid` do nó do dispositivo.
 pub const CLSID_FONTE: GUID = GUID::from_u128(0x5c75fe52_9204_45f6_b143_58b1ac8048e5);
 pub const CLSID_TEXTO: &str = "{5C75FE52-9204-45F6-B143-58B1AC8048E5}";
+
 const NOME_AMIGAVEL: &str = "Quall Virtual Camera Source";
 
 static MODULO: AtomicIsize = AtomicIsize::new(0);

@@ -41,6 +41,8 @@ const ARQUIVOS: &[(&str, &str)] = &[
     ("cameras.rs", include_str!("../cameras.rs")),
     ("fontes.rs", include_str!("../fontes.rs")),
     ("instancia.rs", include_str!("../instancia.rs")),
+    ("regras_da_instalacao_da_camera.rs", include_str!("../regras_da_instalacao_da_camera.rs")),
+    ("bin/quall_camera.rs", include_str!("../bin/quall_camera.rs")),
 ];
 
 #[test]

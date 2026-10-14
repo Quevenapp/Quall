@@ -1,4 +1,5 @@
-//! Embute `app.manifest` e o ícone (`quall.ico`) **só** no binário do app.
+//! Embute `app.manifest` e o ícone (`quall.ico`) **só** no binário do app, e `camera.manifest` com o
+//! mesmo ícone **só** no instalador avulso da câmera (`quall-camera`).
 //!
 //! # Por que não `.cargo/config.toml`
 //!
@@ -31,6 +32,10 @@ fn main() {
     if std::env::var_os("CARGO_FEATURE_TELA_ESTENDIDA_FUTURA").is_some() {
         panic!("tela-estendida-futura indisponível neste snapshot público: sem driver, certificados ou monitor estendido. Use as features default, net ou net,loja.");
     }
+    // **A fonte da câmera virtual embutida** no `quall-camera.exe`: antes do retorno de fora do
+    // MSVC, para o `cfg` existir também no `cargo check` de outro host.
+    embutir_a_fonte_da_camera();
+
     println!("cargo:rerun-if-changed=app.manifest");
     println!("cargo:rerun-if-changed=quall.ico");
     println!("cargo:rerun-if-changed=build.rs");
@@ -46,13 +51,78 @@ fn main() {
     let ico = fs::read(Path::new(&raiz).join("quall.ico")).expect("quall.ico (gerado por tools/icones/gerar.py)");
     let icones = res_do_icone(&ico).expect("quall.ico malformado");
     let versao = std::env::var("CARGO_PKG_VERSION").expect("CARGO_PKG_VERSION");
-    let mut res = icones;
+    let mut res = icones.clone();
     recurso(&mut res, 16, 1, 0x0030, &informacao_de_versao(&versao, "quall-app.exe", "Quall Studio"));
     let saida = Path::new(&std::env::var("OUT_DIR").expect("OUT_DIR")).join("quall-icone.res");
     fs::write(&saida, res).expect("gravar o .res do ícone");
     println!("cargo:rustc-link-arg-bin=quall-app={}", saida.display());
 
+    // **O instalador avulso da câmera virtual** (`quall-camera.exe`): `requireAdministrator` e os
+    // Common Controls 6 no `camera.manifest`, e o mesmo ícone. Sem `/MANIFESTUAC:NO` o `link.exe`
+    // gera o próprio `trustInfo` (`asInvoker`) e recusa juntá-lo ao nosso ("Values of attribute
+    // "level" not equal in different manifest snippets"): o nível fica só no manifesto.
+    println!("cargo:rerun-if-changed=camera.manifest");
+    println!("cargo:rustc-link-arg-bin=quall-camera=/MANIFEST:EMBED");
+    println!("cargo:rustc-link-arg-bin=quall-camera=/MANIFESTUAC:NO");
+    println!("cargo:rustc-link-arg-bin=quall-camera=/MANIFESTINPUT:{raiz}\\camera.manifest");
+    let mut res_camera = icones;
+    recurso(&mut res_camera, 16, 1, 0x0030, &informacao_de_versao(&versao, "quall-camera.exe", "Quall Studio — instalador da câmera virtual"));
+    let saida_camera = saida.with_file_name("quall-camera-icone.res");
+    fs::write(&saida_camera, res_camera).expect("gravar os recursos do instalador da câmera");
+    println!("cargo:rustc-link-arg-bin=quall-camera={}", saida_camera.display());
+}
 
+/// **A fonte da câmera virtual dentro do exe** (`instalador_da_camera.rs`).
+///
+/// O `quall-camera.exe` instala a `quall_camera_fonte.dll` **de dentro de si**: o processo elevado
+/// não lê nada do disco do usuário, e o instalador avulso é um arquivo só. A DLL vem de outro
+/// workspace (`integrations/camera-windows`), então ela tem de estar compilada **antes** deste
+/// pacote:
+///
+/// - `QUALL_CAMERA_FONTE_DLL=<caminho>`: embute esse arquivo (tem de existir; é o que
+///   `scripts/construir-quall-camera.ps1` passa);
+/// - `QUALL_CAMERA_FONTE_DLL=nao`: não embute (o instalador diz "a fonte da câmera não veio dentro
+///   deste Quall");
+/// - sem a variável: procura em `integrations/camera-windows/target/{x86_64-pc-windows-msvc/,}release/`
+///   e, sem achar, não embute e avisa (`cargo:warning`).
+///
+/// Embutida, a build ganha o `cfg(fonte_embutida)` e a variável `QUALL_CAMERA_FONTE_DLL_EMBUTIDA`
+/// com o caminho absoluto, que o `include_bytes!` lê.
+fn embutir_a_fonte_da_camera() {
+    println!("cargo::rustc-check-cfg=cfg(fonte_embutida)");
+    println!("cargo:rerun-if-env-changed=QUALL_CAMERA_FONTE_DLL");
+    let raiz = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
+    let escolhida = match std::env::var("QUALL_CAMERA_FONTE_DLL") {
+        Ok(v) if v.eq_ignore_ascii_case("nao") => None,
+        Ok(v) => {
+            let p = std::path::PathBuf::from(&v);
+            assert!(p.is_file(), "QUALL_CAMERA_FONTE_DLL={v}: o arquivo não existe");
+            Some(p)
+        }
+        Err(_) => {
+            let base = raiz.join("..").join("..").join("integrations").join("camera-windows").join("target");
+            let candidatas = [
+                base.join("x86_64-pc-windows-msvc").join("release").join("quall_camera_fonte.dll"),
+                base.join("release").join("quall_camera_fonte.dll"),
+            ];
+            for c in &candidatas {
+                println!("cargo:rerun-if-changed={}", c.display());
+            }
+            let achada = candidatas.into_iter().find(|c| c.is_file());
+            if achada.is_none() {
+                println!(
+                    "cargo:warning=a fonte da câmera virtual não foi embutida (compile integrations/camera-windows antes, ou passe QUALL_CAMERA_FONTE_DLL)"
+                );
+            }
+            achada
+        }
+    };
+    if let Some(p) = escolhida {
+        let p = p.canonicalize().unwrap_or(p);
+        println!("cargo:rerun-if-changed={}", p.display());
+        println!("cargo:rustc-cfg=fonte_embutida");
+        println!("cargo:rustc-env=QUALL_CAMERA_FONTE_DLL_EMBUTIDA={}", p.display());
+    }
 }
 
 /// RT_VERSION (VS_VERSION_INFO), sem rc.exe: os rótulos do Explorer e a versão do Cargo.

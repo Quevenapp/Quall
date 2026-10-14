@@ -546,6 +546,31 @@ pub fn texto_do_andamento(a: &crate::regras_do_driver::Andamento) -> Option<(Tom
     Some((tom, texto))
 }
 
+/// **A frase do andamento** da instalação da câmera, no idioma de agora, e o tom. `None` parado. O
+/// mesmo molde de `texto_do_andamento` do driver; o instalador avulso (`quall-camera.exe`) a usa.
+pub fn texto_do_andamento_da_camera(a: &crate::regras_da_instalacao_da_camera::Andamento) -> Option<(Tom, String)> {
+    use crate::regras_da_instalacao_da_camera::{self as ri, Andamento, Resultado, TomDoAviso};
+    let (tom, chave) = ri::frase(a)?;
+    let tom = match tom {
+        TomDoAviso::Info => Tom::Info,
+        TomDoAviso::Ambar => Tom::Ambar,
+        TomDoAviso::Vermelho => Tom::Vermelho,
+    };
+    let texto = match a {
+        Andamento::Rodando { acao, passo } if *passo > 0 => {
+            let nome = ri::nome_do_passo(*acao, *passo).map(t).unwrap_or("");
+            tf(chave, &[passo, &ri::passos(*acao).len(), &nome])
+        }
+        Andamento::Acabou { acao, resultado: Resultado::Falha(n, motivo, tecnico) } => {
+            let passo = ri::nome_do_passo(*acao, *n).map(t).unwrap_or(t(ri::ANTES_DE_COMECAR));
+            let motivo = if tecnico.is_empty() { tr(motivo) } else { format!("{} ({tecnico})", tr(motivo)) };
+            tf(chave, &[&passo, &motivo])
+        }
+        _ => t(chave).to_string(),
+    };
+    Some((tom, texto))
+}
+
 /// O aviso do painel Espelhar: o da instalação do driver, quando há, vence o do emissor.
 fn aviso_do_espelhar(e: &EstadoDaTela) -> Option<Aviso> {
     #[cfg(not(feature = "tela-estendida-futura"))]

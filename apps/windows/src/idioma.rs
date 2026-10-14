@@ -40,6 +40,7 @@ use std::sync::OnceLock;
 
 mod ajustes;
 mod bandeja;
+mod camera;
 #[cfg(any(test, feature = "tela-estendida-futura"))]
 mod driver;
 mod janela;
@@ -202,6 +203,7 @@ pub fn areas() -> Vec<(&'static str, &'static [(&'static str, &'static str)])> {
         ("ajustes", ajustes::TEXTOS),
         ("receptor", receptor::TEXTOS),
         ("mensagens", mensagens::TEXTOS),
+        ("camera", camera::TEXTOS),
         #[cfg(any(test, feature = "tela-estendida-futura"))]
         ("driver", driver::TEXTOS),
     ]

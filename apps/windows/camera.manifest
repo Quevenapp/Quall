@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Manifesto do `quall-camera.exe`, o instalador avulso da câmera virtual
+  (`src/bin/quall_camera.rs`). O molde é o `driver.manifest`.
+
+  Duas coisas:
+  - `requireAdministrator`: o UAC vem ao abrir, e o exe inteiro roda como administrador (pôr a
+    fonte em Arquivos de Programas e registrá-la em HKLM exigem). Nada nele se relança.
+  - os Common Controls 6: o `TaskDialog` da janela só existe neles (o mesmo motivo do
+    `app.manifest`).
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+          type="win32"
+          name="Microsoft.Windows.Common-Controls"
+          version="6.0.0.0"
+          processorArchitecture="*"
+          publicKeyToken="6595b64144ccf1df"
+          language="*" />
+    </dependentAssembly>
+  </dependency>
+</assembly>
