@@ -72,6 +72,14 @@ cargo build --manifest-path apps/windows/Cargo.toml --locked --release --feature
 cargo build --manifest-path integrations/camera-windows/Cargo.toml --locked --release
 ```
 
+O instalador avulso da câmera virtual (`quall-camera.exe`, elevado, com a fonte da câmera
+dentro) sai da fonte da câmera e do app sem o núcleo, e o roteiro confere o artefato e grava o
+SHA-256, o commit e os avisos de licença ao lado do exe:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/windows/scripts/construir-quall-camera.ps1 -Saida C:\saida\quall-camera
+```
+
 A variante Store usa `net,loja`; não habilite `tela-estendida-futura` na primeira release.
 MSI, recursos, DLLs e assinatura exigem conferência nativa, ainda pendente para este snapshot.
 Veja [Windows](../apps/windows/README.md).
