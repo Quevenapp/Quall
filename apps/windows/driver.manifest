@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Manifesto do `quall-driver.exe`, o instalador avulso do driver da tela estendida (02/10/2026,
+  noite; `src/bin/quall_driver.rs`, `docs/monitor-virtual-windows.md` §15.8).
+
+  Duas coisas:
+  - `requireAdministrator`: o UAC vem ao abrir, e o exe inteiro roda como administrador (instalar
+    o driver e pôr o certificado nas lojas da máquina exigem). Nada nele se relança.
+  - os Common Controls 6: o `TaskDialog` da janela só existe neles (o mesmo motivo do
+    `app.manifest`).
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+          type="win32"
+          name="Microsoft.Windows.Common-Controls"
+          version="6.0.0.0"
+          processorArchitecture="*"
+          publicKeyToken="6595b64144ccf1df"
+          language="*" />
+    </dependentAssembly>
+  </dependency>
+</assembly>

@@ -1,0 +1,25 @@
+Quall Studio — marca da distribuição oficial
+
+A geometria Q branca com luz vermelha e os arquivos identificados no manifesto
+em overlays/quall-studio-1.0.0/manifesto.json são os insumos aprovados da marca
+para esta distribuição. O manifesto registra origem funcional, destinos e
+SHA256 dos três vetores Android e do PNG da loja. Não incorporam os paths
+Material anteriormente omitidos. Os controles ic_q_* da base pública são
+desenhos geométricos próprios separados, cobertos pela MPL-2.0.
+
+O código do gerador marca.py é disponibilizado sob MPL-2.0. Essa concessão de
+código não concede automaticamente direitos de marca, endosso ou autorização
+para identificar builds de terceiros como distribuição oficial. A licença do
+app e núcleo também não transforma os assets de marca em assets MPL.
+
+É permitida a reprodução técnica destes arquivos como insumos da receita desta
+versão para compilar, testar e relinkar o aplicativo, mantendo este aviso. Não
+há autorização para usar a marca em outro produto nem para apresentar uma
+versão modificada como publicação oficial de Quall Studio/Quéven. Para uma
+distribuição com outra identidade, usar os placeholders neutros ou arte própria.
+Titulares e demais direitos da marca permanecem preservados.
+
+Os arquivos foram fornecidos pelo responsável da distribuição oficial,
+Veneri & Quellis Ltda. Este aviso não declara cessão de direitos de autores nem
+altera as licenças dos componentes de terceiros. Não redistribui arquivos de
+fontes tipográficas nem imagens de pessoas ou conteúdo de usuários.

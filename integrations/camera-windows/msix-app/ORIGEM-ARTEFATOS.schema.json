@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Build provenance input required by preparar_msix.py; schema is not completed build evidence",
+  "type": "object",
+  "required": ["public_base_commit", "candidate_source_changes", "private_brand_overlays", "binary_sha256", "native_build_completed", "edition", "cargo_features", "security_protocol_version"],
+  "properties": {
+    "public_base_commit": {"const": "3172b188c29a010cd161c56bbeeb2cbcefbb220a"},
+    "candidate_source_changes": {"type": "array", "items": {"type": "object"}},
+    "private_brand_overlays": {"type": "array", "items": {"type": "object"}},
+    "native_build_completed": {"const": true},
+    "edition": {"const": "store-without-virtual-camera"},
+    "cargo_features": {"const": ["net", "loja"]},
+    "security_protocol_version": {"const": 3},
+    "binary_sha256": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quall-app.exe"],
+      "properties": {
+        "quall-app.exe": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    }
+  }
+}

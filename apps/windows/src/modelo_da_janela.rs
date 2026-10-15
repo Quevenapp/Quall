@@ -1,0 +1,3039 @@
+//! **A janela principal sem Win32**: o estado da tela em valores simples, e cada cena composta em
+//! peças de `estilo.rs` e em lugares de controle (`docs/telas-estudio.md` §7 e §11.5).
+//!
+//! # Por que um módulo sem Windows
+//!
+//! A janela (`janela.rs`) monta um [`EstadoDaTela`] a partir do `Emissor` e do `Receptor` a cada
+//! mudança de versão, e daí para a frente só lê dele: [`compor`] diz o que pintar e onde fica cada
+//! controle nativo; [`aparencia`] diz como cada botão se desenha no `NM_CUSTOMDRAW`. O retrato de
+//! bancada (`--retratos-de-bancada`) passa um estado de exemplo ([`exemplos`]) pelo mesmo caminho,
+//! sem emissor nem receptor. E os testes daqui rodam em qualquer máquina: conferem que tudo cabe na
+//! janela de 880 × 580, que nenhum controle cobre outro, e as frases.
+//!
+//! As posições vêm **todas** de `estilo::lugar` (a tabela única, §11.5).
+
+use crate::estilo::{lugar, *};
+use crate::idioma::{t, tf, tr};
+
+// =============================================================================================
+// Painéis, cenas e controles
+// =============================================================================================
+
+/// Os itens da barra lateral.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default)]
+pub enum Painel {
+    #[default]
+    Espelhar,
+    Exibir,
+    Teleprompter,
+    Ajustes,
+}
+
+impl Painel {
+    pub const TODOS: [Painel; 4] = [Painel::Espelhar, Painel::Exibir, Painel::Teleprompter, Painel::Ajustes];
+
+    pub fn indice(self) -> usize {
+        match self {
+            Painel::Espelhar => 0,
+            Painel::Exibir => 1,
+            Painel::Teleprompter => 2,
+            Painel::Ajustes => 3,
+        }
+    }
+
+    pub fn rotulo(self) -> &'static str {
+        match self {
+            Painel::Espelhar => t("Espelhar"),
+            Painel::Exibir => t("Exibir"),
+            Painel::Teleprompter => t("Teleprompter"),
+            Painel::Ajustes => t("Ajustes"),
+        }
+    }
+
+    pub fn icone(self) -> Icone {
+        match self {
+            Painel::Espelhar => Icone::Espelhar,
+            Painel::Exibir => Icone::Exibir,
+            Painel::Teleprompter => Icone::Teleprompter,
+            Painel::Ajustes => Icone::Ajustes,
+        }
+    }
+}
+
+/// O que o painel mostra: um dos quatro painéis, ou a tela de uma sessão de pé.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Cena {
+    Painel(Painel),
+    Esperando,
+    NoAr,
+    Varios,
+    Conectando,
+    Exibindo,
+}
+
+impl Default for Cena {
+    fn default() -> Cena {
+        Cena::Painel(Painel::Espelhar)
+    }
+}
+
+/// Os controles nativos da janela.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum Controle {
+    /// Um item da barra lateral (os quatro formam um grupo de opções).
+    Item(Painel),
+    /// Um ladrilho de origem (grupo de opções).
+    Ladrilho(usize),
+    /// "Mandar o som deste computador" (interruptor).
+    Som,
+    /// O microfone da câmera: a linha com interruptor em Espelhar, o redondo na sessão.
+    Microfone,
+    Espelhar,
+    Lista,
+    Endereco,
+    Pin,
+    Exibir,
+    /// Um cartão do teleprompter: 0 mostrar o texto, 1 controlar, 2 texto com a câmera.
+    Papel(usize),
+    Esquecer,
+    Diario,
+    Licencas,
+    Privacidade,
+    Suporte,
+    /// O letreiro do PIN: um `STATIC` desenhado, para o Narrador ler "PIN 4 8 2 7 1 9".
+    Letreiro,
+    /// O chip do endereço: copia.
+    Chip,
+    /// "Cancelar", ou o "Parar" (cheio, ou o redondo da câmera).
+    Cancelar,
+    Gravar,
+    Mudo,
+    SomComCamera,
+    /// Um segmento do volume (grupo de opções): 100, 75, 50, 25 %.
+    Volume(usize),
+    /// "Detalhes": abre e fecha os números da exibição (interruptor).
+    Detalhes,
+    /// **Os ajustes da câmera** (R9, `docs/controles-de-camera.md` §4.1): o redondo da engrenagem
+    /// (U+E713) na câmera pela espera e no ar; abre a janela "Ajustes da câmera".
+    AjustesDaCamera,
+    /// **"Travar em 30 fps"** (`controles-de-camera.md` §3.1.1): o botão do aviso da pouca luz, em cima
+    /// da linha da gravação, quando a câmera comum tem a trava de fps.
+    TravarFps,
+    /// **A tela estendida sem o driver** (R10, 02/10): o ladrilho apagado, no lugar do escolhível,
+    /// quando o adaptador do SudoVDA não está presente. É um botão, e não uma opção do grupo dos
+    /// ladrilhos: não se escolhe (nem pelas setas). O clique abre a caixa de instalar o driver (02/10,
+    /// noite), ou, na loja e no Windows sem suporte, as instruções do SudoVDA
+    /// (`regras_do_driver::clique_no_apagado`).
+    TelaEstendidaSemDriver,
+    /// **"Desinstalar" o driver da tela estendida**, no cartão dele nos Ajustes: só com o driver que
+    /// o Quall instalou.
+    DriverDaTelaEstendida,
+    /// **O seletor de idioma "PT | EN"** (a tradução, 02/10): um segmento por idioma (0 PT, 1 EN),
+    /// num grupo de opções, no canto de cima à direita dos quatro painéis.
+    Idioma(usize),
+    /// **O interruptor "Câmera virtual"** (12/10/2026), um cartão inteiro nos Ajustes: os aparelhos
+    /// pareados como câmera no Zoom, no Meet e no OBS, enquanto o Quall estiver aberto. A frase e as
+    /// regras são de `regras_da_camera_virtual.rs`.
+    CameraVirtual,
+    /// **O botão do cartão "Instalação da câmera virtual"** (12/10/2026, tarde): instalar, remover
+    /// ou, no Quall da loja, abrir a página do instalador avulso
+    /// (`regras_da_instalacao_da_camera::botao`).
+    InstalacaoDaCamera,
+    /// **"Gerenciar câmeras"** (13/10/2026), no cartão "Câmeras deste computador": abre a lista que
+    /// remove uma câmera ou todas, sem desparear (`caixa_das_cameras.rs`).
+    GerenciarCameras,
+    /// **Um dos três números do código de 4 dígitos** (`docs/v3-no-privado.md` §3.6), no cartão da
+    /// espera (o anfitrião): 0, 1 e 2, da esquerda para a direita. Tocar no que o outro aparelho
+    /// mostra confirma; num falso, recusa e desliga o código da espera (P11). O toque vai com a
+    /// tentativa do cartão desenhado (M2).
+    EscolherCodigo(usize),
+    /// **"Nenhum destes"**: o quarto botão do cartão do anfitrião, separado dos três. Recusa.
+    RecusarCodigo,
+    /// **"Esquecer este aparelho"** no Exibir (A2, `docs/v3-no-privado.md` §3.5): o aparelho com
+    /// vínculo não reconheceu este pareamento, e o código só volta para ele depois de esquecê-lo.
+    EsquecerEsteAparelho,
+    /// **"Nome que os outros aparelhos veem"** (`docs/v3-no-privado.md` §8.7): o `EDIT` no pé da barra,
+    /// no lugar do "Nome deste computador" que só se lia. Vazio: os outros veem o alias.
+    NomeNaRede,
+    /// **"Procurar de novo"** no Exibir (`docs/v3-no-privado.md` §8.9), ao lado do "procurando": a
+    /// varredura da /24 recomeça (`descoberta::Busca::procurar_de_novo`).
+    ProcurarDeNovo,
+}
+
+/// Que controle nativo cada um é.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Especie {
+    /// `BS_PUSHBUTTON`, desenhado no `NM_CUSTOMDRAW`.
+    Botao,
+    /// `BS_AUTOCHECKBOX | BS_PUSHLIKE`: o estado é o do próprio controle (`BM_GETCHECK`).
+    Alternar,
+    /// `BS_AUTORADIOBUTTON | BS_PUSHLIKE`, num grupo.
+    Opcao,
+    /// `LISTBOX` com `LBS_OWNERDRAWFIXED | LBS_HASSTRINGS`.
+    Lista,
+    /// `EDIT`.
+    Campo,
+    /// `STATIC` desenhado (o letreiro).
+    Letreiro,
+}
+
+pub const MAX_LADRILHOS: usize = 32;
+pub const MAX_RECEPTORES: usize = 8;
+/// Os volumes do segmentado, na ordem em que aparecem.
+pub const VOLUMES: [(f32, &str); 4] = [(1.0, "100 %"), (0.75, "75 %"), (0.5, "50 %"), (0.25, "25 %")];
+/// O aviso da espera enquanto o emissor desmonta a sessão (e o do Exibindo que acaba). Em português,
+/// como chave da tabela: quem mostra passa por `t(ENCERRANDO)`. A bandeja reconhece o estado pelo
+/// [`TelaEspera::encerrando`], e não por este texto (que muda com o idioma).
+pub const ENCERRANDO: &str = "Encerrando…"; // i18n: chave
+/// Os avisos do cartão do teleprompter (`janela::abrir_o_teleprompter`), em português: o cartão os
+/// guarda assim, a janela os compara a cada pulso, e o [`compor`] os traduz.
+pub const AVISO_FECHANDO_O_TELEPROMPTER: &str = "Fechando o teleprompter aberto para abrir no papel pedido…"; // i18n: chave
+pub const AVISO_O_TELEPROMPTER_NAO_FECHOU: &str =
+    "O teleprompter aberto não fechou em 45 s. Feche a janela dele e clique no cartão de novo."; // i18n: chave
+
+impl Controle {
+    /// O id do controle (o `HMENU` do filho, e o que chega no `WM_COMMAND`). Os que já existiam
+    /// antes desta rodada mantêm o número.
+    pub fn id(self) -> usize {
+        match self {
+            Controle::Espelhar => 102,
+            Controle::Cancelar => 103,
+            Controle::Esquecer => 104,
+            Controle::Som => 105,
+            Controle::Lista => 106,
+            Controle::Endereco => 107,
+            Controle::Pin => 108,
+            Controle::Exibir => 109,
+            Controle::Mudo => 111,
+            Controle::SomComCamera => 113,
+            Controle::Microfone => 114,
+            Controle::Gravar => 115,
+            Controle::AjustesDaCamera => 116,
+            Controle::TelaEstendidaSemDriver => 117,
+            Controle::Idioma(i) => 118 + i.min(1),
+            Controle::Item(p) => 120 + p.indice(),
+            Controle::Papel(i) => 130 + i,
+            Controle::Diario => 140,
+            Controle::Licencas => 145,
+            Controle::Privacidade => 146,
+            Controle::Suporte => 147,
+            Controle::CameraVirtual => 148,
+            Controle::TravarFps => 149,
+            Controle::Chip => 141,
+            Controle::Detalhes => 142,
+            Controle::Letreiro => 143,
+            Controle::DriverDaTelaEstendida => 144,
+            Controle::Volume(i) => 150 + i,
+            Controle::RecusarCodigo => 161,
+            Controle::InstalacaoDaCamera => 162,
+            Controle::GerenciarCameras => 163,
+            Controle::EscolherCodigo(i) => 164 + i.min(2),
+            Controle::EsquecerEsteAparelho => 167,
+            Controle::NomeNaRede => 168,
+            Controle::ProcurarDeNovo => 169,
+            Controle::Ladrilho(i) => 200 + i,
+        }
+    }
+
+    pub fn de_id(id: usize) -> Option<Controle> {
+        Some(match id {
+            102 => Controle::Espelhar,
+            103 => Controle::Cancelar,
+            104 => Controle::Esquecer,
+            105 => Controle::Som,
+            106 => Controle::Lista,
+            107 => Controle::Endereco,
+            108 => Controle::Pin,
+            109 => Controle::Exibir,
+            111 => Controle::Mudo,
+            113 => Controle::SomComCamera,
+            114 => Controle::Microfone,
+            115 => Controle::Gravar,
+            116 => Controle::AjustesDaCamera,
+            117 => Controle::TelaEstendidaSemDriver,
+            118 => Controle::Idioma(0),
+            119 => Controle::Idioma(1),
+            120..=123 => Controle::Item(Painel::TODOS[id - 120]),
+            130..=132 => Controle::Papel(id - 130),
+            140 => Controle::Diario,
+            145 => Controle::Licencas,
+            146 => Controle::Privacidade,
+            147 => Controle::Suporte,
+            148 => Controle::CameraVirtual,
+            149 => Controle::TravarFps,
+            141 => Controle::Chip,
+            142 => Controle::Detalhes,
+            143 => Controle::Letreiro,
+            144 => Controle::DriverDaTelaEstendida,
+            150..=153 => Controle::Volume(id - 150),
+            161 => Controle::RecusarCodigo,
+            162 => Controle::InstalacaoDaCamera,
+            163 => Controle::GerenciarCameras,
+            164..=166 => Controle::EscolherCodigo(id - 164),
+            167 => Controle::EsquecerEsteAparelho,
+            168 => Controle::NomeNaRede,
+            169 => Controle::ProcurarDeNovo,
+            i if (200..200 + MAX_LADRILHOS).contains(&i) => Controle::Ladrilho(i - 200),
+            _ => return None,
+        })
+    }
+
+    pub fn especie(self) -> Especie {
+        match self {
+            Controle::Item(_) | Controle::Ladrilho(_) | Controle::Volume(_) | Controle::Idioma(_) => Especie::Opcao,
+            Controle::Som | Controle::Microfone | Controle::Mudo | Controle::SomComCamera | Controle::Detalhes | Controle::CameraVirtual => {
+                Especie::Alternar
+            }
+            Controle::Lista => Especie::Lista,
+            Controle::Endereco | Controle::Pin | Controle::NomeNaRede => Especie::Campo,
+            Controle::Letreiro => Especie::Letreiro,
+            _ => Especie::Botao,
+        }
+    }
+
+    /// Os controles fixos, na ordem de criação (que é a do Tab). Os ladrilhos entram logo depois dos
+    /// itens da barra (a janela os põe no lugar da ordem quando os cria), e por isso antes da tela
+    /// estendida apagada, que vem logo depois dos itens aqui.
+    pub fn fixos() -> Vec<Controle> {
+        let mut v: Vec<Controle> = Painel::TODOS.iter().map(|p| Controle::Item(*p)).collect();
+        #[cfg(feature = "tela-estendida-futura")]
+        v.push(Controle::TelaEstendidaSemDriver);
+        v.extend([Controle::Som, Controle::Microfone, Controle::Espelhar, Controle::ProcurarDeNovo, Controle::Lista, Controle::Endereco, Controle::Pin, Controle::Exibir, Controle::EsquecerEsteAparelho]);
+        v.extend((0..3).map(Controle::Papel));
+        // O chip antes do Esquecer e do microfone: é a ordem de cima para baixo da espera da câmera
+        // (a janela põe o microfone depois do Diário quando a sessão é de câmera).
+        v.extend([Controle::Letreiro, Controle::Chip, Controle::Esquecer, Controle::Diario, Controle::Licencas, Controle::Privacidade, Controle::Suporte, Controle::CameraVirtual, Controle::InstalacaoDaCamera, Controle::GerenciarCameras, Controle::Mudo]);
+        #[cfg(feature = "tela-estendida-futura")]
+        v.push(Controle::DriverDaTelaEstendida);
+        v.extend((0..4).map(Controle::Volume));
+        v.extend([Controle::SomComCamera, Controle::Detalhes, Controle::TravarFps, Controle::Gravar, Controle::Cancelar, Controle::AjustesDaCamera]);
+        v.extend([Controle::Idioma(0), Controle::Idioma(1)]);
+        // O nome na rede, no pé da barra, antes do item Ajustes (§8.7).
+        v.push(Controle::NomeNaRede);
+        // O cartão do código: os três números, da esquerda para a direita, e o "Nenhum destes" embaixo.
+        v.extend([Controle::EscolherCodigo(0), Controle::EscolherCodigo(1), Controle::EscolherCodigo(2), Controle::RecusarCodigo]);
+        v
+    }
+
+    /// O primeiro de um grupo de opções (leva `WS_GROUP`; os seguintes do grupo, não).
+    pub fn abre_grupo(self) -> bool {
+        match self {
+            Controle::Item(p) => p == Painel::Espelhar,
+            Controle::Ladrilho(i) | Controle::Volume(i) | Controle::Idioma(i) => i == 0,
+            _ => true,
+        }
+    }
+}
+
+/// Os destinos oficiais dos Ajustes, escolhidos pelo mesmo idioma da interface.
+pub fn pagina_dos_ajustes(controle: Controle, idioma: crate::idioma::Idioma) -> Option<&'static str> {
+    use crate::idioma::Idioma;
+    Some(match (controle, idioma) {
+        (Controle::Privacidade, Idioma::Pt) => "https://queven.com.br/quall/privacidade/",
+        (Controle::Privacidade, Idioma::En) => "https://queven.com.br/en/quall/privacy/",
+        (Controle::Suporte, Idioma::Pt) => "https://queven.com.br/quall/suporte/",
+        (Controle::Suporte, Idioma::En) => "https://queven.com.br/en/quall/support/",
+        _ => return None,
+    })
+}
+
+// =============================================================================================
+// O estado da tela
+// =============================================================================================
+
+/// O item da sessão de pé, na barra lateral.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SessaoNaBarra {
+    pub item: Painel,
+    pub luz: Luz,
+    pub rotulo: String,
+    pub nota: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ladrilho {
+    pub titulo: String,
+    pub detalhe: String,
+    pub detalhe_mono: bool,
+    pub icone: Icone,
+    pub escolhido: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Aviso {
+    pub tom: Tom,
+    pub texto: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaEspelhar {
+    pub fontes: Vec<Ladrilho>,
+    /// A escolhida é uma câmera (a linha do interruptor é a do microfone).
+    pub camera: bool,
+    /// Há uma escolhida (sem escolha, não há linha de interruptor).
+    pub alguma_escolhida: bool,
+    pub som: bool,
+    pub microfone: bool,
+    /// O endereço deste computador na rede, sem a porta. `None`: sem rede.
+    pub ip: Option<String>,
+    pub aviso: Option<Aviso>,
+    pub pode_espelhar: bool,
+    /// **A tela estendida apagada** (R10): a casa dela na grade dos ladrilhos (logo depois dos
+    /// monitores, `regras_da_tela_estendida::lugar_do_apagado`), ou `None` com o adaptador presente
+    /// (aí a tela estendida é um ladrilho de `fontes`).
+    pub tela_estendida_sem_driver: Option<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinhaDeAparelho {
+    pub nome: String,
+    /// "Tela ou câmera", "Tela", "Câmera".
+    pub tipo: String,
+    pub endereco: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaExibir {
+    pub aparelhos: Vec<LinhaDeAparelho>,
+    pub escolhido: Option<usize>,
+    pub procurando: bool,
+    /// A frase no lugar da lista vazia (ou o aviso da busca).
+    pub vazio: String,
+    pub pede_pin: bool,
+    pub aviso: Option<Aviso>,
+    /// Qual campo tem o foco (a borda de baixo violeta).
+    pub foco: Option<Controle>,
+    /// **O QR do computador** (`docs/conexao.md` §10), numa coluna à direita da lista. `None`: sem a
+    /// coluna (a bancada com `--so-local`, e o retrato de antes).
+    pub qr: Option<crate::qr_na_tela::QrNaTela>,
+    /// **"Esquecer este aparelho"** no pé (A2): a última conexão falhou fechado com um aparelho de que
+    /// este computador guarda vínculo.
+    pub esquecer_este: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaAjustes {
+    /// Há pares no disco (`Estado::ha_pares_conhecidos`): só a frase depende disto.
+    pub tem_pares: bool,
+    /// O primeiro clique no Esquecer já foi dado: o segundo, em 5 s, esquece de verdade (§11.1).
+    pub confirmando: bool,
+    pub pasta_do_diario: String,
+    pub versao: String,
+    /// O cartão "Câmera virtual": o interruptor e o que o fio das câmeras fez.
+    pub camera_virtual: crate::regras_da_camera_virtual::Situacao,
+    /// O cartão "Instalação da câmera virtual" (12/10/2026, tarde): a fonte no Windows e o que o
+    /// instalador está fazendo.
+    pub instalacao_da_camera: TelaDaInstalacaoDaCamera,
+    /// O cartão "Câmeras deste computador" (13/10/2026): uma linha por nome.
+    pub cameras: Vec<crate::regras_da_camera_virtual::LinhaDaCamera>,
+}
+
+/// **A frase do cartão "Câmeras deste computador"**, no idioma de agora: quantas, as duas primeiras
+/// (as em uso antes, com "(em uso agora)") e "e mais N".
+pub fn frase_das_cameras_do_pc(linhas: &[crate::regras_da_camera_virtual::LinhaDaCamera]) -> String {
+    use crate::regras_da_camera_virtual::{self as cv, FraseDasCameras};
+    match cv::frase_das_cameras(linhas) {
+        FraseDasCameras::Nenhuma => t(cv::CAMERAS_NENHUMA).to_string(),
+        FraseDasCameras::Lista { quantas, nomes, mais } => {
+            let lista = nomes.iter().map(|(n, em_uso)| if *em_uso { tf(cv::CAMERAS_EM_USO, &[n]) } else { n.clone() }).collect::<Vec<_>>().join(", ");
+            let lista = if mais > 0 { tf(cv::CAMERAS_E_MAIS, &[&lista, &mais]) } else { lista };
+            if quantas == 1 {
+                tf(cv::CAMERAS_UMA, &[&lista])
+            } else {
+                tf(cv::CAMERAS_VARIAS, &[&quantas, &lista])
+            }
+        }
+    }
+}
+
+/// A instalação da câmera virtual, na tela (`regras_da_instalacao_da_camera`).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaDaInstalacaoDaCamera {
+    pub situacao: crate::regras_da_instalacao_da_camera::Situacao,
+    pub andamento: crate::regras_da_instalacao_da_camera::Andamento,
+}
+
+/// **A frase do andamento** da instalação da câmera, no idioma de agora, e o tom. `None` parado. O
+/// mesmo molde de `texto_do_andamento` do driver; o instalador avulso (`quall-camera.exe`) usa
+/// esta também.
+pub fn texto_do_andamento_da_camera(a: &crate::regras_da_instalacao_da_camera::Andamento) -> Option<(Tom, String)> {
+    use crate::regras_da_instalacao_da_camera::{self as ri, Andamento, Resultado, TomDoAviso};
+    let (tom, chave) = ri::frase(a)?;
+    let tom = match tom {
+        TomDoAviso::Info => Tom::Info,
+        TomDoAviso::Ambar => Tom::Ambar,
+        TomDoAviso::Vermelho => Tom::Vermelho,
+    };
+    let texto = match a {
+        Andamento::Rodando { acao, passo } if *passo > 0 => {
+            let nome = ri::nome_do_passo(*acao, *passo).map(t).unwrap_or("");
+            tf(chave, &[passo, &ri::passos(*acao).len(), &nome])
+        }
+        Andamento::Acabou { acao, resultado: Resultado::Falha(n, motivo, tecnico) } => {
+            let passo = ri::nome_do_passo(*acao, *n).map(t).unwrap_or(t(ri::ANTES_DE_COMECAR));
+            let motivo = if tecnico.is_empty() { tr(motivo) } else { format!("{} ({tecnico})", tr(motivo)) };
+            tf(chave, &[&passo, &motivo])
+        }
+        _ => t(chave).to_string(),
+    };
+    Some((tom, texto))
+}
+
+/// A frase do cartão "Instalação da câmera virtual": o andamento, quando há; senão, a situação.
+/// **Sem o detalhe técnico** da falha (a API e o código): o cartão tem três linhas, e o detalhe está
+/// no diário (e no rodapé do instalador avulso, que tem espaço).
+pub fn frase_da_instalacao_da_camera(i: &TelaDaInstalacaoDaCamera) -> (Tom, String) {
+    use crate::regras_da_instalacao_da_camera::{Andamento, Resultado};
+    let sem_tecnico = match &i.andamento {
+        Andamento::Acabou { acao, resultado: Resultado::Falha(n, motivo, _) } => {
+            Andamento::Acabou { acao: *acao, resultado: Resultado::Falha(*n, motivo.clone(), String::new()) }
+        }
+        outro => outro.clone(),
+    };
+    texto_do_andamento_da_camera(&sem_tecnico)
+        .unwrap_or_else(|| (Tom::Info, t(crate::regras_da_instalacao_da_camera::frase_dos_ajustes(i.situacao)).to_string()))
+}
+
+/// O botão do cartão, se há (`regras_da_instalacao_da_camera::botao`).
+pub fn botao_da_instalacao_da_camera(i: &TelaDaInstalacaoDaCamera) -> Option<crate::regras_da_instalacao_da_camera::Botao> {
+    crate::regras_da_instalacao_da_camera::botao(i.situacao, &i.andamento)
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaEspera {
+    pub pin: String,
+    pub endereco: String,
+    pub ha_pares: bool,
+    /// O nome que os outros veem na lista (o anunciado), ou o alias sem nome (14/10, §8.7.1).
+    pub nome: String,
+    /// O alias para conferir ao lado do nome, como na linha da lista; `None` sem nome anunciado.
+    pub alias: Option<String>,
+    pub anunciando: bool,
+    pub origem: String,
+    /// Com o som do computador (a intenção). `None`: câmera (o som é o do microfone).
+    pub com_som: Option<bool>,
+    /// O que aconteceu com o som (a recusa do WASAPI, a linha do microfone).
+    pub frase: String,
+    /// "Encerrando…", ou o aviso da espera da câmera.
+    pub aviso: String,
+    pub aviso_ambar: bool,
+    /// O emissor está desmontando a sessão (o aviso é o [`ENCERRANDO`]): a bandeja lê daqui, e não
+    /// do texto, que muda com o idioma.
+    pub encerrando: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ControlesDaCamera {
+    pub microfone: bool,
+    pub legenda_do_microfone: String,
+    /// O Gravar existe (a câmera comum pelo dono).
+    pub gravar: bool,
+    pub gravar_ativo: bool,
+    pub gravando: bool,
+    pub legenda_do_gravar: String,
+    /// O nome do Gravar para o Narrador: o rótulo de hoje ("■ Parar a gravação (1:23)"…).
+    pub nome_do_gravar: String,
+    pub legenda_do_parar: String,
+    pub linha_da_gravacao: String,
+    /// "Esquecer pareamentos" à mão na espera da câmera: a retomada falhou agora
+    /// (`Estado::oferece_desparear`), como antes desta rodada (a dívida 22).
+    pub esquecer: bool,
+    /// **Os ajustes da câmera** (R9): a câmera comum pelo dono, de verdade. A fonte do Quall no
+    /// processo (a sintética) e a câmera virtual do próprio Quall ficam sem (§2.2, pelo tipo).
+    pub ajustes: bool,
+    /// **R9b**: "Controlado por <aparelho>" (o nome; vazio fora dos 4 s depois de um pedido remoto).
+    pub controlado_por: String,
+    /// **Pouca luz** (§3.1 dos controles): o automático baixou o fps para clarear. Na linha da
+    /// gravação: a primeira frase sozinha, a curta ao lado da gravação ou do "Controlado por".
+    pub pouca_luz: Option<crate::regras_dos_controles::PoucaLuz>,
+    /// **A prévia da câmera no ar** (14/10): a câmera comum pelo dono está aberta, e a janela principal
+    /// mostra o que vai ao ar ([`lugar::PREVIA_NO_AR`]), como as outras cascas na tela de quem filma.
+    pub previa: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaNoAr {
+    pub par: String,
+    pub origem: String,
+    pub imagem: String,
+    pub rede: String,
+    pub som: String,
+    pub som_indo: bool,
+    pub resumo: String,
+    pub frase: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LinhaDeReceptor {
+    pub nome: String,
+    pub monitor: String,
+    pub resumo: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaVarios {
+    pub receptores: Vec<LinhaDeReceptor>,
+    /// PIN e endereço da espera aberta para mais um.
+    pub mais_um: Option<(String, String)>,
+    /// Sem espera aberta: o limite de 8 (o texto de hoje) ou "Abrindo a espera…".
+    pub mais_um_texto: String,
+    pub rodape: String,
+    pub rodape_aviso: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct TelaExibindo {
+    pub par: String,
+    /// A linha do som ("som: tocando, volume 100 %"…). Vazia sem track de som.
+    pub som: String,
+    /// Mudo, volume e "tocar mesmo com a câmera": só com a track de som (como hoje).
+    pub controles_do_som: bool,
+    pub mudo: bool,
+    pub volume: usize,
+    pub som_com_camera: bool,
+    pub detalhes_abertos: bool,
+    pub resumo: String,
+    pub cadeia: String,
+    pub alerta: bool,
+    pub encerrando: bool,
+    /// **R9b**: o aparelho que filma aceita o controle remoto da câmera (está `pronto` ou
+    /// `nao_permitido`): a engrenagem "Ajustes da câmera" abre a janela dos ajustes da câmera dele.
+    pub ajustes_da_camera: bool,
+    pub gravacao: String,
+    pub gravando: bool,
+    pub gravacao_fechando: bool,
+}
+
+/// A janela do teleprompter aberta (a de janela própria, `teleprompter::papel_aberto`), e em que
+/// papel. A janela principal não a desenha; a bandeja a diz, porque "Sair do Quall" a fecha junto.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TeleprompterAberto {
+    /// A janela aberta na escolha do papel.
+    Escolha,
+    Prompter,
+    Controle,
+    /// O prompter com a câmera (a tela R5).
+    PrompterComCamera,
+}
+
+/// **Tudo o que a janela desenha**, em valores simples.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct EstadoDaTela {
+    pub cena: Cena,
+    /// O item escolhido na barra (com sessão de pé, o da sessão).
+    pub painel: Painel,
+    pub nome_do_aparelho: String,
+    pub sessao: Option<SessaoNaBarra>,
+    pub espelhar: TelaEspelhar,
+    pub exibir: TelaExibir,
+    pub ajustes: TelaAjustes,
+    pub espera: TelaEspera,
+    pub no_ar: TelaNoAr,
+    pub varios: TelaVarios,
+    pub conectando: String,
+    pub exibindo: TelaExibindo,
+    /// Os controles redondos da câmera pela espera, quando a sessão é de câmera.
+    pub camera: Option<ControlesDaCamera>,
+    /// O chip acabou de copiar.
+    pub copiado: bool,
+    /// O que o cartão do teleprompter está fazendo ou por que não abriu ("Fechando o teleprompter
+    /// aberto…"), no painel Teleprompter. **Em português**, como o cartão o escreveu: a janela o
+    /// compara a cada pulso com o de agora, e [`compor`] o traduz na hora de pintar (`tr`).
+    pub aviso_do_teleprompter: String,
+    /// A janela do teleprompter aberta, e o papel (`None` sem ela). Só a bandeja lê.
+    pub teleprompter: Option<TeleprompterAberto>,
+    /// A revisão da lista de origens que `espelhar.fontes` mostra (o clique num ladrilho vai com
+    /// ela, e o emissor descarta o de uma lista velha), e a da lista de aparelhos.
+    pub revisao_das_fontes: u64,
+    pub revisao_dos_aparelhos: u64,
+    /// O idioma da tela (o segmento aceso do seletor "PT | EN").
+    pub idioma: crate::idioma::Idioma,
+    /// **O cartão do código de 4 dígitos** (`docs/conexao.md` §4): o do emissor na espera
+    /// ([`Cena::Esperando`], quem pede é o outro) ou o do receptor na conexão ([`Cena::Conectando`]).
+    /// Só é desenhado nessas duas cenas.
+    pub codigo: Option<crate::conexao::CartaoDoCodigo>,
+    /// **O driver da tela estendida** (02/10, noite): a situação neste computador e o que está
+    /// acontecendo com ele (o ladrilho apagado, o aviso do Espelhar e o cartão dos Ajustes).
+    #[cfg(feature = "tela-estendida-futura")]
+    pub driver: TelaDoDriver,
+}
+
+/// O driver da tela estendida, na tela (`regras_do_driver`).
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg(feature = "tela-estendida-futura")]
+pub struct TelaDoDriver {
+    pub situacao: crate::regras_do_driver::Situacao,
+    pub andamento: crate::regras_do_driver::Andamento,
+}
+
+/// **A frase do andamento** do driver, no idioma de agora, e o tom. `None` parado.
+#[cfg(feature = "tela-estendida-futura")]
+pub fn texto_do_andamento(a: &crate::regras_do_driver::Andamento) -> Option<(Tom, String)> {
+    use crate::regras_do_driver::{self as rd, Andamento, Resultado, TomDoAviso};
+    let (tom, chave) = rd::frase(a)?;
+    let tom = match tom {
+        TomDoAviso::Info => Tom::Info,
+        TomDoAviso::Ambar => Tom::Ambar,
+        TomDoAviso::Vermelho => Tom::Vermelho,
+    };
+    let texto = match a {
+        Andamento::Rodando { acao, passo } if *passo > 0 => {
+            let nome = rd::nome_do_passo(*acao, *passo).map(t).unwrap_or("");
+            tf(chave, &[passo, &rd::passos(*acao).len(), &nome])
+        }
+        Andamento::Acabou { acao, resultado: Resultado::Falha(n, motivo, tecnico) } => {
+            let passo = rd::nome_do_passo(*acao, *n).map(t).unwrap_or(t(rd::ANTES_DE_COMECAR));
+            let motivo = if tecnico.is_empty() { tr(motivo) } else { format!("{} ({tecnico})", tr(motivo)) };
+            tf(chave, &[&passo, &motivo])
+        }
+        _ => t(chave).to_string(),
+    };
+    Some((tom, texto))
+}
+
+/// O aviso do painel Espelhar: o da instalação do driver, quando há, vence o do emissor.
+fn aviso_do_espelhar(e: &EstadoDaTela) -> Option<Aviso> {
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    { return e.espelhar.aviso.clone(); }
+    #[cfg(feature = "tela-estendida-futura")]
+    {
+    use crate::regras_do_driver::{Acao, Andamento};
+    let do_driver = matches!(
+        e.driver.andamento,
+        Andamento::Rodando { acao: Acao::Instalar, .. } | Andamento::Acabou { acao: Acao::Instalar, .. }
+    );
+    match texto_do_andamento(&e.driver.andamento) {
+        Some((tom, texto)) if do_driver => Some(Aviso { tom, texto }),
+        _ => e.espelhar.aviso.clone(),
+    }
+    }
+}
+
+// =============================================================================================
+// As frases
+// =============================================================================================
+
+/// A instrução da espera (§6.4 com a emenda da §11.5): o nome e "Exibir" em destaque, e a origem.
+pub fn instrucao_da_espera(e: &TelaEspera) -> Vec<Trecho> {
+    // Cada pedaço é uma chave da tabela: a ordem das partes é a mesma nos dois idiomas.
+    let mut v = vec![Trecho::simples(t("No outro aparelho, abra o Quall em ")), Trecho::forte(t("Exibir"))];
+    if e.anunciando {
+        v.push(Trecho::simples(t(" e escolha ")));
+        v.push(Trecho::forte(e.nome.clone()));
+        // O alias pequeno para conferir (14/10): o nome anunciado não autentica, o alias é o da lista.
+        if let Some(a) = &e.alias {
+            v.push(Trecho { tamanho: Some(12.0), ..Trecho::simples(format!(" ({a})")) });
+        }
+        v.push(Trecho::simples(t(" na lista, ou digite o endereço abaixo.")));
+    } else {
+        v.push(Trecho::simples(t(" e digite o endereço abaixo.")));
+    }
+    if !e.origem.is_empty() {
+        match e.com_som {
+            None => {
+                v.push(Trecho::simples(t(" Vai a câmera ")));
+                v.push(Trecho::forte(e.origem.clone()));
+                v.push(Trecho::simples("."));
+            }
+            Some(com) => {
+                v.push(Trecho::simples(t(" Vai ")));
+                v.push(Trecho::forte(e.origem.clone()));
+                v.push(Trecho::simples(if com { t(", com o som deste computador.") } else { t(", sem som.") }));
+            }
+        }
+    }
+    v
+}
+
+/// **A legenda curta do microfone redondo** (§6.5): "Mic desligado", "Mic ligado", "Ligando…",
+/// "Sem acesso", "Não abriu". A frase longa de hoje continua na linha de baixo e no Narrador.
+/// `linha` é a linha do microfone da sessão (`Emissor::linha_do_microfone`), `None` antes de a
+/// sessão abrir o microfone; `sem_acesso`, a frase da privacidade do Windows.
+///
+/// A `linha` chega **em português** (é o estado do emissor, comparado aqui); a legenda sai no
+/// idioma de agora.
+pub fn legenda_do_microfone(pedido: bool, linha: Option<&str>, sem_acesso: bool) -> &'static str {
+    if sem_acesso {
+        return t("Sem acesso");
+    }
+    if !pedido {
+        return t("Mic desligado");
+    }
+    match linha {
+        None | Some("Com o som do microfone.") => t("Mic ligado"), // i18n: fora (o estado do emissor)
+        Some("Microfone abrindo…") => t("Ligando…"), // i18n: fora (o estado do emissor)
+        Some(l) if l.starts_with("Microfone desligado") => t("Mic desligado"), // i18n: fora (o estado do emissor)
+        Some(_) => t("Não abriu"),
+    }
+}
+
+/// **A legenda do Gravar redondo** (§6.5), a partir do rótulo de hoje (`Estado::rotulo_gravar`,
+/// que continua sendo o nome do botão para o Narrador): gravando, o tempo ("1:23", com "· SEM SOM"
+/// quando a linha da gravação diz); abrindo e fechando o arquivo, o que está acontecendo; senão,
+/// "Gravar".
+///
+/// O `rotulo` de abrir e de fechar chega **em português** (o emissor o deixa assim para esta
+/// comparação); o de gravar e a `linha` chegam no idioma da hora (o tempo entre parênteses e o
+/// marcador do "SEM SOM" valem nos dois). A legenda sai no idioma de agora.
+pub fn legenda_do_gravar(rotulo: &str, gravando: bool, linha: &str) -> String {
+    if rotulo.contains("abrindo") {
+        return t("Abrindo…").into();
+    }
+    // i18n: fora (o rótulo do emissor, comparado em português)
+    if rotulo.starts_with("Fechando") {
+        return t("Fechando…").into();
+    }
+    if !gravando {
+        return t("Gravar").into();
+    }
+    let tempo = rotulo.rsplit_once('(').and_then(|(_, r)| r.strip_suffix(')')).filter(|x| x.contains(':')).unwrap_or("");
+    let base = if tempo.is_empty() { t("Gravando").to_string() } else { tempo.to_string() };
+    // A linha da gravação nasce no idioma da hora: o marcador "SEM SOM" vale nos dois.
+    if crate::regras_da_gravacao::diz_sem_som(linha) {
+        tf("{} · SEM SOM", &[&base])
+    } else {
+        base
+    }
+}
+
+/// O PIN em dois grupos de três: "482 719".
+pub fn pin_em_grupos(pin: &str) -> String {
+    let c: Vec<char> = pin.chars().collect();
+    if c.len() == 6 {
+        format!("{} {}", c[..3].iter().collect::<String>(), c[3..].iter().collect::<String>())
+    } else {
+        pin.to_string()
+    }
+}
+
+/// A acessibilidade do letreiro (§11.1): "PIN 4 8 2 7 1 9".
+pub fn pin_para_ler(pin: &str) -> String {
+    let digitos: Vec<String> = pin.chars().map(|c| c.to_string()).collect();
+    format!("PIN {}", digitos.join(" "))
+}
+
+/// O volume do segmentado mais perto do volume pedido.
+pub fn indice_do_volume(v: f32) -> usize {
+    VOLUMES
+        .iter()
+        .enumerate()
+        .min_by(|a, b| (a.1 .0 - v).abs().total_cmp(&(b.1 .0 - v).abs()))
+        .map(|(i, _)| i)
+        .unwrap_or(0)
+}
+
+/// A pasta do diário para a tela: `%LOCALAPPDATA%` no lugar do caminho da conta.
+pub fn pasta_curta(pasta: &str, localappdata: Option<&str>) -> String {
+    if let Some(base) = localappdata.filter(|b| !b.is_empty()) {
+        if let Some(resto) = pasta.strip_prefix(base) {
+            return format!("%LOCALAPPDATA%{resto}");
+        }
+    }
+    pasta.to_string()
+}
+
+/// O endereço sem a porta (o cartão "Rede" do no ar, a linha "Na rede").
+pub fn sem_porta(endereco: &str) -> String {
+    match endereco.rsplit_once(':') {
+        Some((ip, porta)) if porta.chars().all(|c| c.is_ascii_digit()) && !ip.ends_with(']') && !ip.contains(':') => ip.to_string(),
+        Some((ip, porta)) if porta.chars().all(|c| c.is_ascii_digit()) && ip.starts_with('[') && ip.ends_with(']') => ip.to_string(),
+        _ => endereco.to_string(),
+    }
+}
+
+// =============================================================================================
+// A composição
+// =============================================================================================
+
+/// O que pintar (em coordenadas da área de cliente, DIP) e onde fica cada controle visível.
+#[derive(Clone, Debug, Default)]
+pub struct Quadro {
+    pub itens: Vec<Item>,
+    pub controles: Vec<(Controle, Ret)>,
+    /// **Onde a janela filha da prévia da câmera fica** (14/10), quando a cena a tem. Não é um
+    /// controle: não entra no Tab nem recebe clique; a janela só a põe ali e a mostra.
+    pub previa: Option<Ret>,
+}
+
+impl Quadro {
+    fn mais(&mut self, i: Item) {
+        self.itens.push(i);
+    }
+    fn varios(&mut self, v: Vec<Item>) {
+        self.itens.extend(v);
+    }
+    fn controle(&mut self, c: Controle, r: Ret) {
+        self.controles.push((c, r));
+    }
+    pub fn lugar(&self, c: Controle) -> Option<Ret> {
+        self.controles.iter().find(|(x, _)| *x == c).map(|(_, r)| *r)
+    }
+    /// Os textos pintados, corridos (para os testes lerem a tela).
+    #[cfg(test)]
+    pub fn textos(&self) -> Vec<String> {
+        self.itens.iter().filter_map(|i| if let Item::Texto(t) = i { Some(t.texto_corrido()) } else { None }).collect()
+    }
+}
+
+/// O controle está habilitado? (Visível é estar no [`Quadro`].)
+pub fn habilitado(c: Controle, e: &EstadoDaTela) -> bool {
+    match c {
+        Controle::Item(p) => e.sessao.as_ref().is_none_or(|s| s.item == p),
+        Controle::Espelhar => e.espelhar.pode_espelhar,
+        Controle::Gravar if e.cena == Cena::Exibindo => !e.exibindo.encerrando && !e.exibindo.gravacao_fechando,
+        Controle::Gravar => e.camera.as_ref().is_some_and(|c| c.gravar_ativo),
+        Controle::CameraVirtual => crate::regras_da_camera_virtual::interruptor_habilitado(&e.ajustes.camera_virtual),
+        Controle::InstalacaoDaCamera => botao_da_instalacao_da_camera(&e.ajustes.instalacao_da_camera).is_some(),
+        Controle::GerenciarCameras => !e.ajustes.cameras.is_empty(),
+        #[cfg(feature = "tela-estendida-futura")]
+        Controle::DriverDaTelaEstendida => crate::regras_do_driver::pode_comecar(&e.driver.andamento),
+        #[cfg(not(feature = "tela-estendida-futura"))]
+        Controle::DriverDaTelaEstendida | Controle::TelaEstendidaSemDriver => false,
+        _ => true,
+    }
+}
+
+/// **Compõe a janela** no estado dado. A janela é fixa (880 × 580 DIP), e os lugares são os de
+/// `estilo::lugar`.
+pub fn compor(e: &EstadoDaTela) -> Quadro {
+    let mut q = Quadro::default();
+    // O fundo: a barra, e o painel com o canto de cima à esquerda redondo e o contorno fino.
+    q.mais(caixa(Ret::new(0.0, 0.0, LARGURA_MINIMA, ALTURA_MINIMA), 0.0, BARRA));
+    let p = lugar::PAINEL;
+    q.mais(caixa_com_borda(Ret::new(p.x, p.y, p.l + 16.0, p.a + 16.0), RAIO_DO_CARTAO, FUNDO, Cor::rgba(0xFFFFFF, 15), 1.0));
+    barra(&mut q, e);
+    // O seletor de idioma, no canto de cima à direita dos quatro painéis (não nas telas de sessão).
+    if matches!(e.cena, Cena::Painel(_)) {
+        q.mais(caixa(lugar::IDIOMA, 6.0, SUPERFICIE_ALTA));
+        for (i, r) in lugar::segmentos_do_idioma().iter().enumerate() {
+            q.controle(Controle::Idioma(i), *r);
+        }
+    }
+    match e.cena {
+        Cena::Painel(Painel::Espelhar) => painel_espelhar(&mut q, e),
+        Cena::Painel(Painel::Exibir) => painel_exibir(&mut q, e),
+        Cena::Painel(Painel::Teleprompter) => painel_teleprompter(&mut q, e),
+        Cena::Painel(Painel::Ajustes) => painel_ajustes(&mut q, e),
+        Cena::Esperando => cena_esperando(&mut q, e),
+        Cena::NoAr => cena_no_ar(&mut q, e),
+        Cena::Varios => cena_varios(&mut q, e),
+        Cena::Conectando => cena_conectando(&mut q, e),
+        Cena::Exibindo => cena_exibindo(&mut q, e),
+    }
+    q
+}
+
+fn barra(q: &mut Quadro, e: &EstadoDaTela) {
+    q.varios(marca(lugar::MARCA_X, lugar::MARCA_Y, lugar::MARCA_LADO));
+    q.mais(texto(lugar::MARCA_TEXTO, "Quall Studio", F_MARCA, TEXTO).meio().item());
+    for (i, painel) in [Painel::Espelhar, Painel::Exibir, Painel::Teleprompter].iter().enumerate() {
+        q.controle(Controle::Item(*painel), lugar::ITENS[i]);
+    }
+    if let Some(s) = &e.sessao {
+        q.mais(texto(lugar::NOTA_DA_SESSAO, s.nota.clone(), F_LEGENDA, TEXTO3).quebra().item());
+    }
+    // **O nome que os outros aparelhos veem** (`docs/v3-no-privado.md` §8.7): o "Nome deste computador"
+    // de antes, agora editável. O `EDIT` guarda e passa ao núcleo a cada mudança (`janela.rs`); a dica
+    // cinza de dentro dele é o nome do computador ([`EstadoDaTela::nome_do_aparelho`]).
+    q.mais(texto(lugar::NOME_ROTULO, t("Nome que os outros aparelhos veem"), F_LEGENDA_11, TEXTO3).quebra().item());
+    q.varios(campo(lugar::CAMPO_DO_NOME, e.exibir.foco == Some(Controle::NomeNaRede)));
+    q.controle(Controle::NomeNaRede, lugar::edit_no_campo(lugar::CAMPO_DO_NOME));
+    q.mais(texto(lugar::NOTA_DO_NOME, t("Aparece para quem está na mesma rede Wi-Fi."), F_LEGENDA_11, TEXTO3).quebra().item());
+    q.controle(Controle::Item(Painel::Ajustes), lugar::ITEM_AJUSTES);
+}
+
+fn cabecalho(q: &mut Quadro, titulo_: &str, explicacao: &str) {
+    q.mais(titulo(lugar::TITULO, titulo_));
+    q.mais(texto(lugar::SUBTITULO, explicacao, F_CORPO, TEXTO2).quebra().item());
+}
+
+fn painel_espelhar(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.espelhar;
+    #[cfg(feature = "tela-estendida-futura")]
+    let explicacao = t("Uma tela, a tela estendida ou uma câmera. Quem exibe escolhe este computador na lista.");
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    let explicacao = t("Uma tela existente ou uma câmera. Quem exibe escolhe este computador na lista.");
+    cabecalho(q, t("O que vamos espelhar?"), explicacao);
+    let com_interruptor = s.alguma_escolhida;
+    let aviso_ = aviso_do_espelhar(e);
+    let altura_do_aviso = aviso_.as_ref().map(|a| altura_do_aviso(&a.texto, lugar::L));
+    let n = s.fontes.len().min(MAX_LADRILHOS);
+    // A tela estendida apagada ocupa uma casa da grade, e os ladrilhos depois dela andam uma (R10).
+    #[cfg(feature = "tela-estendida-futura")]
+    let apagado = s.tela_estendida_sem_driver.map(|a| a.min(n));
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    let apagado: Option<usize> = None;
+    let casas = n + usize::from(apagado.is_some());
+    let (ladrilhos, interruptor, aviso_r) = lugar::espelhar(casas, com_interruptor, altura_do_aviso);
+    for i in 0..n {
+        #[cfg(feature = "tela-estendida-futura")]
+        let casa = crate::regras_da_tela_estendida::casa_do_ladrilho(i, apagado);
+        #[cfg(not(feature = "tela-estendida-futura"))]
+        let casa = i;
+        q.controle(Controle::Ladrilho(i), ladrilhos[casa]);
+    }
+    if let Some(a) = apagado {
+        q.controle(Controle::TelaEstendidaSemDriver, ladrilhos[a]);
+    }
+    if casas == 0 {
+        q.mais(texto(lugar::SEM_FONTES, t("Nenhum monitor foi encontrado."), F_CORPO, AGUARDANDO_TEXTO).meio().item());
+    }
+    if let Some(r) = interruptor {
+        q.controle(if s.camera { Controle::Microfone } else { Controle::Som }, r);
+    }
+    if let (Some(a), Some(r)) = (&aviso_, aviso_r) {
+        q.varios(aviso(r, a.tom, &a.texto));
+    }
+    rede(q, lugar::RODAPE, s.ip.as_deref());
+    q.controle(Controle::Espelhar, lugar::BOTAO_PRINCIPAL);
+}
+
+/// A linha da rede: bolinha verde e "Na rede · {ip}" (mono no ip), ou âmbar e "Sem rede".
+fn rede(q: &mut Quadro, r: Ret, ip: Option<&str>) {
+    let cy = r.y + r.a / 2.0;
+    match ip {
+        Some(ip) => {
+            q.mais(Item::Circulo { cx: r.x + 4.0, cy, raio: 4.0, cor: CONECTADO });
+            q.mais(rico(Ret::new(r.x + 16.0, r.y, r.l - 16.0, r.a), vec![Trecho::simples(t("Na rede · ")), Trecho::mono(ip)], F_LEGENDA_13, TEXTO2).meio().item());
+        }
+        None => {
+            q.mais(Item::Circulo { cx: r.x + 4.0, cy, raio: 4.0, cor: AGUARDANDO });
+            q.mais(texto(Ret::new(r.x + 16.0, r.y, r.l - 16.0, r.a), t("Sem rede"), F_LEGENDA_13, AGUARDANDO_TEXTO).meio().item());
+        }
+    }
+}
+
+fn painel_exibir(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.exibir;
+    cabecalho(q, t("Assistir outro aparelho"), t("Escolha quem está espelhando. Na primeira vez, os dois aparelhos mostram um código para conferir, ou digite o PIN que aparece lá."));
+    // Com o QR, a lista estreita e ele fica na coluna à direita — ao lado, não no lugar (§10).
+    let (r_rotulo, r_procurando, r_lista, r_vazia) = if s.qr.is_some() {
+        (lugar::ROTULO_DA_LISTA_COM_QR, lugar::PROCURANDO_COM_QR, lugar::LISTA_COM_QR, lugar::LISTA_VAZIA_COM_QR)
+    } else {
+        (lugar::ROTULO_DA_LISTA, lugar::PROCURANDO, lugar::LISTA, lugar::LISTA_VAZIA)
+    };
+    q.mais(rotulo(r_rotulo, t("Na rede agora")));
+    // "Procurar de novo" (`docs/v3-no-privado.md` §8.9): a /24 só sai sozinha com a lista vazia, uma vez.
+    q.controle(Controle::ProcurarDeNovo, if s.qr.is_some() { lugar::PROCURAR_DE_NOVO_COM_QR } else { lugar::PROCURAR_DE_NOVO });
+    if let Some(qr) = &s.qr {
+        coluna_do_qr(q, qr);
+    }
+    if s.procurando {
+        let r = r_procurando;
+        // A bolinha violeta e "procurando" (§6.6), encostados à direita.
+        let lt = 80.0;
+        q.mais(Item::Circulo { cx: r.direita() - lt - 9.0, cy: r.y + r.a / 2.0, raio: 5.0, cor: TRACO_ESCOLHIDO.vezes(0.3) });
+        q.mais(Item::Circulo { cx: r.direita() - lt - 9.0, cy: r.y + r.a / 2.0, raio: 3.0, cor: TRACO_ESCOLHIDO });
+        q.mais(texto(Ret::new(r.direita() - lt, r.y, lt, r.a), t("procurando"), F_LEGENDA, TEXTO2).direita().meio().item());
+    }
+    if s.aparelhos.is_empty() {
+        let r = r_vazia;
+        q.mais(cartao(r));
+        q.mais(texto(r.dentro(16.0, 0.0), s.vazio.clone(), F_LEGENDA_13, TEXTO2).meio().quebra().item());
+    } else {
+        q.controle(Controle::Lista, r_lista);
+    }
+    q.mais(rotulo(lugar::ROTULO_DO_ENDERECO, t("Ou digite o endereço")));
+    let r_pin = lugar::ROTULO_DO_PIN;
+    q.mais(texto(r_pin, caixa_alta("PIN"), F_ROTULO, if s.pede_pin { ACENTO_CLARO } else { TEXTO3 }).meio().item());
+    q.varios(campo(lugar::CAMPO_DO_ENDERECO, s.foco == Some(Controle::Endereco)));
+    q.varios(campo(lugar::CAMPO_DO_PIN, s.foco == Some(Controle::Pin) || s.pede_pin));
+    q.controle(Controle::Endereco, lugar::edit_no_campo(lugar::CAMPO_DO_ENDERECO));
+    q.controle(Controle::Pin, lugar::edit_no_campo(lugar::CAMPO_DO_PIN));
+    q.mais(texto(lugar::LEGENDA_DO_PIN, t("Sem PIN, entra o pareamento guardado ou o código de 4 dígitos."), F_LEGENDA, if s.pede_pin { ACENTO_CLARO } else { TEXTO3 }).meio().item());
+    if let Some(a) = &s.aviso {
+        let altura = altura_do_aviso(&a.texto, lugar::L).min(lugar::PE_Y - 12.0 - lugar::AVISO_DO_EXIBIR_Y);
+        q.varios(aviso(Ret::new(lugar::X, lugar::AVISO_DO_EXIBIR_Y, lugar::L, altura), a.tom, &a.texto));
+    }
+    if s.esquecer_este {
+        q.controle(Controle::EsquecerEsteAparelho, lugar::ESQUECER_ESTE_APARELHO);
+    }
+    q.controle(Controle::Exibir, lugar::BOTAO_PRINCIPAL);
+}
+
+/// **A coluna do QR** (`docs/conexao.md` §10): o rótulo, o QR (ou a frase no lugar dele) e a fase.
+fn coluna_do_qr(q: &mut Quadro, qr: &crate::qr_na_tela::QrNaTela) {
+    use crate::qr_na_tela::{desenho, frase, no_lugar_do_qr, FaseDoQr};
+    q.mais(rotulo(lugar::ROTULO_DO_QR, t("Ler no celular")));
+    match (&qr.matriz, qr.mostra_o_qr()) {
+        (Some(m), true) => q.varios(desenho(lugar::QR, m)),
+        _ => {
+            q.mais(cartao(lugar::QR));
+            let no_lugar = no_lugar_do_qr(&qr.fase);
+            if !no_lugar.is_empty() {
+                q.mais(texto(lugar::QR.dentro(14.0, 14.0), no_lugar, F_LEGENDA_13, TEXTO2).centro().meio().quebra().item());
+            }
+        }
+    }
+    let cor = match qr.fase {
+        FaseDoQr::Chamado { .. } => CONECTADO_TEXTO,
+        FaseDoQr::SemRede | FaseDoQr::Falhou => AGUARDANDO_TEXTO,
+        _ => TEXTO3,
+    };
+    q.mais(texto(lugar::FASE_DO_QR, frase(&qr.fase), F_LEGENDA, cor).centro().meio().item());
+}
+
+/// Os três cartões do teleprompter: ícone, título e explicação (§7.3). Em português, como chaves da
+/// tabela: quem mostra passa por `t()`.
+pub const PAPEIS: [(Icone, &str, &str); 3] = [
+    (Icone::Teleprompter, "Mostrar o texto", "Este computador vira o prompter e espera o controle."), // i18n: chave
+    (Icone::Controlar, "Controlar", "Comanda o texto que outro aparelho está mostrando."), // i18n: chave
+    (Icone::Rosto, "Texto com a câmera", "O roteiro do lado da webcam. Só a câmera vai para a rede."), // i18n: chave
+];
+
+fn painel_teleprompter(q: &mut Quadro, e: &EstadoDaTela) {
+    cabecalho(q, t("Teleprompter"), t("Um computador mostra o texto atrás do vidro; outro aparelho controla. O roteiro se edita dos dois lados."));
+    let cartoes = lugar::cartoes_do_teleprompter();
+    for (i, r) in cartoes.iter().enumerate() {
+        q.controle(Controle::Papel(i), *r);
+    }
+    if !e.aviso_do_teleprompter.is_empty() {
+        // O aviso do cartão está em português (é comparado pela janela a cada pulso): traduzido aqui.
+        let dito = tr(&e.aviso_do_teleprompter);
+        let y = cartoes[0].baixo() + 16.0;
+        let a = altura_do_aviso(&dito, lugar::L);
+        q.varios(aviso(Ret::new(lugar::X, y, lugar::L, a), Tom::Ambar, &dito));
+    }
+    q.mais(
+        texto(lugar::NOTA_DO_TELEPROMPTER, t("Janela própria; tela cheia pelo botão da barra ou F11 (Esc sai); H esconde as faixas."), F_LEGENDA, TEXTO3)
+            .meio()
+            .item(),
+    );
+}
+
+/// A frase do cartão "Câmera virtual", no idioma de agora.
+pub fn frase_da_camera_virtual(s: &crate::regras_da_camera_virtual::Situacao) -> String {
+    let f = crate::regras_da_camera_virtual::frase(s);
+    match f.numero {
+        Some(n) => tf(f.chave, &[&n]),
+        None => t(f.chave).to_string(),
+    }
+}
+
+fn painel_ajustes(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.ajustes;
+    q.mais(titulo(lugar::TITULO, t("Ajustes")));
+    let linhas = lugar::LINHAS_DOS_AJUSTES;
+    let mut conteudo = vec![
+        (
+            t("Aparelhos pareados"),
+            if s.confirmando {
+                t("Clique de novo para esquecer todos.")
+            } else if s.tem_pares {
+                t("Os aparelhos pareados entram sem PIN.")
+            } else {
+                t("Nenhum aparelho pareado.")
+            }
+            .to_string(),
+            false,
+            lugar::ESQUECER.l,
+        ),
+        (t("Diário"), s.pasta_do_diario.clone(), true, lugar::DIARIO.l),
+        (t("Versão"), s.versao.clone(), true, lugar::AJUSTES_LARGURA_DOS_LINKS),
+    ];
+    #[cfg(feature = "tela-estendida-futura")]
+    conteudo.push((t(crate::regras_do_driver::AJUSTES_NOME), frase_do_driver(e).1, false, botao_do_driver(e).map_or(0.0, |(_, r)| r.l)));
+    for (i, (r, (nome, d, mono, botao))) in linhas.iter().zip(conteudo).enumerate() {
+        q.mais(cartao(*r));
+        let largura = r.l - 32.0 - if botao > 0.0 { botao + 12.0 } else { 0.0 };
+        q.mais(texto(Ret::new(r.x + 16.0, r.y + 11.0, largura, 20.0), nome, F_CORPO_FORTE, TEXTO).meio().item());
+        // A primeira linha é a dos aparelhos pareados, e a quarta a do driver (pela posição: o texto
+        // muda com o idioma).
+        #[cfg(feature = "tela-estendida-futura")]
+        let driver_vermelho = i == 3 && frase_do_driver(e).0 == Tom::Vermelho;
+        #[cfg(not(feature = "tela-estendida-futura"))]
+        let driver_vermelho = false;
+        let cor = if (s.confirmando && i == 0) || driver_vermelho { PERIGO_TEXTO } else { TEXTO2 };
+        if i == 3 {
+            // O driver: a frase pode ter três linhas (o SudoVDA de outro programa, 02/10, noite).
+            q.mais(texto(Ret::new(r.x + 16.0, r.y + 32.0, largura, r.a - 40.0), d, F_LEGENDA, cor).quebra().item());
+        } else {
+            q.mais(texto(Ret::new(r.x + 16.0, r.y + 32.0, largura, 18.0), d, if mono { F_MONO_12 } else { F_LEGENDA }, cor).meio().item());
+        }
+    }
+    q.controle(Controle::Esquecer, lugar::ESQUECER);
+    q.controle(Controle::Diario, lugar::DIARIO);
+    q.controle(Controle::Licencas, lugar::LICENCAS);
+    q.controle(Controle::Privacidade, lugar::PRIVACIDADE);
+    q.controle(Controle::Suporte, lugar::SUPORTE);
+    q.controle(Controle::CameraVirtual, lugar::CAMERA_VIRTUAL);
+    // **A instalação da câmera virtual** (12/10/2026, tarde): o nome, a frase (a situação ou o
+    // andamento, até três linhas) e o botão, quando há.
+    let r = lugar::INSTALACAO_DA_CAMERA;
+    let (tom, frase) = frase_da_instalacao_da_camera(&s.instalacao_da_camera);
+    let botao_ = botao_da_instalacao_da_camera(&s.instalacao_da_camera);
+    let largura = r.l - 32.0 - if botao_.is_some() { lugar::BOTAO_DA_CAMERA.l + 12.0 } else { 0.0 };
+    q.mais(cartao(r));
+    q.mais(texto(Ret::new(r.x + 16.0, r.y + 11.0, largura, 20.0), t(crate::regras_da_instalacao_da_camera::AJUSTES_NOME), F_CORPO_FORTE, TEXTO).meio().item());
+    let cor = if tom == Tom::Vermelho { PERIGO_TEXTO } else { TEXTO2 };
+    q.mais(texto(Ret::new(r.x + 16.0, r.y + 32.0, largura, r.a - 40.0), &frase, F_LEGENDA, cor).quebra().item());
+    if botao_.is_some() {
+        q.controle(Controle::InstalacaoDaCamera, lugar::BOTAO_DA_CAMERA);
+    }
+    // **As câmeras deste computador** (13/10/2026): quantas, as primeiras, e o "Gerenciar câmeras".
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    {
+        let r = lugar::CAMERAS_DO_PC;
+        let com_botao = !s.cameras.is_empty();
+        let largura = r.l - 32.0 - if com_botao { lugar::GERENCIAR_CAMERAS.l + 12.0 } else { 0.0 };
+        q.mais(cartao(r));
+        q.mais(texto(Ret::new(r.x + 16.0, r.y + 11.0, largura, 20.0), t(crate::regras_da_camera_virtual::CAMERAS_TITULO), F_CORPO_FORTE, TEXTO).meio().item());
+        q.mais(texto(Ret::new(r.x + 16.0, r.y + 32.0, largura, r.a - 40.0), &frase_das_cameras_do_pc(&s.cameras), F_LEGENDA, TEXTO2).quebra().item());
+        if com_botao {
+            q.controle(Controle::GerenciarCameras, lugar::GERENCIAR_CAMERAS);
+        }
+    }
+    #[cfg(feature = "tela-estendida-futura")]
+    if let Some((_, r)) = botao_do_driver(e) {
+        q.controle(Controle::DriverDaTelaEstendida, r);
+    }
+}
+
+/// O botão do cartão do driver nos Ajustes, e o lugar dele: "Desinstalar" com o driver que o Quall
+/// instalou; na loja, com o SudoVDA presente, "Desinstalar pelo instalador do driver" (abre a página,
+/// mais largo). Nunca no meio de uma instalação ou desinstalação (`regras_do_driver::botao_dos_ajustes`).
+#[cfg(feature = "tela-estendida-futura")]
+fn botao_do_driver(e: &EstadoDaTela) -> Option<(crate::regras_do_driver::BotaoDosAjustes, Ret)> {
+    use crate::regras_do_driver::{botao_dos_ajustes, pode_comecar, BotaoDosAjustes};
+    if !pode_comecar(&e.driver.andamento) {
+        return None;
+    }
+    botao_dos_ajustes(e.driver.situacao).map(|b| {
+        let r = match b {
+            BotaoDosAjustes::Desinstalar => lugar::DRIVER,
+            BotaoDosAjustes::PaginaDoInstalador => lugar::DRIVER_LARGO,
+        };
+        (b, r)
+    })
+}
+
+/// A frase do cartão do driver: o andamento, quando há; senão, a situação.
+#[cfg(feature = "tela-estendida-futura")]
+fn frase_do_driver(e: &EstadoDaTela) -> (Tom, String) {
+    texto_do_andamento(&e.driver.andamento)
+        .unwrap_or_else(|| (Tom::Info, t(crate::regras_do_driver::frase_dos_ajustes(e.driver.situacao)).to_string()))
+}
+
+fn cena_esperando(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.espera;
+    q.mais(Item::Pilula { ancora: Ancora::Centro(lugar::CX), y: lugar::PILULA_Y, luz: Luz::Aguardando, texto: t("Aguardando").into() });
+    q.mais(texto(lugar::TITULO_DA_SESSAO, t("Pronto para espelhar"), F_TITULO_GRANDE, TEXTO).centro().meio().item());
+    let chip_l = largura_do_chip(&s.endereco);
+    if let Some(c) = e.codigo.as_ref().filter(|c| c.do_anfitriao()) {
+        // **Alguém tocou Conectar** (`docs/v3-no-privado.md` §3.6): o cartão dos três números toma o
+        // lugar da instrução, do PIN e do chip até a pessoa decidir. O PIN continua valendo por baixo.
+        cartao_do_codigo(q, c, true);
+    } else if !s.ha_pares {
+        q.mais(rico(lugar::INSTRUCAO, instrucao_da_espera(s), F_CORPO, TEXTO2).centro().quebra().item());
+        q.mais(texto(lugar::ROTULO_DO_PIN_DA_ESPERA, caixa_alta(t("Na primeira vez, o PIN")), F_ROTULO, TEXTO3).centro().meio().item());
+        q.controle(Controle::Letreiro, lugar::letreiro());
+        let (rotulo_r, chip_r) = lugar::chip(chip_l, true, lugar::CHIP_Y);
+        if let Some(r) = rotulo_r {
+            q.mais(texto(r, t("ou pelo endereço"), F_LEGENDA_13, TEXTO3).direita().meio().item());
+        }
+        q.controle(Controle::Chip, chip_r);
+    } else {
+        q.mais(rico(lugar::INSTRUCAO, instrucao_da_espera(s), F_CORPO, TEXTO2).centro().quebra().item());
+        q.mais(texto(lugar::FRASE_DOS_PAREADOS, t("Aparelhos pareados entram direto."), F_CORPO_15, TEXTO).centro().meio().item());
+        let (_, chip_r) = lugar::chip(chip_l, false, lugar::CHIP_Y_COM_PARES);
+        q.controle(Controle::Chip, chip_r);
+        q.mais(
+            rico(lugar::PIN_NOVO, vec![Trecho::simples(t("Aparelho novo? PIN ")), Trecho::mono(pin_em_grupos(&s.pin))], F_LEGENDA_13, TEXTO2)
+                .centro()
+                .meio()
+                .item(),
+        );
+    }
+    if !s.frase.is_empty() {
+        q.mais(texto(lugar::FRASE_DO_SOM, s.frase.clone(), F_LEGENDA_13, TEXTO3).centro().meio().item());
+    }
+    if !s.aviso.is_empty() {
+        q.mais(texto(lugar::AVISO_DA_ESPERA, s.aviso.clone(), F_LEGENDA_13, if s.aviso_ambar { AGUARDANDO_TEXTO } else { TEXTO3 }).centro().meio().item());
+    }
+    match &e.camera {
+        Some(c) => controles_da_camera(q, c),
+        None => {
+            let frase = if s.anunciando {
+                t("O nome deste computador aparece após conectar.")
+            } else {
+                t("Sem anúncio na rede: use o endereço acima.")
+            };
+            q.mais(texto(lugar::RODAPE_DA_SESSAO, frase, F_LEGENDA, TEXTO3).meio().item());
+            q.controle(Controle::Cancelar, lugar::CANCELAR);
+        }
+    }
+}
+
+/// A câmera pela espera e no ar: a linha da gravação e os três redondos (microfone, Gravar, Parar).
+fn controles_da_camera(q: &mut Quadro, c: &ControlesDaCamera) {
+    // R9b: "Controlado por <aparelho>" divide a linha da gravação (a gravação primeiro).
+    let controlado = if c.controlado_por.is_empty() { String::new() } else { tf("Controlado por {}", &[&c.controlado_por]) };
+    let mut linha = match (c.linha_da_gravacao.is_empty(), controlado.is_empty()) {
+        (false, false) => format!("{} · {controlado}", c.linha_da_gravacao),
+        (false, true) => c.linha_da_gravacao.clone(),
+        (true, _) => controlado,
+    };
+    // Pouca luz (§3.1) por último. A frase inteira (com o conselho) não cabe numa linha do painel:
+    // sozinha vai a primeira frase, ao lado de outra coisa a curta ("Pouca luz: 15 fps"), e a
+    // inteira fica na janela dos ajustes e na faixa da R5.
+    if let Some(p) = &c.pouca_luz {
+        linha = if linha.is_empty() { p.sem_conselho() } else { format!("{linha} · {}", p.curto()) };
+        // "Travar em 30 fps" (§3.1.1), em cima da linha, no lugar do Esquecer (ou ao lado dele).
+        if p.botao().is_some() {
+            q.controle(Controle::TravarFps, if c.esquecer { lugar::TRAVAR_FPS_AO_LADO_DO_ESQUECER } else { lugar::TRAVAR_FPS_NA_CAMERA });
+        }
+    }
+    if !linha.is_empty() {
+        let cor = if c.gravando {
+            PERIGO_TEXTO
+        } else if c.linha_da_gravacao.is_empty() {
+            AGUARDANDO_TEXTO
+        } else {
+            TEXTO2
+        };
+        q.mais(texto(lugar::LINHA_DA_GRAVACAO, linha, F_LEGENDA_13, cor).centro().meio().item());
+    }
+    if c.esquecer {
+        q.controle(Controle::Esquecer, lugar::ESQUECER_NA_CAMERA);
+    }
+    let [m, g, p] = lugar::redondos();
+    q.controle(Controle::Microfone, m);
+    if c.gravar {
+        q.controle(Controle::Gravar, g);
+    }
+    q.controle(Controle::Cancelar, p);
+    if c.ajustes {
+        q.controle(Controle::AjustesDaCamera, lugar::AJUSTES_DA_CAMERA);
+    }
+}
+
+fn cena_no_ar(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.no_ar;
+    // **A prévia da câmera** (14/10): o cartão no canto de cima à direita, com a janela filha dentro;
+    // o nome do par encolhe até ele, e os números descem.
+    let com_previa = e.camera.as_ref().is_some_and(|c| c.previa);
+    let d = |r: Ret| lugar::no_ar(r, com_previa);
+    q.mais(Item::Pilula { ancora: Ancora::Esquerda(lugar::X), y: lugar::PILULA_Y, luz: Luz::NoAr, texto: t("No ar").into() });
+    let (espelhando_para, par_r) = if com_previa { (lugar::ESPELHANDO_PARA_COM_PREVIA, lugar::PAR_COM_PREVIA) } else { (lugar::ESPELHANDO_PARA, lugar::PAR) };
+    q.mais(texto(espelhando_para, t("Espelhando para"), F_CORPO, TEXTO2).meio().item());
+    let par = if s.par.is_empty() { t("o outro aparelho").to_string() } else { s.par.clone() };
+    q.mais(texto(par_r, par, F_PAR, TEXTO).meio().item());
+    if com_previa {
+        q.mais(caixa_com_borda(lugar::PREVIA_NO_AR, RAIO_DO_CARTAO, SUPERFICIE, CONTORNO, 1.0));
+        q.previa = Some(lugar::previa_no_ar_dentro());
+    }
+    let cartoes = lugar::cartoes_de_numero().map(d);
+    q.varios(cartao_de_numero(cartoes[0], t("Origem"), &s.origem, false, TEXTO));
+    q.varios(cartao_de_numero(cartoes[1], t("Imagem"), &s.imagem, true, TEXTO));
+    q.varios(cartao_de_numero(cartoes[2], t("Rede"), &s.rede, true, TEXTO));
+    q.varios(cartao_de_numero(cartoes[3], t("Som"), &s.som, false, if s.som_indo { CONECTADO_TEXTO } else { TEXTO2 }));
+    if !s.resumo.is_empty() {
+        q.mais(texto(d(lugar::RESUMO_NO_AR), s.resumo.clone(), F_MONO_12, TEXTO3).meio().item());
+    }
+    q.mais(texto(d(lugar::FRASE_DO_PARAR), t("Parar encerra a sessão nos dois lados."), F_LEGENDA_13, TEXTO2).meio().item());
+    if !s.frase.is_empty() {
+        q.mais(texto(d(lugar::FRASE_DO_SOM_NO_AR), s.frase.clone(), F_LEGENDA_13, TEXTO3).meio().item());
+    }
+    match &e.camera {
+        Some(c) => controles_da_camera(q, c),
+        None => q.controle(Controle::Cancelar, lugar::PARAR),
+    }
+}
+
+fn cena_varios(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.varios;
+    q.mais(Item::Pilula { ancora: Ancora::Esquerda(lugar::X), y: lugar::PILULA_Y, luz: Luz::NoAr, texto: t("No ar").into() });
+    let n = s.receptores.len();
+    let titulo_ = if n == 1 { t("Espelhando para 1 aparelho").to_string() } else { tf("Espelhando para {} aparelhos", &[&n]) };
+    q.mais(texto(lugar::TITULO_DOS_VARIOS, titulo_, F_TITULO, TEXTO).meio().item());
+    let linhas = lugar::linhas_dos_varios(n.min(MAX_RECEPTORES));
+    for (r, x) in linhas.iter().zip(&s.receptores) {
+        q.mais(cartao(*r));
+        let lado = (r.a - 8.0).clamp(18.0, 28.0);
+        let q_icone = Ret::new(r.x + 12.0, r.y + (r.a - lado) / 2.0, lado, lado);
+        q.mais(caixa(q_icone, 6.0, ACENTO_FUNDO));
+        q.mais(Item::Icone { ret: q_icone, icone: Icone::Monitor, tamanho: 15.0, cor: ACENTO_CLARO });
+        let xt = q_icone.direita() + 12.0;
+        let lt = r.direita() - 14.0 - xt;
+        let duas = r.a >= 40.0 && !x.resumo.is_empty();
+        let topo = if duas { Ret::new(xt, r.y + 4.0, lt, 20.0) } else { Ret::new(xt, r.y, lt, r.a) };
+        q.mais(
+            rico(topo, vec![Trecho::forte(x.nome.clone()), Trecho { texto: format!("  {}", x.monitor), cor: Some(TEXTO2), peso: None, familia: None, tamanho: Some(12.0) }], F_CORPO_FORTE, TEXTO)
+                .meio()
+                .item(),
+        );
+        if duas {
+            q.mais(texto(Ret::new(xt, r.y + 24.0, lt, 16.0), x.resumo.clone(), F_MONO_11, TEXTO3).meio().item());
+        }
+    }
+    if !s.rodape.is_empty() {
+        q.mais(texto(lugar::RODAPE_DOS_VARIOS, s.rodape.clone(), F_LEGENDA_13, if s.rodape_aviso { AGUARDANDO_TEXTO } else { TEXTO2 }).meio().item());
+    }
+    let c = lugar::CARTAO_MAIS_UM;
+    q.mais(cartao(c));
+    q.mais(texto(Ret::new(c.x + 16.0, c.y + 10.0, c.l - 32.0, 16.0), caixa_alta(t("Mais um aparelho")), F_ROTULO, TEXTO3).meio().item());
+    let valor = Ret::new(c.x + 16.0, c.y + 30.0, c.l - 32.0, 24.0);
+    match &s.mais_um {
+        Some((pin, endereco)) => q.mais(
+            rico(valor, vec![Trecho::simples("PIN "), Trecho::mono(pin_em_grupos(pin)), Trecho::simples("  ·  "), Trecho::mono(endereco.clone())], F_ENDERECO, TEXTO)
+                .meio()
+                .item(),
+        ),
+        None => q.mais(texto(valor, s.mais_um_texto.clone(), F_LEGENDA_13, AGUARDANDO_TEXTO).meio().item()),
+    }
+    q.controle(Controle::Cancelar, lugar::PARAR);
+}
+
+fn cena_conectando(q: &mut Quadro, e: &EstadoDaTela) {
+    q.mais(Item::Pilula { ancora: Ancora::Centro(lugar::CX), y: lugar::PILULA_Y, luz: Luz::Aguardando, texto: t("Conectando").into() });
+    q.mais(texto(lugar::TITULO_DA_SESSAO, t("Conectando"), F_TITULO_GRANDE, TEXTO).centro().meio().item());
+    if let Some(c) = e.codigo.as_ref().filter(|c| !c.do_anfitriao()) {
+        // O outro lado aceitou o código: o cartão toma o lugar do destino e do parágrafo.
+        cartao_do_codigo(q, c, false);
+        q.controle(Controle::Cancelar, lugar::CANCELAR);
+        return;
+    }
+    q.mais(texto(lugar::DESTINO, e.conectando.clone(), F_CORPO_15, TEXTO).centro().meio().item());
+    q.mais(
+        texto(
+            lugar::PARAGRAFO_DA_CONEXAO,
+            t("O outro aparelho precisa já ter clicado em Espelhar: quem exibe só entra depois de quem transmite estar esperando."),
+            F_CORPO,
+            TEXTO2,
+        )
+        .centro()
+        .quebra()
+        .item(),
+    );
+    q.controle(Controle::Cancelar, lugar::CANCELAR);
+}
+
+/// **O cartão do código de 4 dígitos** (`docs/v3-no-privado.md` §3.6). `anfitriao`: este computador
+/// espera (o outro tocou Conectar) — quem pede, "Qual número o outro aparelho mostra?", os três
+/// números (botões iguais em cor e tamanho, nada só por cor) e o "Nenhum destes" separado; escolhido
+/// o certo, os botões saem e a frase diz que está conectando. O convidado: a quem se conecta, os
+/// quatro dígitos e a instrução de achá-los na outra tela (o Cancelar da cena desiste). Sem prazo
+/// visual: os 60 s do núcleo bastam, e a contagem não apressa ninguém.
+fn cartao_do_codigo(q: &mut Quadro, c: &crate::conexao::CartaoDoCodigo, anfitriao: bool) {
+    q.mais(cartao(lugar::CARTAO_DO_CODIGO));
+    let quem = match (anfitriao, c.par.is_empty()) {
+        (true, false) => tf("{} quer conectar", &[&c.par]),
+        (true, true) => t("Um aparelho quer conectar").to_string(),
+        (false, false) => tf("Conectando a {}", &[&c.par]),
+        (false, true) => t("Conectando").to_string(),
+    };
+    q.mais(texto(lugar::CODIGO_QUEM, quem, F_CORPO_FORTE, TEXTO).centro().meio().item());
+    if !anfitriao {
+        q.varios(codigo(lugar::CX, lugar::CODIGO_Y, &c.codigo));
+        q.mais(texto(lugar::CODIGO_PERGUNTA, t("Escolha este número no outro aparelho."), F_CORPO, TEXTO).centro().meio().item());
+        // O toque que tentou reconectar e caiu para o código (§8.6) diz por que o código apareceu.
+        let conselho = if c.pareamento_anterior { t(crate::conexao::FRASE_PAREAMENTO_ANTERIOR) } else { t("Ele mostra três números; só este é o certo.") };
+        q.mais(texto(lugar::CODIGO_CONSELHO, conselho, F_LEGENDA_13, TEXTO2).centro().meio().item());
+        return;
+    }
+    if c.confirmado_aqui {
+        q.mais(texto(lugar::ESCOLHA_PERGUNTA, t("Número certo. Conectando…"), F_CORPO, CONECTADO_TEXTO).centro().meio().item());
+        return;
+    }
+    q.mais(texto(lugar::ESCOLHA_PERGUNTA, t("Qual número o outro aparelho mostra?"), F_CORPO, TEXTO).centro().meio().item());
+    for (i, r) in lugar::opcoes_do_codigo().into_iter().enumerate().take(c.opcoes.len()) {
+        q.controle(Controle::EscolherCodigo(i), r);
+    }
+    q.controle(Controle::RecusarCodigo, lugar::NENHUM_DESTES);
+    q.mais(texto(lugar::ESCOLHA_CONSELHO, t("Errar o número desliga o código nesta espera; o PIN continua valendo."), F_LEGENDA_13, TEXTO2).centro().meio().item());
+}
+
+fn cena_exibindo(q: &mut Quadro, e: &EstadoDaTela) {
+    let s = &e.exibindo;
+    q.mais(Item::Pilula { ancora: Ancora::Esquerda(lugar::X), y: lugar::PILULA_Y, luz: Luz::Conectado, texto: t("Conectado").into() });
+    let de = if s.par.is_empty() { t("do outro aparelho").to_string() } else { tf("de {}", &[&s.par]) };
+    q.mais(texto(lugar::TITULO_DA_SESSAO, de, F_TITULO_GRANDE, TEXTO).meio().item());
+    q.mais(texto(lugar::VIDEO_NA_OUTRA_JANELA, t("O vídeo está na outra janela."), F_CORPO, TEXTO2).meio().item());
+    if !s.som.is_empty() {
+        let c = lugar::CARTAO_DO_SOM;
+        q.mais(cartao(c));
+        q.mais(texto(Ret::new(c.x + 16.0, c.y + 10.0, 200.0, 20.0), t("Som"), F_CORPO_FORTE, TEXTO).meio().item());
+        let linha = if s.controles_do_som { lugar::LINHA_DO_SOM } else { Ret::new(c.x + 16.0, lugar::LINHA_DO_SOM.y, c.l - 32.0, 18.0) };
+        q.mais(texto(linha, s.som.clone(), F_LEGENDA, TEXTO2).meio().item());
+        if s.controles_do_som {
+            q.mais(caixa(lugar::SEGMENTADO, RAIO_DO_BOTAO, SUPERFICIE_ALTA));
+            q.controle(Controle::Mudo, lugar::MUDO);
+            for (i, r) in lugar::segmentos().iter().enumerate() {
+                q.controle(Controle::Volume(i), *r);
+            }
+            q.controle(Controle::SomComCamera, lugar::SOM_COM_CAMERA);
+        }
+    }
+    q.controle(Controle::Detalhes, lugar::DETALHES);
+    if s.ajustes_da_camera {
+        q.controle(Controle::AjustesDaCamera, lugar::AJUSTES_DA_CAMERA_REMOTA);
+    }
+    if s.detalhes_abertos {
+        let b = lugar::BLOCO_DOS_DETALHES;
+        q.mais(cartao(b));
+        let resumo = if s.resumo.is_empty() { "—".to_string() } else { s.resumo.clone() };
+        q.mais(texto(Ret::new(b.x + 16.0, b.y + 10.0, b.l - 32.0, 36.0), resumo, F_MONO_12, TEXTO2).quebra().item());
+        if !s.cadeia.is_empty() {
+            q.mais(texto(Ret::new(b.x + 16.0, b.y + 50.0, b.l - 32.0, 36.0), s.cadeia.clone(), F_MONO_12, if s.alerta { AGUARDANDO_TEXTO } else { TEXTO2 }).quebra().item());
+        }
+    }
+    if s.encerrando {
+        q.mais(texto(lugar::ENCERRANDO, t(ENCERRANDO), F_LEGENDA_13, TEXTO3).meio().item());
+    }
+    if !s.encerrando { q.mais(texto(Ret::new(lugar::X, lugar::PE_Y - 80.0, lugar::L, 32.0), t("Parar encerra a sessão nos dois lados."), F_LEGENDA, TEXTO3).meio().item()); }
+    q.controle(Controle::Gravar, Ret::new(lugar::X, lugar::PE_Y, 210.0, ALTURA_DO_BOTAO));
+    q.controle(Controle::Cancelar, lugar::PARAR);
+    if !s.gravacao.is_empty() {
+        q.mais(texto(Ret::new(lugar::X, lugar::PE_Y - 44.0, lugar::L, 36.0), s.gravacao.clone(), F_LEGENDA, if s.gravando { AGUARDANDO_TEXTO } else { TEXTO2 }).quebra().item());
+    }
+}
+
+// =============================================================================================
+// A aparência de cada controle (o que o NM_CUSTOMDRAW desenha)
+// =============================================================================================
+
+/// O estado de um controle na hora de desenhar: o do próprio controle nativo.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct EstadoDoControle {
+    pub apertado: bool,
+    pub foco: bool,
+    pub desligado: bool,
+    pub quente: bool,
+    /// `BM_GETCHECK` (interruptores e opções).
+    pub marcado: bool,
+}
+
+/// O desenho de um controle: a cor de trás (os cantos redondos mostram o que está atrás dele), a
+/// lista de peças em `(0, 0, l, a)`, e a opacidade (apertado 90 %, desligado 40 %, §4).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Aparencia {
+    pub fundo: Cor,
+    pub itens: Vec<Item>,
+    pub opacidade: f32,
+}
+
+/// **Como cada controle se desenha**, no tamanho `l × a`.
+pub fn aparencia(c: Controle, e: &EstadoDaTela, l: f32, a: f32, s: EstadoDoControle) -> Aparencia {
+    let mut fundo = FUNDO;
+    let mut raio = RAIO_DO_BOTAO;
+    let mut itens = match c {
+        Controle::Item(p) => {
+            fundo = BARRA;
+            let estado = e.sessao.as_ref().filter(|x| x.item == p).map(|x| (x.luz, x.rotulo.as_str()));
+            item_da_barra(l, a, p.icone(), p.rotulo(), s.marcado, estado)
+        }
+        Controle::Ladrilho(i) => {
+            raio = RAIO_DO_CARTAO;
+            match e.espelhar.fontes.get(i) {
+                Some(x) => ladrilho(l, a, x.icone, &x.titulo, &x.detalhe, x.detalhe_mono, s.marcado),
+                None => vec![],
+            }
+        }
+        #[cfg(feature = "tela-estendida-futura")]
+        Controle::TelaEstendidaSemDriver => {
+            raio = RAIO_DO_CARTAO;
+            use crate::regras_da_tela_estendida as te;
+            // O detalhe é o botão (02/10, noite): "Instalar o driver da tela estendida" sem o
+            // adaptador; o texto de antes na loja e no Windows sem suporte.
+            let detalhe = t(crate::regras_do_driver::detalhe_do_apagado(e.driver.situacao));
+            ladrilho(l, a, Icone::TelaEstendida, t(te::TITULO), detalhe, false, false)
+        }
+        #[cfg(feature = "tela-estendida-futura")]
+        Controle::DriverDaTelaEstendida => {
+            fundo = SUPERFICIE;
+            let rotulo = match crate::regras_do_driver::botao_dos_ajustes(e.driver.situacao) {
+                Some(crate::regras_do_driver::BotaoDosAjustes::PaginaDoInstalador) => crate::regras_do_driver::AJUSTES_PAGINA_DO_INSTALADOR,
+                _ => crate::regras_do_driver::AJUSTES_DESINSTALAR,
+            };
+            botao(l, a, TipoDeBotao::Secundario, t(rotulo), None, F_BOTAO_PEQUENO)
+        }
+        #[cfg(not(feature = "tela-estendida-futura"))]
+        Controle::TelaEstendidaSemDriver | Controle::DriverDaTelaEstendida => vec![],
+        Controle::Som => {
+            raio = RAIO_DO_CARTAO;
+            linha_de_interruptor(l, a, t("Mandar o som deste computador"), t("Vai o que o Windows estiver tocando."), s.marcado)
+        }
+        Controle::Microfone => match &e.camera {
+            Some(cam) if e.cena != Cena::Painel(Painel::Espelhar) => {
+                raio = l / 2.0;
+                redondo(l, Redondo::Microfone { ligado: s.marcado }, &cam.legenda_do_microfone)
+            }
+            _ => {
+                raio = RAIO_DO_CARTAO;
+                linha_de_interruptor(l, a, t("Microfone"), t("Começa desligado. O som da câmera é o do microfone."), s.marcado)
+            }
+        },
+        Controle::Espelhar => botao(l, a, TipoDeBotao::Principal, t("Espelhar"), Some(Icone::Espelhar), F_BOTAO),
+        Controle::Exibir => botao(l, a, TipoDeBotao::Principal, t("Exibir"), None, F_BOTAO),
+        Controle::Papel(i) => {
+            raio = RAIO_DO_CARTAO;
+            let (icone, titulo_, detalhe) = PAPEIS[i.min(2)];
+            cartao_de_papel(l, a, icone, t(titulo_), t(detalhe))
+        }
+        Controle::Esquecer => {
+            // Nos Ajustes fica dentro do cartão; na espera da câmera, sobre o fundo.
+            fundo = if e.cena == Cena::Painel(Painel::Ajustes) { SUPERFICIE } else { FUNDO };
+            if e.ajustes.confirmando && e.cena == Cena::Painel(Painel::Ajustes) {
+                botao(l, a, TipoDeBotao::Perigo, t("Esquecer de verdade"), None, F_BOTAO_PEQUENO)
+            } else {
+                botao(l, a, TipoDeBotao::Secundario, t("Esquecer pareamentos"), None, F_BOTAO_PEQUENO)
+            }
+        }
+        Controle::Diario => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t("Abrir a pasta"), Some(Icone::Pasta), F_BOTAO_PEQUENO)
+        }
+        Controle::GerenciarCameras => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t(crate::regras_da_camera_virtual::CAMERAS_GERENCIAR), None, F_BOTAO_PEQUENO)
+        }
+        Controle::InstalacaoDaCamera => {
+            fundo = SUPERFICIE;
+            let i = &e.ajustes.instalacao_da_camera;
+            match botao_da_instalacao_da_camera(i) {
+                Some(b) => {
+                    let rotulo = t(crate::regras_da_instalacao_da_camera::rotulo(b, i.situacao));
+                    let tipo = if b == crate::regras_da_instalacao_da_camera::Botao::Instalar { TipoDeBotao::Principal } else { TipoDeBotao::Secundario };
+                    botao(l, a, tipo, rotulo, None, F_BOTAO_PEQUENO)
+                }
+                None => vec![],
+            }
+        }
+        Controle::Licencas => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t("Licenças"), None, F_BOTAO_PEQUENO)
+        }
+        Controle::Privacidade => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t("Privacidade"), None, F_BOTAO_PEQUENO)
+        }
+        Controle::Suporte => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t("Suporte"), None, F_BOTAO_PEQUENO)
+        }
+        Controle::Letreiro => {
+            raio = 12.0;
+            letreiro(l / 2.0, 0.0, &e.espera.pin)
+        }
+        Controle::Chip => {
+            raio = a / 2.0;
+            chip(l, a, &e.espera.endereco, e.copiado)
+        }
+        Controle::Cancelar => match (&e.camera, e.cena) {
+            (Some(cam), Cena::Esperando | Cena::NoAr) => {
+                raio = l / 2.0;
+                redondo(l, Redondo::Parar, &cam.legenda_do_parar)
+            }
+            (_, Cena::Esperando | Cena::Conectando) => botao(l, a, TipoDeBotao::Secundario, t("Cancelar"), None, F_BOTAO),
+            _ => botao(l, a, TipoDeBotao::PararCheio, t("Parar"), None, F_BOTAO),
+        },
+        Controle::Gravar if e.cena == Cena::Exibindo => {
+            botao(l, a, TipoDeBotao::Secundario, if e.exibindo.gravacao_fechando { t("Salvando…") } else if e.exibindo.gravando { t("■ Parar a gravação") } else { t("● Gravar neste computador") }, None, F_BOTAO_PEQUENO)
+        }
+        Controle::Gravar => {
+            raio = l / 2.0;
+            let cam = e.camera.clone().unwrap_or_default();
+            redondo(l, Redondo::Gravar { gravando: cam.gravando }, &cam.legenda_do_gravar)
+        }
+        // R9b: no Exibindo, um botão com a engrenagem ao lado de "Detalhes" (a câmera de quem filma).
+        Controle::AjustesDaCamera if e.cena == Cena::Exibindo => {
+            botao(l, a, TipoDeBotao::Secundario, t(crate::regras_dos_controles::ROTULO_DO_ICONE), Some(Icone::Ajustes), F_BOTAO_PEQUENO)
+        }
+        Controle::AjustesDaCamera => {
+            raio = l / 2.0;
+            redondo(l, Redondo::Ajustes, t("Ajustes"))
+        }
+        Controle::TravarFps => {
+            let rotulo = e.camera.as_ref().and_then(|c| c.pouca_luz).and_then(|p| p.botao()).unwrap_or_else(|| t("Travar fps").into());
+            botao(l, a, TipoDeBotao::Secundario, &rotulo, None, F_BOTAO_PEQUENO)
+        }
+        Controle::Mudo => {
+            fundo = SUPERFICIE;
+            let mut v = vec![texto(Ret::new(0.0, 0.0, l - INTERRUPTOR_L - 8.0, a), t("Mudo"), F_LEGENDA_13, TEXTO_DA_BARRA).direita().meio().item()];
+            v.extend(interruptor(l - INTERRUPTOR_L, (a - INTERRUPTOR_A) / 2.0, s.marcado));
+            v
+        }
+        Controle::CameraVirtual => {
+            raio = RAIO_DO_CARTAO;
+            linha_de_interruptor(l, a, t(crate::regras_da_camera_virtual::TITULO), &frase_da_camera_virtual(&e.ajustes.camera_virtual), s.marcado)
+        }
+        Controle::SomComCamera => {
+            raio = RAIO_DO_CARTAO;
+            linha_de_interruptor(
+                l,
+                a,
+                t("Tocar o som mesmo com a câmera do Quall em uso"),
+                t("Numa chamada com a câmera virtual, o som continua tocando aqui."),
+                s.marcado,
+            )
+        }
+        Controle::Volume(i) => {
+            fundo = SUPERFICIE_ALTA;
+            raio = 4.0;
+            segmento(l, a, VOLUMES[i.min(3)].1, s.marcado)
+        }
+        Controle::Idioma(i) => {
+            fundo = SUPERFICIE_ALTA;
+            raio = 4.0;
+            segmento(l, a, idioma_do_segmento(i).sigla(), s.marcado)
+        }
+        Controle::Detalhes => {
+            let rotulo_ = t("Detalhes");
+            let mut v = vec![rico(
+                Ret::new(0.0, 0.0, l, a),
+                vec![Trecho::icone(if s.marcado { Icone::Fechar } else { Icone::Abrir }, 11.0), Trecho::simples(format!("\u{2002}{rotulo_}"))],
+                F_LEGENDA_13,
+                TEXTO2,
+            )
+            .meio()
+            .item()];
+            // A acusação (a linha laranja de hoje) põe um ponto âmbar ao lado (§6.6).
+            if e.exibindo.alerta {
+                let x = 11.0 + largura_estimada(&format!("  {rotulo_}"), F_LEGENDA_13) + 8.0;
+                v.push(Item::Circulo { cx: x.min(l - 6.0), cy: a / 2.0, raio: 4.0, cor: AGUARDANDO });
+            }
+            v
+        }
+        // Os três números: a mesma caixa, a mesma borda e o mesmo dígito mono dos quatro do convidado
+        // (`estilo::codigo`), em dois grupos ("04 27"). Nenhum se destaca.
+        Controle::EscolherCodigo(i) => {
+            fundo = SUPERFICIE;
+            let numero = e.codigo.as_ref().and_then(|c| c.opcoes.get(i)).map(|n| crate::conexao::em_grupos(n)).unwrap_or_default();
+            vec![
+                caixa_com_borda(Ret::new(0.0, 0.0, l, a), 12.0, SUPERFICIE_ALTA, ACENTO, 1.0),
+                texto(Ret::new(0.0, 0.0, l, a), numero, F_PIN, TEXTO).centro().meio().item(),
+            ]
+        }
+        Controle::RecusarCodigo => {
+            fundo = SUPERFICIE;
+            botao(l, a, TipoDeBotao::Secundario, t("Nenhum destes"), None, F_BOTAO)
+        }
+        Controle::EsquecerEsteAparelho => botao(l, a, TipoDeBotao::Secundario, t("Esquecer este aparelho"), None, F_BOTAO),
+        Controle::ProcurarDeNovo => botao(l, a, TipoDeBotao::Secundario, t("Procurar de novo"), Some(Icone::Atualizar), F_BOTAO_PEQUENO),
+        Controle::Lista | Controle::Endereco | Controle::Pin | Controle::NomeNaRede => vec![],
+    };
+    if s.quente && !s.desligado && c.especie() != Especie::Letreiro {
+        itens.push(caixa(Ret::new(0.0, 0.0, l, a), raio, Cor::rgba(0xFFFFFF, 10)));
+    }
+    if s.foco {
+        itens.push(anel_de_foco(l, a, raio));
+    }
+    let opacidade = if s.desligado {
+        0.4
+    } else if c == Controle::TelaEstendidaSemDriver {
+        // **Apagado, sem estar desligado** (R10): a mesma opacidade do desligado (§4), mas o botão
+        // segue vivo para o clique abrir as instruções; apertado, um pouco mais escuro.
+        if s.apertado { 0.36 } else { 0.4 }
+    } else if s.apertado {
+        0.9
+    } else {
+        1.0
+    };
+    Aparencia { fundo, itens, opacidade }
+}
+
+/// **Uma linha da lista** "NA REDE AGORA", no tamanho `l × a`.
+pub fn aparencia_da_linha(i: usize, e: &EstadoDaTela, l: f32, a: f32, escolhida: bool, foco: bool) -> Aparencia {
+    let mut itens = match e.exibir.aparelhos.get(i) {
+        Some(x) => linha_de_aparelho(l, a, &x.nome, &x.tipo, &x.endereco, escolhida),
+        None => vec![],
+    };
+    if foco {
+        itens.push(Item::Caixa { ret: Ret::new(0.0, 0.0, l, a - 6.0), raio: RAIO_DO_CARTAO, fundo: Cor::rgba(0, 0), borda: Some((TEXTO.vezes(0.85), 2.0)) });
+    }
+    Aparencia { fundo: FUNDO, itens, opacidade: 1.0 }
+}
+
+/// O idioma de cada segmento do seletor: 0 PT, 1 EN.
+pub fn idioma_do_segmento(i: usize) -> crate::idioma::Idioma {
+    if i == 0 {
+        crate::idioma::Idioma::Pt
+    } else {
+        crate::idioma::Idioma::En
+    }
+}
+
+/// **O nome de cada controle para o Narrador** (o texto da janela do botão).
+pub fn texto_acessivel(c: Controle, e: &EstadoDaTela) -> String {
+    match c {
+        // Cada segmento diz o idioma dele, na língua dele (o contrato comum, item 1).
+        Controle::Idioma(i) => idioma_do_segmento(i).nome_acessivel().into(),
+        Controle::Item(p) => match e.sessao.as_ref().filter(|s| s.item == p) {
+            Some(s) => format!("{}, {}", p.rotulo(), s.rotulo),
+            None => p.rotulo().to_string(),
+        },
+        Controle::Ladrilho(i) => e
+            .espelhar
+            .fontes
+            .get(i)
+            .map(|x| if x.detalhe.is_empty() { x.titulo.clone() } else { format!("{}, {}", x.titulo, x.detalhe) })
+            .unwrap_or_default(),
+        #[cfg(feature = "tela-estendida-futura")]
+        Controle::TelaEstendidaSemDriver => t(crate::regras_do_driver::texto_acessivel_do_apagado(e.driver.situacao)).into(),
+        #[cfg(feature = "tela-estendida-futura")]
+        Controle::DriverDaTelaEstendida => match crate::regras_do_driver::botao_dos_ajustes(e.driver.situacao) {
+            Some(crate::regras_do_driver::BotaoDosAjustes::PaginaDoInstalador) => t(crate::regras_do_driver::AJUSTES_PAGINA_DO_INSTALADOR).into(),
+            _ => t(crate::regras_do_driver::CAIXA_DESINSTALAR_TITULO).into(),
+        },
+        #[cfg(not(feature = "tela-estendida-futura"))]
+        Controle::TelaEstendidaSemDriver | Controle::DriverDaTelaEstendida => String::new(),
+        Controle::Som => t("Mandar o som deste computador").into(),
+        Controle::Microfone => match &e.camera {
+            Some(cam) if e.cena != Cena::Painel(Painel::Espelhar) => tf("Microfone, {}", &[&cam.legenda_do_microfone]),
+            _ => t("Microfone").into(),
+        },
+        Controle::Espelhar => t("Espelhar").into(),
+        Controle::Exibir => t("Exibir").into(),
+        Controle::Lista => t("Na rede agora").into(),
+        Controle::Endereco => t("Endereço do outro aparelho").into(),
+        Controle::Pin => t("PIN do outro aparelho; vazio se os dois já parearam").into(),
+        Controle::NomeNaRede => t("Nome que os outros aparelhos veem").into(),
+        Controle::Papel(i) => t(PAPEIS[i.min(2)].1).to_string(),
+        Controle::Esquecer if e.ajustes.confirmando && e.cena == Cena::Painel(Painel::Ajustes) => {
+            t("Esquecer de verdade: os aparelhos vão pedir o PIN outra vez").into()
+        }
+        Controle::Esquecer => t("Esquecer pareamentos").into(),
+        Controle::Diario => t("Abrir a pasta do diário").into(),
+        Controle::Licencas => t("Abrir as licenças de terceiros").into(),
+        Controle::Privacidade => t("Abrir a política de privacidade").into(),
+        Controle::Suporte => t("Abrir a página de suporte").into(),
+        Controle::Letreiro => pin_para_ler(&e.espera.pin),
+        // Copiado, o nome muda, e o Narrador anuncia a troca do nome do botão com o foco.
+        Controle::Chip if e.copiado => tf("Copiado: {}", &[&e.espera.endereco]),
+        Controle::Chip => tf("Copiar o endereço {}", &[&e.espera.endereco]),
+        Controle::Cancelar => match (&e.camera, e.cena) {
+            (Some(cam), Cena::Esperando | Cena::NoAr) => cam.legenda_do_parar.clone(),
+            (_, Cena::Esperando | Cena::Conectando) => t("Cancelar").into(),
+            _ => t("Parar").into(),
+        },
+        Controle::Gravar if e.cena == Cena::Exibindo => if e.exibindo.gravando { t("Parar e salvar a gravação recebida") } else { t("Gravar o vídeo e o som recebidos neste computador") }.into(),
+        Controle::Gravar => e
+            .camera
+            .as_ref()
+            .map(|c| if c.nome_do_gravar.is_empty() { c.legenda_do_gravar.clone() } else { c.nome_do_gravar.clone() })
+            .unwrap_or_else(|| t("Gravar").into()),
+        Controle::Mudo => t("Mudo").into(),
+        Controle::SomComCamera => t("Tocar o som mesmo com a câmera do Quall em uso").into(),
+        Controle::CameraVirtual => t(crate::regras_da_camera_virtual::NOME_ACESSIVEL).into(),
+        Controle::GerenciarCameras => t(crate::regras_da_camera_virtual::CAMERAS_GERENCIAR_ACESSIVEL).into(),
+        Controle::InstalacaoDaCamera => {
+            let i = &e.ajustes.instalacao_da_camera;
+            botao_da_instalacao_da_camera(i)
+                .map(|b| t(crate::regras_da_instalacao_da_camera::nome_acessivel(b, i.situacao)).to_string())
+                .unwrap_or_default()
+        }
+        Controle::Volume(i) => tf("Volume {}", &[&VOLUMES[i.min(3)].1]),
+        Controle::Detalhes => t("Detalhes").into(),
+        Controle::AjustesDaCamera => t(crate::regras_dos_controles::ROTULO_DO_ICONE).into(),
+        Controle::TravarFps => e.camera.as_ref().and_then(|c| c.pouca_luz).and_then(|p| p.botao()).unwrap_or_else(|| t("Travar fps").into()),
+        // O Narrador lê cada número dígito a dígito, e a posição ("0 4 2 7, primeiro de três"): o
+        // cartão é pintado, e o botão é o que tem foco.
+        Controle::EscolherCodigo(i) => {
+            let numero = e.codigo.as_ref().and_then(|c| c.opcoes.get(i)).map(|n| crate::conexao::para_ler(n)).unwrap_or_else(|| "—".into());
+            tf(crate::conexao::MOLDE_DA_OPCAO, &[&numero, &t(crate::conexao::posicao(i))])
+        }
+        Controle::RecusarCodigo => t("Nenhum destes").into(),
+        Controle::EsquecerEsteAparelho => t("Esquecer este aparelho").into(),
+        Controle::ProcurarDeNovo => t("Procurar de novo").into(),
+    }
+}
+
+// =============================================================================================
+// Os exemplos (o retrato de bancada e os testes)
+// =============================================================================================
+
+// Os exemplos vêm no idioma de agora (o retrato de bancada os chama dentro de `com_idioma`): os
+// textos de interface por `t()` (os que nascem no emissor e no receptor, com as chaves das tabelas
+// deles); os dados de exemplo (nomes de aparelho, de monitor e de câmera, endereços, números) como
+// estão.
+
+fn ladrilhos_de_exemplo(escolhido: usize) -> Vec<Ladrilho> {
+    let base = [
+        // i18n: fora (o nome do monitor é dado de exemplo)
+        (tf("{} (principal)", &[&"Monitor 1"]), "1920 × 1080", true, Icone::Monitor),
+        #[cfg(feature = "tela-estendida-futura")]
+        (t(crate::regras_da_tela_estendida::TITULO).to_string(), t(crate::regras_da_tela_estendida::DETALHE), false, Icone::TelaEstendida),
+        ("Integrated Webcam".to_string(), t("Câmera"), false, Icone::Camera),
+        ("Canon EOS".to_string(), t("Câmera"), false, Icone::Camera),
+    ];
+    base.iter()
+        .enumerate()
+        .map(|(i, (nome, d, m, ic))| Ladrilho { titulo: nome.clone(), detalhe: d.to_string(), detalhe_mono: *m, icone: *ic, escolhido: i == escolhido })
+        .collect()
+}
+
+fn base_de_exemplo() -> EstadoDaTela {
+    EstadoDaTela {
+        nome_do_aparelho: "DELL-G3".into(),
+        espelhar: TelaEspelhar {
+            fontes: ladrilhos_de_exemplo(0),
+            camera: false,
+            alguma_escolhida: true,
+            som: true,
+            microfone: false,
+            ip: Some("192.168.15.2".into()),
+            aviso: None,
+            pode_espelhar: true,
+            tela_estendida_sem_driver: None,
+        },
+        exibir: TelaExibir {
+            aparelhos: vec![
+                // No v3 a rede só diz o alias ("Quall 1a2b3c4d", P3); o nome guardado é o do pareado.
+                // i18n: fora (o nome do aparelho é dado de exemplo)
+                LinhaDeAparelho { nome: "Quall 1a2b3c4d".into(), tipo: t("Tela ou câmera").into(), endereco: "192.168.15.4:7877".into() },
+                LinhaDeAparelho { nome: "Galaxy A07".into(), tipo: t("Pareado").into(), endereco: "192.168.15.11:7877".into() },
+            ],
+            escolhido: Some(0),
+            procurando: true,
+            vazio: t("Ninguém anunciando. Use o endereço que aparece no outro aparelho.").into(),
+            pede_pin: false,
+            aviso: None,
+            foco: None,
+            qr: Some(crate::qr_na_tela::QrNaTela {
+                // i18n: fora (o texto de um convite de exemplo; o segredo é de mentira)
+                matriz: crate::qr_na_tela::matriz("quall://chamar?v=2&a=192.168.15.2&p=7874&i=win-3F2504E0-4F89-11D3-9A0C-0305E82C3301&n=DELL-G3&s=00112233445566778899aabbccddeeff").map(std::sync::Arc::new),
+                fase: crate::qr_na_tela::FaseDoQr::Esperando { segundos: 161 },
+            }),
+            esquecer_este: false,
+        },
+        ajustes: TelaAjustes { tem_pares: true, confirmando: false, pasta_do_diario: "%LOCALAPPDATA%\\Quall\\Logs".into(), versao: "0.1.0".into(),
+            camera_virtual: crate::regras_da_camera_virtual::Situacao { conhecidos: 2, vivas: 2, ..Default::default() },
+            instalacao_da_camera: TelaDaInstalacaoDaCamera {
+                situacao: crate::regras_da_instalacao_da_camera::Situacao::Instalada,
+                ..Default::default()
+            },
+            // i18n: fora (nomes de aparelhos de exemplo)
+            cameras: vec![
+                crate::regras_da_camera_virtual::LinhaDaCamera { nome: "Iphone 7".into(), em_uso: false },
+                crate::regras_da_camera_virtual::LinhaDaCamera { nome: "SM-S928B".into(), em_uso: true },
+            ],
+        },
+        espera: TelaEspera {
+            pin: "482719".into(),
+            endereco: "192.168.15.2:7877".into(),
+            ha_pares: false,
+            nome: "Quall 1234abcd".into(),
+            alias: None,
+            anunciando: true,
+            origem: "Monitor 1".into(), // i18n: fora (dado de exemplo)
+            com_som: Some(true),
+            frase: String::new(),
+            aviso: String::new(),
+            aviso_ambar: false,
+            encerrando: false,
+        },
+        no_ar: TelaNoAr {
+            par: "iPad do Bruno".into(), // i18n: fora (dado de exemplo)
+            origem: "Monitor 1".into(), // i18n: fora (dado de exemplo)
+            imagem: "1920×1080 · 30".into(),
+            rede: "192.168.15.2".into(),
+            som: t("Indo junto").into(),
+            som_indo: true,
+            // i18n: fora (os números do emissor, o diagnóstico de hoje)
+            resumo: "1834 quadros · 3 IDR · captura+encode 4.2 ms · 2870 quadros de som".into(),
+            frase: String::new(),
+        },
+        conectando: "iPhone do Bruno (192.168.15.4:7877)".into(), // i18n: fora (dado de exemplo)
+        exibindo: TelaExibindo {
+            par: "iPhone do Bruno".into(), // i18n: fora (dado de exemplo)
+            som: tf("som: tocando, volume {} %", &[&100]),
+            controles_do_som: true,
+            mudo: false,
+            volume: 0,
+            som_com_camera: false,
+            detalhes_abertos: false,
+            resumo: "1920×1080 · 30,0 fps · 8,4 Mbps · 0 perdidos".into(),
+            // i18n: fora (os números do receptor, o diagnóstico de hoje)
+            cadeia: "rupturas 0 · suspeitos 0 · pior rajada 0 · retidos 0 · sem referência 0 ms".into(),
+            alerta: false,
+            encerrando: false,
+            ajustes_da_camera: true,
+            gravacao: String::new(),
+            gravando: false,
+            gravacao_fechando: false,
+        },
+        ..Default::default()
+    }
+}
+
+fn camera_de_exemplo(gravando: bool) -> ControlesDaCamera {
+    ControlesDaCamera {
+        microfone: true,
+        legenda_do_microfone: t("Mic ligado").into(),
+        gravar: true,
+        gravar_ativo: true,
+        gravando,
+        legenda_do_gravar: if gravando { "1:23".into() } else { t("Gravar").into() },
+        // O rótulo e a linha como o emissor os monta (`publicar_camera_comum`), com as chaves dele.
+        nome_do_gravar: if gravando { tf("■ Parar a gravação ({})", &[&"1:23"]) } else { t("● Gravar neste computador").into() },
+        legenda_do_parar: if gravando { t("Parar e salvar").into() } else { t("Cancelar").into() },
+        linha_da_gravacao: if gravando {
+            tf("● GRAVANDO {}", &[&"1:23"]) + &tf(" · sobram {} GB", &[&crate::idioma::decimal(41.2, 1)])
+        } else {
+            String::new()
+        },
+        esquecer: false,
+        ajustes: true,
+        controlado_por: String::new(),
+        pouca_luz: None,
+        previa: true,
+    }
+}
+
+fn sessao_de_exemplo(item: Painel, luz: Luz, rotulo: &str) -> Option<SessaoNaBarra> {
+    let nota = if item == Painel::Exibir { t(NOTA_DO_RECEPTOR) } else { t(NOTA_DO_EMISSOR) };
+    Some(SessaoNaBarra { item, luz, rotulo: rotulo.into(), nota: nota.into() })
+}
+
+/// A nota da barra com uma sessão de pé (as mesmas da janela).
+pub const NOTA_DO_EMISSOR: &str = "Um papel por vez. Pare de espelhar para usar os outros."; // i18n: chave
+pub const NOTA_DO_RECEPTOR: &str = "Um papel por vez. Pare de exibir para usar os outros."; // i18n: chave
+
+/// **Os estados de exemplo**, um por tela e estado da §7 (nome do arquivo, estado).
+pub fn exemplos() -> Vec<(&'static str, EstadoDaTela)> {
+    let mut v = Vec::new();
+    let b = base_de_exemplo();
+
+    v.push(("01-espelhar", EstadoDaTela { cena: Cena::Painel(Painel::Espelhar), painel: Painel::Espelhar, ..b.clone() }));
+    let mut e = b.clone();
+    e.espelhar.fontes = ladrilhos_de_exemplo(2);
+    e.espelhar.camera = true;
+    e.espelhar.microfone = true;
+    e.espelhar.aviso = Some(Aviso { tom: Tom::Ambar, texto: t("O teleprompter com a câmera está aberto: feche-o para espelhar daqui.").into() });
+    e.espelhar.pode_espelhar = false;
+    v.push(("02-espelhar-camera-com-aviso", e));
+    let mut e = b.clone();
+    e.espelhar.fontes = (0..10)
+        .map(|i| Ladrilho {
+            titulo: format!("Monitor {}", i + 1), // i18n: fora (o nome do monitor é dado de exemplo)
+            detalhe: "2560 × 1440".into(),
+            detalhe_mono: true,
+            icone: Icone::Monitor,
+            escolhido: i == 3,
+        })
+        .collect();
+    e.espelhar.ip = None;
+    v.push(("03-espelhar-dez-fontes-sem-rede", e));
+    #[cfg(feature = "tela-estendida-futura")]
+    {
+    // R10: sem o adaptador do SudoVDA, a tela estendida apagada depois do monitor.
+    let mut e = b.clone();
+    e.espelhar.fontes = ladrilhos_de_exemplo(0).into_iter().filter(|x| x.icone != Icone::TelaEstendida).collect();
+    e.espelhar.tela_estendida_sem_driver = Some(1);
+    v.push(("03b-espelhar-tela-estendida-sem-driver", e.clone()));
+    // 02/10, noite: o Quall instalando o driver (o aviso diz o passo).
+    e.driver.andamento = crate::regras_do_driver::Andamento::Rodando { acao: crate::regras_do_driver::Acao::Instalar, passo: 5 };
+    v.push(("03c-espelhar-instalando-o-driver", e));
+    }
+
+    v.push(("04-exibir", EstadoDaTela { cena: Cena::Painel(Painel::Exibir), painel: Painel::Exibir, ..b.clone() }));
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Exibir), painel: Painel::Exibir, ..b.clone() };
+    e.exibir.aparelhos.clear();
+    e.exibir.escolhido = None;
+    e.exibir.pede_pin = true;
+    e.exibir.aviso = Some(Aviso { tom: Tom::Vermelho, texto: t("O PIN não conferiu. Digite os seis dígitos que aparecem no outro aparelho.").into() });
+    v.push(("05-exibir-vazio-pede-pin", e.clone()));
+    // A2 (`docs/v3-no-privado.md` §3.5): a sessão salva não reconheceu este pareamento — falha fechado,
+    // com "Esquecer este aparelho" no pé e o PIN em destaque. A frase mais longa, com o nome.
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Exibir), painel: Painel::Exibir, ..b.clone() };
+    e.exibir.pede_pin = true;
+    e.exibir.esquecer_este = true;
+    e.exibir.aviso = Some(Aviso { tom: Tom::Vermelho, texto: tf(crate::conexao::MOLDE_NAO_ACHEI, &[&"Galaxy A07"]) });
+    v.push(("05e-exibir-nao-reconheceu", e));
+    // O QR depois do chamado (sai o QR, fica a frase) e sem rede (§10).
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Exibir), painel: Painel::Exibir, ..b.clone() };
+    if let Some(qr) = e.exibir.qr.as_mut() {
+        qr.fase = crate::qr_na_tela::FaseDoQr::Chamado { nome: "Galaxy A07".into() }; // i18n: fora (exemplo)
+    }
+    v.push(("05b-exibir-qr-chamado", e.clone()));
+    if let Some(qr) = e.exibir.qr.as_mut() {
+        qr.fase = crate::qr_na_tela::FaseDoQr::SemRede;
+    }
+    e.exibir.aparelhos.clear();
+    e.exibir.escolhido = None;
+    v.push(("05c-exibir-qr-sem-rede", e.clone()));
+    e.exibir.qr = None;
+    v.push(("05d-exibir-sem-qr", e));
+
+    v.push(("06-teleprompter", EstadoDaTela { cena: Cena::Painel(Painel::Teleprompter), painel: Painel::Teleprompter, ..b.clone() }));
+    v.push(("07-ajustes", EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() }));
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+    e.ajustes.confirmando = true;
+    v.push(("07b-ajustes-confirmando", e));
+    // O cartão "Câmera virtual" (12/10/2026): desligado, e ligado com a recusa da privacidade.
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+    e.ajustes.camera_virtual.ligada = false;
+    v.push(("07d-ajustes-camera-virtual-desligada", e));
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+    e.ajustes.camera_virtual.vivas = 0;
+    e.ajustes.camera_virtual.falha = Some(crate::regras_da_camera_virtual::Falha::Privacidade);
+    v.push(("07e-ajustes-camera-virtual-recusada", e));
+    // A instalação da câmera (12/10/2026, tarde): sem instalar (o Quall do site), na loja, e no meio.
+    {
+        use crate::regras_da_instalacao_da_camera::{Acao, Andamento, Situacao as Inst};
+        let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+        e.ajustes.instalacao_da_camera.situacao = Inst::Ausente;
+        e.ajustes.camera_virtual.instalada = false;
+        e.ajustes.camera_virtual.vivas = 0;
+        v.push(("07f-ajustes-camera-nao-instalada", e.clone()));
+        e.ajustes.instalacao_da_camera.andamento = Andamento::Rodando { acao: Acao::Instalar, passo: 2 };
+        v.push(("07g-ajustes-camera-instalando", e.clone()));
+        e.ajustes.instalacao_da_camera.andamento = Andamento::Parado;
+        e.ajustes.instalacao_da_camera.situacao = Inst::Loja { registrada: false };
+        v.push(("07h-ajustes-camera-loja", e));
+    }
+    // As câmeras deste computador: nenhuma, e muitas (o "e mais N").
+    {
+        use crate::regras_da_camera_virtual::LinhaDaCamera;
+        let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+        e.ajustes.cameras.clear();
+        v.push(("07i-ajustes-sem-cameras", e.clone()));
+        // i18n: fora (nomes de aparelhos de exemplo)
+        e.ajustes.cameras = ["Iphone 7", "MacBook Air de Bruno", "SM-A075M", "SM-S928B"]
+            .iter()
+            .map(|n| LinhaDaCamera { nome: n.to_string(), em_uso: *n == "SM-S928B" })
+            .collect();
+        v.push(("07j-ajustes-quatro-cameras", e));
+    }
+    #[cfg(feature = "tela-estendida-futura")]
+    {
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Ajustes), painel: Painel::Ajustes, ..b.clone() };
+    e.driver.situacao = crate::regras_do_driver::Situacao::DoQuall { presente: true };
+    v.push(("07c-ajustes-driver-do-quall", e));
+    }
+    let mut e = EstadoDaTela { cena: Cena::Painel(Painel::Teleprompter), painel: Painel::Teleprompter, ..b.clone() };
+    // Em português, como o cartão o escreve (o `compor` o traduz).
+    e.aviso_do_teleprompter = AVISO_FECHANDO_O_TELEPROMPTER.into();
+    v.push(("06b-teleprompter-fechando", e));
+
+    let espera = EstadoDaTela {
+        cena: Cena::Esperando,
+        painel: Painel::Espelhar,
+        sessao: sessao_de_exemplo(Painel::Espelhar, Luz::Aguardando, t("Aguardando")),
+        ..b.clone()
+    };
+    v.push(("08-esperando", espera.clone()));
+    let mut e = espera.clone();
+    e.espera.ha_pares = true;
+    e.espera.anunciando = false;
+    e.espera.frase = t("O Windows recusou a saída de som padrão: vai sem som.").into();
+    v.push(("09-esperando-pareados-sem-anuncio", e));
+    let mut e = espera.clone();
+    e.espera.origem = "Integrated Webcam".into();
+    e.espera.com_som = None;
+    e.espera.frase = t("O microfone abre quando o outro aparelho conectar.").into();
+    e.espera.aviso = t("O aparelho não entrou com o pareamento guardado: esqueça os pareamentos e use o PIN.").into();
+    e.espera.aviso_ambar = true;
+    e.camera = Some(ControlesDaCamera { esquecer: true, ..camera_de_exemplo(false) });
+    v.push(("10-esperando-camera", e.clone()));
+    // O cartão do código de 4 dígitos (`docs/v3-no-privado.md` §3.6): alguém tocou Conectar, e este
+    // computador escolhe entre três números; o convidado (15b) mostra o certo.
+    // i18n: fora (o nome do aparelho é dado de exemplo)
+    let par = "Galaxy A07".to_string();
+    let opcoes: Vec<String> = ["8812", "0427", "5530"].iter().map(|s| s.to_string()).collect();
+    let pedido = crate::conexao::CartaoDoCodigo { codigo: String::new(), opcoes, par: par.clone(), tentativa: 1, confirmado_aqui: false, espera: 1, pareamento_anterior: false };
+    let do_convidado = crate::conexao::CartaoDoCodigo { codigo: "0427".into(), opcoes: Vec::new(), par, tentativa: 1, confirmado_aqui: false, espera: 2, pareamento_anterior: false };
+    v.push(("10b-esperando-camera-codigo", EstadoDaTela { codigo: Some(pedido.clone()), ..e }));
+    v.push(("08b-esperando-codigo", EstadoDaTela { codigo: Some(pedido.clone()), ..espera.clone() }));
+    let mut e = espera.clone();
+    e.espera.ha_pares = true;
+    e.codigo = Some(crate::conexao::CartaoDoCodigo { confirmado_aqui: true, par: String::new(), ..pedido.clone() });
+    v.push(("08c-esperando-codigo-confirmado", e));
+    // P11: a escolha errada desligou o código desta espera; o PIN continua, e a frase diz isso.
+    let mut e = espera.clone();
+    e.espera.aviso = t(crate::conexao::FRASE_ESCOLHA_ERRADA).into();
+    e.espera.aviso_ambar = true;
+    v.push(("08d-esperando-escolha-errada", e));
+
+    let no_ar = EstadoDaTela { cena: Cena::NoAr, painel: Painel::Espelhar, sessao: sessao_de_exemplo(Painel::Espelhar, Luz::NoAr, t("Espelhando")), ..b.clone() };
+    v.push(("11-no-ar", no_ar.clone()));
+    let mut e = no_ar.clone();
+    e.sessao = sessao_de_exemplo(Painel::Espelhar, Luz::NoAr, t("No ar"));
+    e.no_ar.origem = "Integrated Webcam".into();
+    e.no_ar.imagem = t("Da câmera").into();
+    e.no_ar.som = t("Microfone").into();
+    // A linha do microfone fica em português no emissor; a janela a traduz (`tr`) ao montar.
+    e.no_ar.frase = t("Com o som do microfone.").into();
+    e.camera = Some(camera_de_exemplo(true));
+    v.push(("12-no-ar-camera-gravando", e));
+
+    let mut e = EstadoDaTela { cena: Cena::Varios, painel: Painel::Espelhar, sessao: sessao_de_exemplo(Painel::Espelhar, Luz::NoAr, t("Espelhando")), ..b.clone() };
+    e.varios = TelaVarios {
+        receptores: vec![
+            LinhaDeReceptor { nome: "iPad do Bruno".into(), monitor: "2360 × 1640, índice 1".into(), resumo: "912 quadros · 1 IDR · 3,9 ms".into() }, // i18n: fora (dados de exemplo)
+            LinhaDeReceptor { nome: "iPhone X".into(), monitor: "2436 × 1124, índice 2".into(), resumo: "905 quadros · 1 IDR · 4,1 ms".into() }, // i18n: fora (dados de exemplo)
+            LinhaDeReceptor { nome: "Galaxy S24".into(), monitor: "2340 × 1080, índice 3".into(), resumo: "899 quadros · 2 IDR · 4,4 ms".into() }, // i18n: fora (dados de exemplo)
+        ],
+        mais_um: Some(("591204".into(), "192.168.15.2:7878".into())),
+        mais_um_texto: String::new(),
+        rodape: t("Com o som deste computador, num aparelho só.").into(),
+        rodape_aviso: false,
+    };
+    v.push(("13-varios", e.clone()));
+    e.varios.receptores = (0..8)
+        .map(|i| LinhaDeReceptor { nome: format!("Aparelho {}", i + 1), monitor: "1920 × 1080".into(), resumo: "900 quadros · 1 IDR".into() }) // i18n: fora (dados de exemplo)
+        .collect();
+    e.varios.mais_um = None;
+    e.varios.mais_um_texto = tf("Limite de {} aparelhos: para entrar mais um, outro precisa sair.", &[&8]);
+    v.push(("14-varios-no-limite", e));
+
+    let conectando =
+        EstadoDaTela { cena: Cena::Conectando, painel: Painel::Exibir, sessao: sessao_de_exemplo(Painel::Exibir, Luz::Aguardando, t("Conectando")), ..b.clone() };
+    v.push(("15-conectando", conectando.clone()));
+    v.push(("15b-conectando-codigo", EstadoDaTela { codigo: Some(do_convidado), ..conectando }));
+    let exibindo = EstadoDaTela { cena: Cena::Exibindo, painel: Painel::Exibir, sessao: sessao_de_exemplo(Painel::Exibir, Luz::Conectado, t("Exibindo")), ..b.clone() };
+    v.push(("16-exibindo", exibindo.clone()));
+    let mut e = exibindo;
+    e.exibindo.detalhes_abertos = true;
+    e.exibindo.alerta = true;
+    e.exibindo.cadeia = "rupturas 2 · suspeitos 124 · pior rajada 18 · retidos 3 · sem referência 640 ms".into(); // i18n: fora (o diagnóstico)
+    e.exibindo.volume = 2;
+    e.exibindo.mudo = true;
+    v.push(("17-exibindo-detalhes-com-acusacao", e));
+    v
+}
+
+/// O estado de cada controle num exemplo (o que o retrato põe nos controles nativos antes de
+/// desenhar, e o que o teste confere).
+pub fn marcado_no_exemplo(c: Controle, e: &EstadoDaTela) -> bool {
+    match c {
+        Controle::Item(p) => e.painel == p,
+        Controle::Ladrilho(i) => e.espelhar.fontes.get(i).is_some_and(|x| x.escolhido),
+        Controle::Som => e.espelhar.som,
+        Controle::Microfone => e.camera.as_ref().map_or(e.espelhar.microfone, |c| c.microfone),
+        Controle::Mudo => e.exibindo.mudo,
+        Controle::SomComCamera => e.exibindo.som_com_camera,
+        Controle::CameraVirtual => e.ajustes.camera_virtual.ligada,
+        Controle::Volume(i) => e.exibindo.volume == i,
+        Controle::Detalhes => e.exibindo.detalhes_abertos,
+        Controle::Idioma(i) => idioma_do_segmento(i) == e.idioma,
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod testes {
+    use super::*;
+
+    #[test]
+    fn privacidade_e_suporte_seguem_o_idioma_e_ficam_nos_ajustes() {
+        use crate::idioma::Idioma;
+        for (idioma, privacidade, suporte) in [
+            (Idioma::Pt, "https://queven.com.br/quall/privacidade/", "https://queven.com.br/quall/suporte/"),
+            (Idioma::En, "https://queven.com.br/en/quall/privacy/", "https://queven.com.br/en/quall/support/"),
+        ] {
+            assert_eq!(pagina_dos_ajustes(Controle::Privacidade, idioma), Some(privacidade));
+            assert_eq!(pagina_dos_ajustes(Controle::Suporte, idioma), Some(suporte));
+            assert_eq!(pagina_dos_ajustes(Controle::Licencas, idioma), None);
+            crate::idioma::com_idioma(idioma, || {
+                for (_, e) in exemplos() {
+                    let q = compor(&e);
+                    for controle in [Controle::Privacidade, Controle::Suporte] {
+                        assert_eq!(q.lugar(controle).is_some(), e.cena == Cena::Painel(Painel::Ajustes));
+                    }
+                }
+            });
+        }
+    }
+
+    #[test]
+    fn o_id_de_cada_controle_volta() {
+        let mut todos = Controle::fixos();
+        todos.extend((0..MAX_LADRILHOS).map(Controle::Ladrilho));
+        let mut vistos = std::collections::HashSet::new();
+        for c in todos {
+            assert_eq!(Controle::de_id(c.id()), Some(c), "{c:?}");
+            assert!(vistos.insert(c.id()), "id repetido: {c:?}");
+        }
+        assert_eq!(Controle::de_id(1), None, "o 1 é o IDOK do Enter, e não um controle");
+        assert_eq!(Controle::de_id(2), None, "o 2 é o IDCANCEL do Esc");
+    }
+
+    #[test]
+    fn cada_tela_cabe_na_janela_e_nenhum_controle_cobre_outro() {
+        let janela = Ret::new(0.0, 0.0, LARGURA_MINIMA, ALTURA_MINIMA);
+        for (nome, e) in exemplos() {
+            let q = compor(&e);
+            for (c, r) in &q.controles {
+                assert!(janela.contem(r), "{nome}: {c:?} fora da janela: {r:?}");
+                // Na barra: os itens e o nome na rede (§8.7).
+                if !matches!(c, Controle::Item(_) | Controle::NomeNaRede) {
+                    assert!(lugar::PAINEL.contem(r), "{nome}: {c:?} fora do painel: {r:?}");
+                }
+            }
+            for (i, (a, ra)) in q.controles.iter().enumerate() {
+                for (b, rb) in q.controles.iter().skip(i + 1) {
+                    assert!(!ra.cruza(rb), "{nome}: {a:?} {ra:?} cobre {b:?} {rb:?}");
+                }
+            }
+            for item in &q.itens {
+                if let Item::Texto(t) = item {
+                    assert!(janela.contem(&t.ret), "{nome}: texto fora da janela: {:?} {:?}", t.texto_corrido(), t.ret);
+                    // Um texto pintado não pode ficar debaixo de um controle nativo (o controle o
+                    // cobriria). Os controles pintam o próprio texto.
+                    for (c, r) in &q.controles {
+                        assert!(!t.ret.cruza(r), "{nome}: o texto {:?} fica debaixo de {c:?}", t.texto_corrido());
+                    }
+                }
+            }
+        }
+    }
+
+    /// **Em inglês** (a tradução, 02/10): cada exemplo composto com o idioma da thread em inglês
+    /// continua cabendo, sem controle cobrindo controle nem texto debaixo de controle — e nenhum texto
+    /// de interface do quadro, dos controles ou dos nomes para o Narrador ficou em português (igual a
+    /// uma chave da tabela cujo inglês é outro, também em caixa alta, como saem os rótulos de seção).
+    #[test]
+    fn em_ingles_cabe_e_nada_fica_em_portugues() {
+        use crate::idioma::{areas, com_idioma, Idioma};
+        let chaves: Vec<(String, String)> = areas()
+            .iter()
+            .flat_map(|(_, v)| v.iter())
+            .filter(|(pt, en)| pt != en)
+            .map(|(pt, _)| (pt.to_string(), pt.to_uppercase()))
+            .collect();
+        let em_portugues = |s: &str| !s.trim().is_empty() && chaves.iter().any(|(pt, alta)| s == pt || s == alta);
+        let janela = Ret::new(0.0, 0.0, LARGURA_MINIMA, ALTURA_MINIMA);
+        com_idioma(Idioma::En, || {
+            for (nome, e) in exemplos() {
+                assert_eq!(compor(&e).controles.len(), crate::idioma::com_idioma(Idioma::Pt, || compor(&e).controles.len()), "{nome}");
+                let q = compor(&e);
+                for (i, (a, ra)) in q.controles.iter().enumerate() {
+                    assert!(janela.contem(ra), "{nome} (en): {a:?} fora da janela: {ra:?}");
+                    for (b, rb) in q.controles.iter().skip(i + 1) {
+                        assert!(!ra.cruza(rb), "{nome} (en): {a:?} {ra:?} cobre {b:?} {rb:?}");
+                    }
+                }
+                let mut textos: Vec<String> = Vec::new();
+                let mut juntar = |itens: &[Item]| {
+                    for item in itens {
+                        match item {
+                            Item::Texto(tx) => {
+                                textos.push(tx.texto_corrido());
+                                textos.extend(tx.trechos.iter().map(|p| p.texto.clone()));
+                            }
+                            Item::Pilula { texto, .. } => textos.push(texto.clone()),
+                            _ => {}
+                        }
+                    }
+                };
+                for item in &q.itens {
+                    if let Item::Texto(tx) = item {
+                        assert!(janela.contem(&tx.ret), "{nome} (en): texto fora da janela: {:?}", tx.texto_corrido());
+                        for (c, r) in &q.controles {
+                            assert!(!tx.ret.cruza(r), "{nome} (en): o texto {:?} fica debaixo de {c:?}", tx.texto_corrido());
+                        }
+                    }
+                }
+                juntar(&q.itens);
+                for (c, r) in &q.controles {
+                    juntar(&aparencia(*c, &e, r.l, r.a, EstadoDoControle::default()).itens);
+                    juntar(&aparencia(*c, &e, r.l, r.a, EstadoDoControle { marcado: true, ..Default::default() }).itens);
+                }
+                for i in 0..e.exibir.aparelhos.len() {
+                    juntar(&aparencia_da_linha(i, &e, lugar::L, lugar::LINHA_DA_LISTA, false, false).itens);
+                }
+                let mut nomes: Vec<Controle> = Controle::fixos();
+                nomes.extend((0..e.espelhar.fontes.len()).map(Controle::Ladrilho));
+                textos.extend(nomes.into_iter().map(|c| texto_acessivel(c, &e)));
+                for s in &textos {
+                    assert!(!em_portugues(s), "{nome} (en): {s:?} ficou em português");
+                }
+            }
+            // E um retrato do que muda: o botão, o item da barra e a instrução da espera.
+            let e = exemplos().into_iter().find(|(n, _)| *n == "08-esperando").unwrap().1;
+            assert_eq!(texto_acessivel(Controle::Item(Painel::Espelhar), &e), "Mirror, Waiting");
+            assert_eq!(texto_acessivel(Controle::Chip, &e), "Copy the address 192.168.15.2:7877");
+            let instrucao: String = instrucao_da_espera(&e.espera).iter().map(|x| x.texto.as_str()).collect();
+            assert_eq!(
+                instrucao,
+                "On the other device, open Quall in Receive and pick Quall 1234abcd from the list, or type the address below. Sending Monitor 1, with this computer's audio."
+            );
+            assert_eq!(legenda_do_microfone(true, Some("Com o som do microfone."), false), "Mic on", "a linha do emissor em português");
+            assert_eq!(legenda_do_gravar("■ Stop recording (0:05)", true, "● RECORDING 0:05 · Recording with NO AUDIO — turn on the microphone"), "0:05 · NO AUDIO");
+        });
+    }
+
+    #[test]
+    fn a_sessao_apaga_os_outros_itens() {
+        let e = exemplos().into_iter().find(|(n, _)| *n == "08-esperando").unwrap().1;
+        assert!(habilitado(Controle::Item(Painel::Espelhar), &e));
+        for p in [Painel::Exibir, Painel::Teleprompter, Painel::Ajustes] {
+            assert!(!habilitado(Controle::Item(p), &e), "{p:?}");
+        }
+        let e = exemplos().into_iter().find(|(n, _)| *n == "01-espelhar").unwrap().1;
+        for p in Painel::TODOS {
+            assert!(habilitado(Controle::Item(p), &e));
+        }
+    }
+
+    #[test]
+    fn os_controles_de_cada_cena() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let q = compor(&achar("01-espelhar"));
+        assert!(q.lugar(Controle::Som).is_some() && q.lugar(Controle::Microfone).is_none());
+        assert_eq!(q.controles.iter().filter(|(c, _)| matches!(c, Controle::Ladrilho(_))).count(), if cfg!(feature = "tela-estendida-futura") { 4 } else { 3 });
+        let q = compor(&achar("02-espelhar-camera-com-aviso"));
+        assert!(q.lugar(Controle::Microfone).is_some() && q.lugar(Controle::Som).is_none());
+        let q = compor(&achar("08-esperando"));
+        assert!(q.lugar(Controle::Letreiro).is_some() && q.lugar(Controle::Chip).is_some() && q.lugar(Controle::Cancelar).is_some());
+        let q = compor(&achar("09-esperando-pareados-sem-anuncio"));
+        assert!(q.lugar(Controle::Letreiro).is_none(), "com pares, o PIN vai na frase, sem o letreiro");
+        let q = compor(&achar("10-esperando-camera"));
+        assert!(q.lugar(Controle::Microfone).is_some() && q.lugar(Controle::Gravar).is_some());
+        assert!(q.lugar(Controle::Esquecer).is_some(), "a dívida 22: o Esquecer na espera da câmera quando a retomada falhou");
+        assert!(q.lugar(Controle::AjustesDaCamera).is_some(), "R9 §4.1: os ajustes na espera da câmera");
+        let q = compor(&achar("12-no-ar-camera-gravando"));
+        assert!(q.lugar(Controle::Esquecer).is_none());
+        assert!(q.lugar(Controle::AjustesDaCamera).is_some(), "R9 §4.1: e no ar");
+        let mut sem = achar("12-no-ar-camera-gravando");
+        if let Some(c) = sem.camera.as_mut() {
+            c.ajustes = false;
+        }
+        assert!(compor(&sem).lugar(Controle::AjustesDaCamera).is_none(), "a sintética fica sem (§2.2)");
+        assert!(compor(&achar("11-no-ar")).lugar(Controle::AjustesDaCamera).is_none(), "a tela não tem ajustes de câmera");
+        let q = compor(&achar("07-ajustes"));
+        assert!(q.lugar(Controle::Esquecer).is_some());
+        assert!(habilitado(Controle::Esquecer, &achar("07-ajustes")), "§11.1: nos Ajustes o Esquecer fica sempre à mão");
+        let q = compor(&achar("16-exibindo"));
+        assert_eq!(q.lugar(Controle::SomComCamera).is_some(), true, "a câmera virtual vale também na build da loja (P7)");
+        assert_eq!(q.controles.iter().filter(|(c, _)| matches!(c, Controle::Volume(_))).count(), 4);
+        // R9b: a engrenagem da câmera de quem filma, quando ele responde ao controle remoto.
+        assert!(q.lugar(Controle::AjustesDaCamera).is_some(), "R9b: os ajustes da câmera remota no Exibindo");
+        let mut sem = achar("16-exibindo");
+        sem.exibindo.ajustes_da_camera = false;
+        assert!(compor(&sem).lugar(Controle::AjustesDaCamera).is_none());
+        let mut controlada = achar("12-no-ar-camera-gravando");
+        if let Some(c) = controlada.camera.as_mut() {
+            c.controlado_por = "Pixel do Bruno".into(); // i18n: fora (exemplo)
+        }
+        assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Bruno"))));
+        // Pouca luz (§3.1): ao lado da gravação, a curta; sozinha, a primeira frase, em âmbar.
+        let luz = crate::regras_dos_controles::PoucaLuz { fps_agora: 15, fps: 30, com_manual: true, com_trava: false };
+        if let Some(c) = controlada.camera.as_mut() {
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&controlada).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido().ends_with(" · Controlado por Pixel do Bruno · Pouca luz: 15 fps"))));
+        let mut so_luz = achar("12-no-ar-camera-gravando");
+        if let Some(c) = so_luz.camera.as_mut() {
+            c.linha_da_gravacao = String::new();
+            c.gravando = false;
+            c.pouca_luz = Some(luz);
+        }
+        assert!(compor(&so_luz).itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido() == "Pouca luz: a câmera baixou para 15 fps para clarear a imagem." && t.cor == AGUARDANDO_TEXTO)));
+        assert!(compor(&so_luz).lugar(Controle::TravarFps).is_none(), "sem a trava, sem botão");
+        // Com a trava (§3.1.1): "Travar em 30 fps" em cima da linha, sem cobrir nada.
+        if let Some(c) = so_luz.camera.as_mut() {
+            c.pouca_luz = Some(crate::regras_dos_controles::PoucaLuz { com_trava: true, ..luz });
+        }
+        let q = compor(&so_luz);
+        assert!(q.lugar(Controle::TravarFps).is_some());
+        assert_eq!(texto_acessivel(Controle::TravarFps, &so_luz), "Travar em 30 fps");
+        for (c, r) in &q.controles {
+            if *c != Controle::TravarFps {
+                assert!(!r.cruza(&lugar::TRAVAR_FPS_NA_CAMERA), "{c:?}");
+            }
+        }
+        assert!(!lugar::TRAVAR_FPS_AO_LADO_DO_ESQUECER.cruza(&lugar::ESQUECER_NA_CAMERA));
+        assert!(!lugar::TRAVAR_FPS_NA_CAMERA.cruza(&lugar::LINHA_DA_GRAVACAO));
+        let q = compor(&achar("07-ajustes"));
+        assert!(q.lugar(Controle::SomComCamera).is_none(), "§11.5: saiu dos Ajustes");
+        let q = compor(&achar("13-varios"));
+        assert_eq!(
+            q.controles.iter().filter(|(c, _)| !matches!(c, Controle::Item(_) | Controle::NomeNaRede)).count(),
+            1,
+            "§11.5: sem Desconectar"
+        );
+    }
+
+    /// **A prévia da câmera no ar** (14/10, o Bruno no Dell: só aparecia dentro dos Ajustes da câmera):
+    /// com a câmera comum pelo dono, o cartão no canto de cima à direita, dentro do painel, sem cobrir
+    /// texto nem controle; sem a câmera (a tela) ou sem o dono (a sintética), nada muda.
+    #[test]
+    fn a_previa_da_camera_no_ar_cabe_sem_cobrir_nada() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let e = achar("12-no-ar-camera-gravando");
+        for idioma in [crate::idioma::Idioma::Pt, crate::idioma::Idioma::En] {
+            crate::idioma::com_idioma(idioma, || {
+                let q = compor(&e);
+                let p = q.previa.expect("a prévia no ar da câmera");
+                assert!(lugar::PREVIA_NO_AR.contem(&p));
+                assert!(lugar::PAINEL.contem(&lugar::PREVIA_NO_AR));
+                assert!(Ret::new(lugar::X, 0.0, lugar::L, ALTURA_MINIMA).contem(&lugar::PREVIA_NO_AR), "dentro da coluna útil");
+                for (c, r) in &q.controles {
+                    assert!(!r.cruza(&lugar::PREVIA_NO_AR), "{c:?} sob a prévia");
+                }
+                for i in &q.itens {
+                    if let Item::Texto(t) = i {
+                        assert!(!t.ret.cruza(&lugar::PREVIA_NO_AR), "o texto \"{}\" sob a prévia", t.texto_corrido());
+                    }
+                }
+                // Os números descem e continuam acima do "Travar fps" e da linha da gravação.
+                let ultimo = lugar::no_ar(lugar::FRASE_DO_SOM_NO_AR, true);
+                assert!(ultimo.baixo() <= lugar::TRAVAR_FPS_NA_CAMERA.y, "o no ar desce sem chegar ao Travar fps");
+                assert!(lugar::cartoes_de_numero().iter().all(|c| !lugar::no_ar(*c, true).cruza(&lugar::PREVIA_NO_AR)));
+            });
+        }
+        // Sem a prévia (a sintética, ou o espelhar da tela), o no ar de sempre.
+        let mut sem = e.clone();
+        if let Some(c) = sem.camera.as_mut() {
+            c.previa = false;
+        }
+        assert!(compor(&sem).previa.is_none());
+        assert!(compor(&achar("11-no-ar")).previa.is_none(), "a tela não tem prévia de câmera");
+        assert!(compor(&achar("10-esperando-camera")).previa.is_none(), "na espera, o PIN e o endereço ocupam o painel");
+    }
+
+    /// **O nome que os outros aparelhos veem** (`docs/v3-no-privado.md` §8.7): o campo no pé da barra,
+    /// em toda cena, acima do item Ajustes; o rótulo e a nota traduzidos e dentro da barra.
+    #[test]
+    fn o_nome_na_rede_fica_no_pe_da_barra_em_toda_cena() {
+        let barra = Ret::new(0.0, 0.0, LARGURA_DA_BARRA, ALTURA_MINIMA);
+        for (nome, e) in exemplos() {
+            let q = compor(&e);
+            let r = q.lugar(Controle::NomeNaRede).unwrap_or_else(|| panic!("{nome}: sem o campo do nome"));
+            assert!(barra.contem(&r), "{nome}: o campo fora da barra: {r:?}");
+            assert!(!r.cruza(&lugar::ITEM_AJUSTES) && !r.cruza(&lugar::NOTA_DA_SESSAO), "{nome}");
+        }
+        assert!(lugar::NOTA_DO_NOME.y + lugar::NOTA_DO_NOME.a <= lugar::ITEM_AJUSTES.y);
+        let e = exemplos().into_iter().next().unwrap().1;
+        assert_eq!(texto_acessivel(Controle::NomeNaRede, &e), "Nome que os outros aparelhos veem");
+        crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
+            assert_eq!(texto_acessivel(Controle::NomeNaRede, &e), "Name other devices see");
+            assert_eq!(t("Aparece para quem está na mesma rede Wi-Fi."), "Shown to anyone on the same Wi-Fi network.");
+        });
+    }
+
+    /// **O cartão do código** (`docs/v3-no-privado.md` §3.6): na espera, o anfitrião vê três números
+    /// e o "Nenhum destes", no lugar do PIN e do chip; escolhido o certo, os botões saem. Na conexão, o
+    /// convidado vê o código certo, sem botões no cartão (o Cancelar da cena desiste). Fora dessas
+    /// cenas, nada.
+    #[test]
+    fn o_cartao_do_codigo() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let escolhas = [Controle::EscolherCodigo(0), Controle::EscolherCodigo(1), Controle::EscolherCodigo(2)];
+        let q = compor(&achar("08b-esperando-codigo"));
+        assert!(escolhas.iter().all(|c| q.lugar(*c).is_some()) && q.lugar(Controle::RecusarCodigo).is_some(), "três números e o Nenhum destes");
+        assert!(q.lugar(Controle::Letreiro).is_none() && q.lugar(Controle::Chip).is_none(), "o cartão toma o lugar do PIN e do chip");
+        assert!(q.lugar(Controle::Cancelar).is_some(), "o Cancelar continua");
+        let textos = q.textos();
+        assert!(textos.iter().any(|t| t == "Galaxy A07 quer conectar"), "{textos:?}");
+        assert!(textos.iter().any(|t| t == "Qual número o outro aparelho mostra?"));
+        assert!(textos.iter().any(|t| t.contains("o PIN continua valendo")), "o PIN continua (P11)");
+        // Os três do mesmo tamanho, na mesma linha, da esquerda para a direita; o Nenhum destes
+        // separado, embaixo; e nenhum número pintado fora dos botões (o anfitrião não tem o código).
+        let r: Vec<Ret> = escolhas.iter().map(|c| q.lugar(*c).unwrap()).collect();
+        assert!(r.iter().all(|x| x.l == r[0].l && x.a == r[0].a && x.y == r[0].y));
+        assert!(r[0].direita() < r[1].x && r[1].direita() < r[2].x);
+        let nenhum = q.lugar(Controle::RecusarCodigo).unwrap();
+        assert!(nenhum.y >= r[0].baixo() + 8.0, "o quarto botão, separado");
+        assert!(r.iter().chain([&nenhum]).all(|x| lugar::CARTAO_DO_CODIGO.contem(x)));
+        assert!(!q.itens.iter().any(|i| matches!(i, Item::Texto(t) if t.fonte == F_PIN)), "nenhum número fora dos botões");
+        let e = achar("08b-esperando-codigo");
+        let numeros: Vec<String> = escolhas
+            .iter()
+            .map(|c| {
+                let r = q.lugar(*c).unwrap();
+                aparencia(*c, &e, r.l, r.a, EstadoDoControle::default())
+                    .itens
+                    .iter()
+                    .filter_map(|i| if let Item::Texto(t) = i { (t.fonte == F_PIN).then(|| t.texto_corrido()) } else { None })
+                    .collect()
+            })
+            .collect();
+        assert_eq!(numeros, ["88 12", "04 27", "55 30"], "a ordem do núcleo, em grupos");
+        // O Narrador: dígito a dígito e a posição, na ordem estável; o Nenhum destes pelo nome.
+        assert_eq!(texto_acessivel(Controle::EscolherCodigo(0), &e), "8 8 1 2, primeiro de três");
+        assert_eq!(texto_acessivel(Controle::EscolherCodigo(1), &e), "0 4 2 7, segundo de três");
+        assert_eq!(texto_acessivel(Controle::EscolherCodigo(2), &e), "5 5 3 0, terceiro de três");
+        assert_eq!(texto_acessivel(Controle::RecusarCodigo, &e), "Nenhum destes");
+        crate::idioma::com_idioma(crate::idioma::Idioma::En, || {
+            assert_eq!(texto_acessivel(Controle::EscolherCodigo(1), &e), "0 4 2 7, second of three");
+            assert_eq!(texto_acessivel(Controle::RecusarCodigo, &e), "None of these");
+        });
+        // Os ids: um por número, e de volta.
+        for c in escolhas.iter().chain([&Controle::RecusarCodigo, &Controle::EsquecerEsteAparelho]) {
+            assert_eq!(Controle::de_id(c.id()), Some(*c), "{c:?}");
+        }
+
+        let q = compor(&achar("08c-esperando-codigo-confirmado"));
+        assert!(escolhas.iter().all(|c| q.lugar(*c).is_none()) && q.lugar(Controle::RecusarCodigo).is_none(), "escolhido o certo, sem botões");
+        assert!(q.textos().iter().any(|t| t == "Um aparelho quer conectar"), "sem nome do par");
+        assert!(q.textos().iter().any(|t| t == "Número certo. Conectando…"));
+
+        let q = compor(&achar("10b-esperando-camera-codigo"));
+        assert!(q.lugar(Controle::EscolherCodigo(0)).is_some() && q.lugar(Controle::Gravar).is_some(), "a câmera pela espera segue com os redondos");
+        // O código e o "Travar em 30 fps" (controles-de-camera.md §3.1.1) juntos: nada se cobre.
+        let mut com_luz = achar("10b-esperando-camera-codigo");
+        for esquecer in [false, true] {
+            if let Some(c) = com_luz.camera.as_mut() {
+                c.esquecer = esquecer;
+                c.pouca_luz = Some(crate::regras_dos_controles::PoucaLuz { fps_agora: 15, fps: 30, com_manual: true, com_trava: true });
+            }
+            for idioma in [crate::idioma::Idioma::Pt, crate::idioma::Idioma::En] {
+                let q = crate::idioma::com_idioma(idioma, || compor(&com_luz));
+                assert!(q.lugar(Controle::TravarFps).is_some());
+                for (i, (a, ra)) in q.controles.iter().enumerate() {
+                    for (b, rb) in q.controles.iter().skip(i + 1) {
+                        assert!(!ra.cruza(rb), "{idioma:?}: {a:?} cobre {b:?}");
+                    }
+                }
+                assert!(!q.lugar(Controle::TravarFps).unwrap().cruza(&lugar::CARTAO_DO_CODIGO));
+            }
+        }
+
+        // O convidado: os quatro dígitos e a instrução; nenhum botão no cartão.
+        let q = compor(&achar("15b-conectando-codigo"));
+        assert!(escolhas.iter().all(|c| q.lugar(*c).is_none()) && q.lugar(Controle::RecusarCodigo).is_none());
+        assert!(q.lugar(Controle::Cancelar).is_some());
+        assert!(q.textos().iter().any(|t| t == "Conectando a Galaxy A07"));
+        assert!(q.textos().iter().any(|t| t == "Escolha este número no outro aparelho."));
+        assert!(!q.textos().iter().any(|t| t.contains("192.168.15.4")), "o destino sai com o cartão");
+        let digitos: String = q
+            .itens
+            .iter()
+            .filter_map(|i| if let Item::Texto(t) = i { (t.fonte == F_PIN).then(|| t.texto_corrido()) } else { None })
+            .collect();
+        assert_eq!(digitos, "0427", "as quatro casas, na ordem");
+        // O cartão de um lado não aparece na cena do outro.
+        let e = EstadoDaTela { codigo: achar("15b-conectando-codigo").codigo, ..achar("08b-esperando-codigo") };
+        assert!(compor(&e).lugar(Controle::EscolherCodigo(0)).is_none(), "o cartão do convidado na espera");
+        let e = EstadoDaTela { codigo: achar("08b-esperando-codigo").codigo, ..achar("15b-conectando-codigo") };
+        assert!(compor(&e).lugar(Controle::EscolherCodigo(0)).is_none(), "o do anfitrião na conexão");
+
+        // Um código no estado não aparece nas outras cenas.
+        for n in ["04-exibir", "11-no-ar", "16-exibindo"] {
+            let e = EstadoDaTela { codigo: achar("08b-esperando-codigo").codigo, ..achar(n) };
+            assert!(compor(&e).lugar(Controle::EscolherCodigo(0)).is_none(), "{n}");
+        }
+    }
+
+    /// Os rótulos dos botões novos cabem neles, nos dois idiomas (a largura estimada, folgada).
+    #[test]
+    fn os_rotulos_do_codigo_cabem_nos_botoes() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        for idioma in [crate::idioma::Idioma::Pt, crate::idioma::Idioma::En] {
+            crate::idioma::com_idioma(idioma, || {
+                for (cena, c) in [("08b-esperando-codigo", Controle::RecusarCodigo), ("05e-exibir-nao-reconheceu", Controle::EsquecerEsteAparelho)] {
+                    let r = compor(&achar(cena)).lugar(c).expect("o botão");
+                    let rotulo = texto_acessivel(c, &achar(cena));
+                    assert!(largura_estimada(&rotulo, F_BOTAO) + 16.0 <= r.l, "{idioma:?}: {rotulo:?} não cabe em {}", r.l);
+                }
+                let r = lugar::opcoes_do_codigo()[0];
+                assert!(largura_estimada("04 27", F_PIN) + 12.0 <= r.l && F_PIN.tamanho + 12.0 <= r.a);
+            });
+        }
+    }
+
+    /// **A2 no Exibir** (`docs/v3-no-privado.md` §3.5): a frase de falhar fechado, o PIN em destaque e
+    /// "Esquecer este aparelho" no pé, à esquerda do Exibir; fora disso, o botão não aparece.
+    #[test]
+    fn o_esquecer_este_aparelho_no_exibir() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let q = compor(&achar("05e-exibir-nao-reconheceu"));
+        let esquecer = q.lugar(Controle::EsquecerEsteAparelho).expect("o Esquecer este aparelho");
+        let exibir = q.lugar(Controle::Exibir).unwrap();
+        assert!(esquecer.direita() < exibir.x && esquecer.y == exibir.y, "no pé, à esquerda do Exibir");
+        assert!(q.textos().iter().any(|t| t.starts_with("Não achei Galaxy A07 nesta rede")), "{:?}", q.textos());
+        assert!(compor(&achar("04-exibir")).lugar(Controle::EsquecerEsteAparelho).is_none());
+        assert!(compor(&achar("05-exibir-vazio-pede-pin")).lugar(Controle::EsquecerEsteAparelho).is_none());
+        // P3: a lista mostra o alias da rede e o nome local do pareado.
+        let e = achar("04-exibir");
+        assert_eq!(e.exibir.aparelhos[0].nome, "Quall 1a2b3c4d");
+        assert_eq!((e.exibir.aparelhos[1].nome.as_str(), e.exibir.aparelhos[1].tipo.as_str()), ("Galaxy A07", "Pareado"));
+    }
+
+    /// **O QR do computador** (`docs/conexao.md` §10): ao lado da lista e dos campos, nunca no lugar.
+    #[test]
+    fn o_qr_fica_ao_lado_da_lista() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let q = compor(&achar("04-exibir"));
+        let lista = q.lugar(Controle::Lista).expect("a lista continua");
+        assert!(lista.direita() <= lugar::QR.x, "a lista termina antes do QR");
+        assert!(q.lugar(Controle::Endereco).is_some() && q.lugar(Controle::Pin).is_some(), "os campos continuam");
+        assert!(lugar::FASE_DO_QR.baixo() <= lugar::CAMPOS_Y, "a coluna acaba antes dos campos");
+        let pretos = q.itens.iter().filter(|i| matches!(i, Item::Caixa { fundo, .. } if *fundo == Cor::rgb(0))).count();
+        assert!(pretos > 100, "o QR desenhado: {pretos} trechos");
+        assert!(q.textos().iter().any(|t| t == "Vale por 2:41"));
+        let q = compor(&achar("05b-exibir-qr-chamado"));
+        assert!(!q.itens.iter().any(|i| matches!(i, Item::Caixa { fundo, .. } if *fundo == Cor::rgb(0))), "chamado, o QR sai");
+        assert!(q.textos().iter().any(|t| t == "Galaxy A07 chamou…"));
+        let q = compor(&achar("05d-exibir-sem-qr"));
+        assert_eq!(q.lugar(Controle::Lista), None, "lista vazia");
+        assert!(!q.textos().iter().any(|t| t == "LER NO CELULAR"));
+    }
+
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    #[test]
+    fn o_release_nao_oferece_monitor_virtual_nem_instalador() {
+        for idioma in [crate::idioma::Idioma::Pt, crate::idioma::Idioma::En] {
+            crate::idioma::com_idioma(idioma, || {
+                let fixos = Controle::fixos();
+                assert!(!fixos.contains(&Controle::TelaEstendidaSemDriver));
+                assert!(!fixos.contains(&Controle::DriverDaTelaEstendida));
+                for (nome, e) in exemplos() {
+                    assert!(!nome.contains("driver"), "{nome}");
+                    assert!(e.espelhar.fontes.iter().all(|f| f.icone != Icone::TelaEstendida), "{nome}");
+                    let q = compor(&e);
+                    assert!(q.lugar(Controle::TelaEstendidaSemDriver).is_none(), "{nome}");
+                    assert!(q.lugar(Controle::DriverDaTelaEstendida).is_none(), "{nome}");
+                    assert!(q.textos().iter().all(|s| !s.contains("SudoVDA") && !s.contains("driver") && !s.contains("tela estendida") && !s.contains("extended display")), "{nome}");
+                }
+            });
+        }
+    }
+
+    #[cfg(feature = "tela-estendida-futura")]
+    #[test]
+    fn a_tela_estendida_apagada_fica_depois_dos_monitores() {
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        let e = achar("03b-espelhar-tela-estendida-sem-driver");
+        let q = compor(&e);
+        let apagado = q.lugar(Controle::TelaEstendidaSemDriver).expect("o ladrilho apagado está na tela");
+        let ladrilhos: Vec<Ret> = (0..3).map(|i| q.lugar(Controle::Ladrilho(i)).expect("os três ladrilhos")).collect();
+        // A grade de quatro casas (duas colunas): o monitor na primeira, o apagado na segunda, as
+        // duas câmeras embaixo — o mesmo lugar do escolhível no "01-espelhar".
+        let antes = compor(&achar("01-espelhar"));
+        assert_eq!(Some(apagado), antes.lugar(Controle::Ladrilho(1)));
+        assert_eq!(Some(ladrilhos[0]), antes.lugar(Controle::Ladrilho(0)));
+        assert_eq!(Some(ladrilhos[1]), antes.lugar(Controle::Ladrilho(2)));
+        assert_eq!(Some(ladrilhos[2]), antes.lugar(Controle::Ladrilho(3)));
+        // Não se escolhe: não é opção, e o "01-espelhar" (com o adaptador) não o mostra.
+        assert_eq!(Controle::TelaEstendidaSemDriver.especie(), Especie::Botao);
+        assert!(antes.lugar(Controle::TelaEstendidaSemDriver).is_none());
+        assert!(!marcado_no_exemplo(Controle::TelaEstendidaSemDriver, &e));
+        // O detalhe, o nome para o Narrador e o desenho apagado.
+        // Sem o adaptador e fora da loja, o detalhe é o botão de instalar (02/10, noite).
+        assert!(texto_acessivel(Controle::TelaEstendidaSemDriver, &e).contains("Instalar o driver da tela estendida"));
+        let ap = aparencia(Controle::TelaEstendidaSemDriver, &e, 300.0, 62.0, EstadoDoControle::default());
+        assert!(ap.opacidade < 0.5, "apagado: {}", ap.opacidade);
+        let textos: Vec<String> = ap.itens.iter().filter_map(|i| if let Item::Texto(t) = i { Some(t.texto_corrido()) } else { None }).collect();
+        assert!(textos.iter().any(|t| t == "Instalar o driver da tela estendida"), "{textos:?}");
+        assert!(textos.iter().any(|t| t == "Tela estendida"), "{textos:?}");
+        // Na loja, baixar o instalador avulso (02/10, noite).
+        let mut loja = e.clone();
+        loja.driver.situacao = crate::regras_do_driver::Situacao::Loja { presente: false };
+        assert!(texto_acessivel(Controle::TelaEstendidaSemDriver, &loja).contains("Baixe o driver da tela estendida"));
+        let ap = aparencia(Controle::TelaEstendidaSemDriver, &loja, 300.0, 62.0, EstadoDoControle::default());
+        let textos: Vec<String> = ap.itens.iter().filter_map(|i| if let Item::Texto(t) = i { Some(t.texto_corrido()) } else { None }).collect();
+        assert!(textos.iter().any(|t| t == "Baixe o driver da tela estendida"), "{textos:?}");
+        // Sem fonte nenhuma, só ele, na primeira casa.
+        let mut so = e.clone();
+        so.espelhar.fontes.clear();
+        so.espelhar.tela_estendida_sem_driver = Some(0);
+        assert!(compor(&so).lugar(Controle::TelaEstendidaSemDriver).is_some());
+    }
+
+    /// **O driver da tela estendida** (02/10, noite): o aviso da instalação no Espelhar, o cartão e o
+    /// botão de desinstalar nos Ajustes — só para o que o Quall instalou.
+    #[cfg(feature = "tela-estendida-futura")]
+    #[test]
+    fn o_driver_no_espelhar_e_nos_ajustes() {
+        use crate::regras_do_driver::{Acao, Andamento, Resultado, Situacao, MOTIVO_DRIVER};
+        let achar = |n: &str| exemplos().into_iter().find(|(x, _)| *x == n).unwrap().1;
+        // Instalando: o aviso do Espelhar diz o passo, e vence o do emissor.
+        let e = achar("03c-espelhar-instalando-o-driver");
+        let q = compor(&e);
+        let textos = q.textos();
+        assert!(textos.iter().any(|t| t.contains("passo 5 de 7: Criando o adaptador")), "{textos:?}");
+        // A falha diz o passo, o motivo e o técnico.
+        let mut f = e.clone();
+        f.driver.andamento = Andamento::Acabou {
+            acao: Acao::Instalar,
+            resultado: Resultado::Falha(6, MOTIVO_DRIVER.into(), "UpdateDriverForPlugAndPlayDevicesW: 0xE0000247".into()),
+        };
+        let (tom, texto) = texto_do_andamento(&f.driver.andamento).unwrap();
+        assert_eq!(tom, Tom::Vermelho);
+        assert_eq!(
+            texto,
+            "Não deu para instalar o driver (Instalando o driver): o Windows não instalou o driver (UpdateDriverForPlugAndPlayDevicesW: 0xE0000247)."
+        );
+        let en = crate::idioma::com_idioma(crate::idioma::Idioma::En, || texto_do_andamento(&f.driver.andamento).unwrap().1);
+        assert!(en.starts_with("Couldn't install the driver"), "{en}");
+        assert!(en.contains("0xE0000247"), "o técnico vai como veio: {en}");
+        let c = Andamento::Acabou { acao: Acao::Instalar, resultado: Resultado::CanceladoNoUac };
+        assert_eq!(texto_do_andamento(&c).unwrap().0, Tom::Ambar);
+
+        // Ajustes: o botão só com o driver do Quall, e nunca no meio de outra.
+        let a = achar("07c-ajustes-driver-do-quall");
+        assert!(compor(&a).lugar(Controle::DriverDaTelaEstendida).is_some());
+        assert!(compor(&a).textos().iter().any(|t| t == "Instalado pelo Quall (SudoVDA)."));
+        assert!(habilitado(Controle::DriverDaTelaEstendida, &a));
+        for s in [Situacao::DeFora, Situacao::Ausente, Situacao::Loja { presente: false }, Situacao::Desligado, Situacao::SemSuporte] {
+            let mut x = a.clone();
+            x.driver.situacao = s;
+            assert!(compor(&x).lugar(Controle::DriverDaTelaEstendida).is_none(), "{s:?}");
+        }
+        // Na loja com o SudoVDA presente: o estado, e o botão que abre a página do instalador avulso
+        // (mais largo; nada se eleva dentro do app da loja).
+        let mut loja = a.clone();
+        loja.driver.situacao = Situacao::Loja { presente: true };
+        let q = compor(&loja);
+        assert_eq!(q.lugar(Controle::DriverDaTelaEstendida), Some(crate::estilo::lugar::DRIVER_LARGO));
+        assert!(q.textos().iter().any(|t| t.contains("use o instalador do driver")));
+        assert_eq!(texto_acessivel(Controle::DriverDaTelaEstendida, &loja), "Desinstalar pelo instalador do driver");
+        let ap = aparencia(Controle::DriverDaTelaEstendida, &loja, 280.0, 32.0, EstadoDoControle::default());
+        assert!(ap.itens.iter().any(|i| matches!(i, Item::Texto(t) if t.texto_corrido() == "Desinstalar pelo instalador do driver")));
+        let mut rodando = a.clone();
+        rodando.driver.andamento = Andamento::Rodando { acao: Acao::Desinstalar, passo: 2 };
+        assert!(compor(&rodando).lugar(Controle::DriverDaTelaEstendida).is_none());
+        assert!(compor(&rodando).textos().iter().any(|t| t.contains("Desinstalando o driver da tela estendida — passo 2 de 4")));
+        // O Dell da bancada: instalado à mão, o Quall usa e diz que não desinstala.
+        let mut dell = a.clone();
+        dell.driver.situacao = Situacao::DeFora;
+        assert!(compor(&dell).textos().iter().any(|t| t.contains("instalado por outro programa")));
+    }
+
+    #[test]
+    fn a_grade_dos_ladrilhos() {
+        assert_eq!(lugar::grade(4, 300.0), (2, 62.0));
+        let (c, a) = lugar::grade(10, 300.0);
+        assert_eq!(c, 2);
+        assert!(a >= 44.0 && a < 62.0, "{a}");
+        let (c, _) = lugar::grade(14, 250.0);
+        assert!(c >= 3, "{c}");
+    }
+
+    #[test]
+    fn as_frases() {
+        let mut e = TelaEspera { nome: "Quall 1234abcd".into(), anunciando: true, origem: "Monitor 1".into(), com_som: Some(true), ..Default::default() };
+        let t: String = instrucao_da_espera(&e).iter().map(|x| x.texto.as_str()).collect();
+        assert_eq!(
+            t,
+            "No outro aparelho, abra o Quall em Exibir e escolha Quall 1234abcd na lista, ou digite o endereço abaixo. Vai Monitor 1, com o som deste computador."
+        );
+        // O nome que os outros veem, com o alias para conferir (14/10, §8.7.1).
+        e.nome = "Dell da sala".into();
+        e.alias = Some("Quall 1234abcd".into());
+        let t: String = instrucao_da_espera(&e).iter().map(|x| x.texto.as_str()).collect();
+        assert_eq!(
+            t,
+            "No outro aparelho, abra o Quall em Exibir e escolha Dell da sala (Quall 1234abcd) na lista, ou digite o endereço abaixo. Vai Monitor 1, com o som deste computador."
+        );
+        e.anunciando = false;
+        e.com_som = None;
+        e.origem = "Integrated Webcam".into();
+        let t: String = instrucao_da_espera(&e).iter().map(|x| x.texto.as_str()).collect();
+        assert_eq!(t, "No outro aparelho, abra o Quall em Exibir e digite o endereço abaixo. Vai a câmera Integrated Webcam.");
+        assert_eq!(pin_em_grupos("482719"), "482 719");
+        assert_eq!(pin_para_ler("482719"), "PIN 4 8 2 7 1 9");
+        assert_eq!(indice_do_volume(1.0), 0);
+        assert_eq!(indice_do_volume(0.6), 2);
+        assert_eq!(indice_do_volume(0.1), 3);
+        assert_eq!(pasta_curta("C:\\Users\\bruno\\AppData\\Local\\Quall\\Logs", Some("C:\\Users\\bruno\\AppData\\Local")), "%LOCALAPPDATA%\\Quall\\Logs");
+        assert_eq!(pasta_curta("D:\\logs", Some("C:\\x")), "D:\\logs");
+        assert_eq!(sem_porta("192.168.15.2:7877"), "192.168.15.2");
+        assert_eq!(sem_porta("[fe80::1]:7877"), "[fe80::1]");
+        assert_eq!(sem_porta("sem rede"), "sem rede");
+        assert_eq!(legenda_do_gravar("■ Parar a gravação (1:23)", true, "● GRAVANDO 1:23 · sobram 12,3 GB"), "1:23");
+        assert_eq!(legenda_do_gravar("■ Parar a gravação (0:05)", true, "● GRAVANDO 0:05 · Gravando SEM SOM — ligue o microfone"), "0:05 · SEM SOM");
+        assert_eq!(legenda_do_gravar("Gravar (abrindo…)", true, ""), "Abrindo…");
+        assert_eq!(legenda_do_gravar("■ Parar", true, ""), "Gravando");
+        assert_eq!(legenda_do_gravar("Gravar (abrindo…)", false, ""), "Abrindo…");
+        assert_eq!(legenda_do_gravar("Fechando o arquivo…", false, ""), "Fechando…");
+        assert_eq!(legenda_do_gravar("● Gravar neste computador (sem som)", false, ""), "Gravar");
+        assert_eq!(legenda_do_microfone(false, None, false), "Mic desligado");
+        assert_eq!(legenda_do_microfone(true, None, false), "Mic ligado");
+        assert_eq!(legenda_do_microfone(true, Some("Microfone abrindo…"), false), "Ligando…");
+        assert_eq!(legenda_do_microfone(true, Some("Com o som do microfone."), false), "Mic ligado");
+        assert_eq!(legenda_do_microfone(true, Some("O microfone não abriu: a thread não subiu (x)"), false), "Não abriu");
+        assert_eq!(legenda_do_microfone(true, Some("O Windows não deixa…"), true), "Sem acesso");
+    }
+
+    #[test]
+    fn o_estado_dos_controles_no_exemplo() {
+        let e = exemplos().into_iter().find(|(n, _)| *n == "17-exibindo-detalhes-com-acusacao").unwrap().1;
+        assert!(marcado_no_exemplo(Controle::Volume(2), &e));
+        assert!(!marcado_no_exemplo(Controle::Volume(0), &e));
+        assert!(marcado_no_exemplo(Controle::Mudo, &e));
+        assert!(marcado_no_exemplo(Controle::Detalhes, &e));
+        assert!(marcado_no_exemplo(Controle::Item(Painel::Exibir), &e));
+    }
+
+    #[test]
+    fn os_nomes_para_o_narrador() {
+        let e = exemplos().into_iter().find(|(n, _)| *n == "08-esperando").unwrap().1;
+        assert_eq!(texto_acessivel(Controle::Letreiro, &e), "PIN 4 8 2 7 1 9");
+        assert_eq!(texto_acessivel(Controle::Chip, &e), "Copiar o endereço 192.168.15.2:7877");
+        assert_eq!(texto_acessivel(Controle::Item(Painel::Espelhar), &e), "Espelhar, Aguardando");
+        assert_eq!(texto_acessivel(Controle::AjustesDaCamera, &e), "Ajustes da câmera");
+        let copiado = EstadoDaTela { copiado: true, ..e.clone() };
+        assert_eq!(texto_acessivel(Controle::Chip, &copiado), "Copiado: 192.168.15.2:7877");
+        let a = exemplos().into_iter().find(|(n, _)| *n == "07b-ajustes-confirmando").unwrap().1;
+        assert!(texto_acessivel(Controle::Esquecer, &a).starts_with("Esquecer de verdade"));
+        for c in Controle::fixos() {
+            if !matches!(c, Controle::Lista | Controle::Endereco | Controle::Pin) {
+                assert!(!texto_acessivel(c, &e).is_empty(), "{c:?} sem nome");
+            }
+        }
+    }
+
+    #[test]
+    fn a_marca_segue_a_especificacao() {
+        let m = marca(0.0, 0.0, 32.0);
+        assert_eq!(m[0], Item::Anel { cx: 15.0, cy: 15.0, raio: 10.5, espessura: 3.6, cor: TEXTO });
+        assert_eq!(m[1], Item::Circulo { cx: 25.2, cy: 25.2, raio: 4.6, cor: NO_AR });
+        assert!(largura_do_letreiro() > 6.0 * CASA_L);
+    }
+
+    /// **O cartão "Câmera virtual"** (12/10/2026): só nos Ajustes, o interruptor marcado pelo estado,
+    /// apagado quando `--sem-cameras-virtuais` proíbe, e cada frase traduzida e numa linha só, nos
+    /// dois idiomas (a frase do `linha_de_interruptor` não quebra).
+    /// **O cartão "Instalação da câmera virtual"** (12/10/2026, tarde): só nos Ajustes, logo abaixo
+    /// do interruptor e dentro da janela; o botão de cada situação (instalar no site, a página na
+    /// loja, nenhum no meio do andamento) com o rótulo e o nome do Narrador traduzidos; e cada frase
+    /// da situação e do andamento em até duas linhas, nos dois idiomas (a falha, com o técnico, pode
+    /// usar a terceira).
+    #[test]
+    fn o_cartao_da_instalacao_da_camera() {
+        use crate::estilo::ALTURA_MINIMA;
+        use crate::idioma::{com_idioma, en_de, Idioma};
+        use crate::regras_da_instalacao_da_camera::{self as ri, Acao, Andamento, Botao, Resultado, Situacao as Inst};
+        assert!(lugar::INSTALACAO_DA_CAMERA.y >= lugar::CAMERA_VIRTUAL.baixo());
+        assert!(lugar::INSTALACAO_DA_CAMERA.baixo() <= ALTURA_MINIMA - crate::estilo::PE, "o cartão cabe na janela");
+        assert!(lugar::BOTAO_DA_CAMERA.baixo() <= lugar::INSTALACAO_DA_CAMERA.baixo());
+        for (nome, e) in exemplos() {
+            let q = compor(&e);
+            let com_botao = e.cena == Cena::Painel(Painel::Ajustes) && botao_da_instalacao_da_camera(&e.ajustes.instalacao_da_camera).is_some();
+            assert_eq!(q.lugar(Controle::InstalacaoDaCamera).is_some(), com_botao, "{nome}");
+        }
+        let (_, e) = exemplos().into_iter().find(|(n, _)| *n == "07f-ajustes-camera-nao-instalada").unwrap();
+        assert_eq!(botao_da_instalacao_da_camera(&e.ajustes.instalacao_da_camera), Some(Botao::Instalar));
+        assert!(!habilitado(Controle::CameraVirtual, &e), "sem instalar, o interruptor fica apagado");
+        assert_eq!(texto_acessivel(Controle::InstalacaoDaCamera, &e), ri::ACESSIVEL_INSTALAR);
+        let (_, e) = exemplos().into_iter().find(|(n, _)| *n == "07g-ajustes-camera-instalando").unwrap();
+        assert!(compor(&e).lugar(Controle::InstalacaoDaCamera).is_none(), "um de cada vez: sem botão no meio");
+        assert!(frase_da_instalacao_da_camera(&e.ajustes.instalacao_da_camera).1.contains("passo 2 de 4"));
+        let (_, e) = exemplos().into_iter().find(|(n, _)| *n == "07h-ajustes-camera-loja").unwrap();
+        assert_eq!(botao_da_instalacao_da_camera(&e.ajustes.instalacao_da_camera), Some(Botao::Pagina));
+        com_idioma(Idioma::En, || {
+            assert_eq!(texto_acessivel(Controle::InstalacaoDaCamera, &e), "Virtual camera installer: opens the Quall page in the browser");
+        });
+
+        let livre = lugar::INSTALACAO_DA_CAMERA.l - 32.0 - (lugar::BOTAO_DA_CAMERA.l + 12.0);
+        let situacoes = [Inst::Ausente, Inst::Instalada, Inst::Quebrada, Inst::Loja { registrada: false }, Inst::Loja { registrada: true }, Inst::SemSuporte];
+        let mut andamentos = vec![Andamento::Rodando { acao: Acao::Instalar, passo: 0 }];
+        for acao in [Acao::Instalar, Acao::Desinstalar] {
+            for passo in 1..=ri::passos(acao).len() {
+                andamentos.push(Andamento::Rodando { acao, passo });
+            }
+            for resultado in [Resultado::Ok, Resultado::OkReiniciar, Resultado::CanceladoNoUac] {
+                andamentos.push(Andamento::Acabou { acao, resultado });
+            }
+        }
+        for idioma in [Idioma::Pt, Idioma::En] {
+            com_idioma(idioma, || {
+                for s in situacoes {
+                    let (tom, f) = frase_da_instalacao_da_camera(&TelaDaInstalacaoDaCamera { situacao: s, ..Default::default() });
+                    assert_eq!(tom, Tom::Info);
+                    assert!(largura_estimada(&f, F_LEGENDA) <= 2.0 * livre, "{idioma:?}: {f:?} passa de duas linhas");
+                    if let Some(b) = ri::botao(s, &Andamento::Parado) {
+                        let r = t(ri::rotulo(b, s));
+                        assert!(largura_estimada(r, F_BOTAO_PEQUENO) + 32.0 <= lugar::BOTAO_DA_CAMERA.l, "{idioma:?}: {r:?} não cabe no botão");
+                    }
+                }
+                for a in &andamentos {
+                    let (_, f) = frase_da_instalacao_da_camera(&TelaDaInstalacaoDaCamera { situacao: Inst::Ausente, andamento: a.clone() });
+                    assert!(largura_estimada(&f, F_LEGENDA) <= 2.0 * livre, "{idioma:?}: {f:?} passa de duas linhas");
+                }
+                let falha = Andamento::Acabou {
+                    acao: Acao::Instalar,
+                    resultado: Resultado::Falha(2, ri::MOTIVO_PASTA.into(), "CreateDirectoryW: 0x80070005".into()),
+                };
+                let (tom, f) = frase_da_instalacao_da_camera(&TelaDaInstalacaoDaCamera { situacao: Inst::Ausente, andamento: falha });
+                assert_eq!(tom, Tom::Vermelho);
+                assert!(!f.contains("0x80070005"), "o técnico fica no diário");
+                assert!(largura_estimada(&f, F_LEGENDA) <= 3.0 * livre, "{idioma:?}: {f:?} passa de três linhas");
+            });
+        }
+        for chave in ri::PASSOS_DA_INSTALACAO.iter().chain(ri::PASSOS_DA_DESINSTALACAO.iter()) {
+            assert!(en_de(chave).is_some(), "{chave:?} sem inglês na tabela");
+        }
+    }
+
+    /// **O cartão "Câmeras deste computador"** (13/10/2026): só nos Ajustes do release, o botão só
+    /// com câmera, a frase numa linha ou duas nos dois idiomas, e o "Gerenciar" traduzido.
+    #[test]
+    #[cfg(not(feature = "tela-estendida-futura"))]
+    fn o_cartao_das_cameras_do_pc() {
+        use crate::estilo::ALTURA_MINIMA;
+        use crate::idioma::{com_idioma, en_de, Idioma};
+        use crate::regras_da_camera_virtual::{self as cv, LinhaDaCamera};
+        assert!(lugar::CAMERAS_DO_PC.y >= lugar::INSTALACAO_DA_CAMERA.baixo());
+        assert!(lugar::CAMERAS_DO_PC.baixo() <= ALTURA_MINIMA - crate::estilo::PE, "o cartão cabe na janela");
+        for chave in cv::CHAVES {
+            assert!(en_de(chave).is_some(), "{chave:?} sem inglês na tabela");
+        }
+        for (nome, e) in exemplos() {
+            let esperado = e.cena == Cena::Painel(Painel::Ajustes) && !e.ajustes.cameras.is_empty();
+            assert_eq!(compor(&e).lugar(Controle::GerenciarCameras).is_some(), esperado, "{nome}");
+        }
+        let (_, e) = exemplos().into_iter().find(|(n, _)| *n == "07j-ajustes-quatro-cameras").unwrap();
+        assert_eq!(frase_das_cameras_do_pc(&e.ajustes.cameras), "4 câmeras: SM-S928B (em uso agora), Iphone 7 e mais 2.");
+        com_idioma(Idioma::En, || {
+            assert_eq!(frase_das_cameras_do_pc(&e.ajustes.cameras), "4 cameras: SM-S928B (in use now), Iphone 7 and 2 more.");
+        });
+        let com_botao = lugar::CAMERAS_DO_PC.l - 32.0 - (lugar::GERENCIAR_CAMERAS.l + 12.0);
+        let sem_botao = lugar::CAMERAS_DO_PC.l - 32.0;
+        let longos: Vec<LinhaDaCamera> = ["MacBook Air de Bruno", "Galaxy Tab S9 Ultra", "x", "y"]
+            .iter()
+            .map(|n| LinhaDaCamera { nome: n.to_string(), em_uso: true })
+            .collect();
+        for idioma in [Idioma::Pt, Idioma::En] {
+            com_idioma(idioma, || {
+                let f = frase_das_cameras_do_pc(&longos);
+                assert!(largura_estimada(&f, F_LEGENDA) <= 2.0 * com_botao, "{idioma:?}: {f:?}");
+                let f = frase_das_cameras_do_pc(&[]);
+                assert!(largura_estimada(&f, F_LEGENDA) <= 2.0 * sem_botao, "{idioma:?}: {f:?}");
+                let r = t(cv::CAMERAS_GERENCIAR);
+                assert!(largura_estimada(r, F_BOTAO_PEQUENO) + 32.0 <= lugar::GERENCIAR_CAMERAS.l, "{r:?}");
+            });
+        }
+    }
+
+    #[test]
+    fn o_cartao_da_camera_virtual() {
+        use crate::idioma::{com_idioma, en_de, Idioma};
+        use crate::regras_da_camera_virtual::{self as cv, Falha, Situacao};
+        for chave in cv::CHAVES {
+            assert!(en_de(chave).is_some(), "{chave:?} sem inglês na tabela");
+        }
+        for (nome, e) in exemplos() {
+            let q = compor(&e);
+            assert_eq!(q.lugar(Controle::CameraVirtual).is_some(), e.cena == Cena::Painel(Painel::Ajustes), "{nome}");
+        }
+        let (_, e) = exemplos().into_iter().find(|(n, _)| *n == "07d-ajustes-camera-virtual-desligada").unwrap();
+        assert!(!marcado_no_exemplo(Controle::CameraVirtual, &e));
+        assert!(habilitado(Controle::CameraVirtual, &e));
+        let proibida = EstadoDaTela {
+            ajustes: TelaAjustes { camera_virtual: Situacao { permitida: false, ..Situacao::default() }, ..e.ajustes.clone() },
+            ..e.clone()
+        };
+        assert!(!habilitado(Controle::CameraVirtual, &proibida));
+        // A largura que a `linha_de_interruptor` dá à frase: o cartão menos as margens, o
+        // interruptor e o "Ligado"/"Desligado".
+        let livre = lugar::CAMERA_VIRTUAL.l - 16.0 - (16.0 + INTERRUPTOR_L + 12.0 + 76.0);
+        let estados = [
+            Situacao::default(),
+            Situacao { permitida: false, ..Situacao::default() },
+            Situacao { instalada: false, ..Situacao::default() },
+            Situacao { ligada: false, ..Situacao::default() },
+            Situacao { trabalhando: true, conhecidos: 2, ..Situacao::default() },
+            Situacao { conhecidos: 1, vivas: 1, ..Situacao::default() },
+            Situacao { conhecidos: 12, vivas: 12, ..Situacao::default() },
+            Situacao { conhecidos: 2, falha: Some(Falha::Privacidade), ..Situacao::default() },
+            Situacao { conhecidos: 2, vivas: 1, falha: Some(Falha::Outra(1)), ..Situacao::default() },
+        ];
+        for idioma in [Idioma::Pt, Idioma::En] {
+            com_idioma(idioma, || {
+                for s in &estados {
+                    let f = frase_da_camera_virtual(s);
+                    assert!(largura_estimada(&f, F_LEGENDA) <= livre, "{idioma:?}: {f:?} não cabe em {livre}");
+                }
+            });
+        }
+        com_idioma(Idioma::En, || {
+            assert_eq!(frase_da_camera_virtual(&Situacao { conhecidos: 3, vivas: 3, ..Situacao::default() }), "3 cameras listed in Zoom, Meet and OBS.");
+        });
+    }
+}

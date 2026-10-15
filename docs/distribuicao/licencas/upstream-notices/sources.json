@@ -1,0 +1,37 @@
+[
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/auto-value-parent-1.6.3.pom",
+    "url": "https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-parent/1.6.3/auto-value-parent-1.6.3.pom",
+    "bytes": 1689
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/guava-parent-26.0-android.pom",
+    "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava-parent/26.0-android/guava-parent-26.0-android.pom",
+    "bytes": 10180
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/libyuv-LICENSE",
+    "url": "https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/LICENSE?format=TEXT",
+    "bytes": 1506
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/libyuv-README.chromium",
+    "url": "https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/README.chromium?format=TEXT",
+    "bytes": 305
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/CameraX-CMakeLists.txt",
+    "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/camera/camera-core/src/main/cpp/CMakeLists.txt?format=TEXT",
+    "bytes": 1364
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/CameraX-native-tree.json",
+    "url": "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/camera/camera-core/src/main/cpp/?format=JSON",
+    "bytes": 663
+  },
+  {
+    "path": "/tmp/quall-license-android/upstream-notices/GNU-LGPL-2.1.html",
+    "url": "https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html",
+    "error": "The read operation timed out"
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "product": "Quven.Quall",
+  "version": "1.0.28.0",
+  "scope": "Windows-source snapshot; not an app release or Store certification",
+  "package_family_name": "Quven.Quall_4bed071cmhnq6",
+  "exe_sha256": "3a9f7d0a817f9877b08fb47e849b041abf3dd6fe20d661364a5cb5eb84641a1a",
+  "store_unsigned_msix_sha256": "92f69b7f1d7db1d24125362b3a3a1b4be88b38f4660e3501a162eb71a60b2e65",
+  "store_unsigned_msix_bytes": 7286906,
+  "actual_packager_script_sha256": "41b1e1660822767fbb7b06c3fbca88b38d2698a8dbf13f22c4c07e9238f07f6d",
+  "actual_build_script_sha256": "588c945e8b1ea8c11476e600587572c022dd0fddd6708e6b4129ffd0ac10d5a4",
+  "cargo_command": "cargo build --release --locked --offline --bin quall-app --features net,loja --target-dir target/release-sem-monitor",
+  "environment": {
+    "QUALL_CAMERA_FONTE_DLL": "nao",
+    "CARGO_BUILD_JOBS": "3"
+  },
+  "payload_sha256": {
+    "AppxManifest.xml": "4d7020448a47ed953fecb2d2068963b760a08dc7b84b6aa74e659dbc0746b99d",
+    "Assets/Square150x150Logo.png": "81fab050ea0e733327027b5f659db9ad430d20f9277069de53dbc84c56b1fdf2",
+    "Assets/Square44x44Logo.png": "3c31192a9072d9f523b35f4ce69c3fa056b5fc9fb241b86dc6d16889f03ad4dc",
+    "Assets/StoreLogo.png": "05d2f2199cb4e7a17f7947688aece6d51026e02f3cd200352a62a1e2d3d321e2",
+    "LICENSE": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+    "LICENSE-SCOPE.md": "a2faf007187304624a9110ca2633ae4ecd164e3a90eb3f1a03ed25416ba1415d",
+    "NOTICE.txt": "ab39a47039a971fc9be6019b0a47cf80cc69da9a1be3b5ae9c5b8e54346b9844",
+    "quall-app.exe": "3a9f7d0a817f9877b08fb47e849b041abf3dd6fe20d661364a5cb5eb84641a1a",
+    "THIRD_PARTY_NOTICES.txt": "108eb27bcfdf10344ba2aca4d818b2670bc8914664991ed97c8d398f3c6942f9"
+  },
+  "checks_exit_codes": {
+    "verificar_pe_exit": 0,
+    "verificar_crt_exit": 0,
+    "makeappx_exit": 0
+  },
+  "camera_component_embedded": false,
+  "MFCreateVirtualCamera_import_present": true,
+  "wack": {
+    "partial_run": false,
+    "overall_result": "WARNING",
+    "pass_count": 22,
+    "optional_fail_count": 1,
+    "nonoptional_warning_count": 1,
+    "mandatory_fail_count": 0
+  },
+  "clean_machine_tested": false,
+  "store_submission_or_publication_by_source_release": false
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>br.com.queven.quall.openssl.privacy</string>
+  <key>CFBundleName</key><string>OpenSSL Privacy</string>
+  <key>CFBundlePackageType</key><string>BNDL</string>
+  <key>CFBundleShortVersionString</key><string>4.0.3</string>
+  <key>CFBundleVersion</key><string>4.0.3</string>
+</dict></plist>

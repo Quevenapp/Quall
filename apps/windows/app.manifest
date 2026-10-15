@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Manifesto do app Windows do Quall.
+
+  Identifica o executável Win32, liga os Common Controls 6 e declara a consciência de DPI
+  antes do início do processo.
+  Sem esta dependência declarada, o
+  Windows 11 desenha o botão e a lista suspensa com a aparência clássica do Windows 95 — o app
+  funciona igual e parece abandonado.
+
+  A primeira tentativa foi embutir a mesma dependência por `#[link_section = ".drectve"]` em
+  `src/janela.rs`, sem arquivo e sem build.rs. **Medido e falso**: o exe compilou, ligou e rodou, e
+  uma varredura dos 10.476.544 bytes dele não achou nem "Microsoft.Windows.Common-Controls" nem
+  "assemblyIdentity". A diretiva não chegou ao linker. É mais um caso da distância entre o que se
+  supõe da plataforma e o que ela faz — a mesma família do `S_OK` que o driver ignora.
+
+  A assemblyIdentity própria permite validar este manifesto pelo mt.exe. Sua versão acompanha
+  a versão do executável no Cargo. A identidade MSIX do produto está em `docs/identidade-windows.md`.
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity type="win32" name="Queven.Quall.Studio" version="1.0.0.0" />
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+          type="win32"
+          name="Microsoft.Windows.Common-Controls"
+          version="6.0.0.0"
+          processorArchitecture="*"
+          publicKeyToken="6595b64144ccf1df"
+          language="*" />
+    </dependentAssembly>
+  </dependency>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
+    </windowsSettings>
+  </application>
+</assembly>

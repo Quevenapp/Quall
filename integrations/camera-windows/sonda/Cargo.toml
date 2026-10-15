@@ -1,0 +1,68 @@
+[package]
+name = "quall-camera-sonda"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Sonda de bancada da câmera virtual do Windows: enumera os dois espaços de nomes (Media Foundation e DirectShow) e cria/derruba a câmera virtual."
+
+[[bin]]
+name = "quall-camera-sonda"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Mesma versão que `apps/windows` usa: o `spawn_event_pump` dele devolve um `Receiver` deste
+# crate, e duas versões diferentes seriam dois tipos incompatíveis com o mesmo nome.
+crossbeam-channel = "0.5"
+
+# O receptor provado da Frente 6, **reaproveitado, não reescrito**: `decoder` (MFT de decode em
+# hardware, ~2,6 ms medidos, `MF_SA_D3D11_AWARE`), `device` (escolha de adaptador DXGI, com a
+# armadilha do `MFT_MESSAGE_SET_D3D_MANAGER` já paga) e `encoder` (usado só pelo modo `emitir`,
+# que existe para medir).
+#
+# Entra com as features **padrão** (`core`), não com `net`: o `connect.rs` daquele pacote foi
+# escrito contra um `SessionConfig` que não tinha `tracks` nem `cancelamento`, e **não compila**
+# contra o núcleo de hoje. A coreografia de sessão vive aqui em `nucleo.rs`; ver o comentário lá.
+quall-capture-probe = { path = "../../../apps/windows" }
+
+# A fonte de mídia, como **biblioteca**: é dela que vêm `cano_do_nome`, `CANO_SEM_NOME` e a
+# geometria do cano. Depender dela é o que impede o nome do cano de existir em dois lugares — e
+# este repositório já pagou seis vezes por essa família de defeito. A fonte não depende de nada
+# daqui, então a seta não fecha ciclo.
+quall-camera-fonte = { path = "../fonte" }
+
+# O núcleo, com transporte: é dele que vêm `session::conectar`/`hospedar`, `TrackReceptor`,
+# `ao_receber_quadro` e `pedir_idr` — os nomes fixados em `docs/contrato-track.md`.
+quall-core = { path = "../../../crates/quall-core" }
+
+[target.'cfg(windows)'.dependencies]
+windows-core = { workspace = true }
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_Devices_Properties",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Gdi",
+    "Win32_Media_DirectShow",
+    "Win32_Media_KernelStreaming",
+    "Win32_Media_MediaFoundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Win32_System_Performance",
+    "Win32_System_Pipes",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Ole",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+] }

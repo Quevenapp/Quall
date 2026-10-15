@@ -1,0 +1,32 @@
+[workspace]
+# Workspace independente do workspace raiz e do de `apps/windows`, pelo mesmo motivo que aquele
+# declara: isto só compila no Windows (Dell G3 da bancada) e nunca no host de desenvolvimento.
+resolver = "2"
+members = ["sonda", "fonte"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MPL-2.0"
+publish = false
+
+[workspace.dependencies]
+windows = "0.62"
+windows-core = "0.62"
+
+[profile.release]
+opt-level = 3
+# `lto = "thin"` de propósito **desligado** aqui: a `fonte` é uma cdylib carregada por um processo
+# de serviço do Windows. Nada na dívida do núcleo (item 17) diz que o LTO quebra no MSVC — o
+# problema medido é do `nm`/`ld` da Apple — mas uma DLL que é carregada por `svchost` e depurada
+# só por arquivo de log não é o lugar de economizar bytes às custas de rastreabilidade.
+lto = false
+codegen-units = 1
+debug = 1
+
+# A mesma cópia do `datachannel-sys` que a raiz usa — ver o comentário igual em
+# `apps/windows/Cargo.toml`. A `sonda` deste workspace depende do `quall-core` com transporte, e o
+# `[patch]` da raiz do repositório não vale num workspace próprio.
+[patch.crates-io]
+datachannel-sys = { path = "../../vendor/datachannel-sys" }
