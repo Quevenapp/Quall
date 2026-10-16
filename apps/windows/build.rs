@@ -103,6 +103,11 @@ fn main() {
 fn embutir_a_fonte_da_camera() {
     println!("cargo::rustc-check-cfg=cfg(fonte_embutida)");
     println!("cargo:rerun-if-env-changed=QUALL_CAMERA_FONTE_DLL");
+    // A edição MSIX só usa o componente instalado separadamente. Nem uma variável
+    // de ambiente de outro build pode acrescentar o instalador ao pacote da loja.
+    if std::env::var_os("CARGO_FEATURE_MSIX").is_some() {
+        return;
+    }
     let raiz = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let escolhida = match std::env::var("QUALL_CAMERA_FONTE_DLL") {
         Ok(v) if v.eq_ignore_ascii_case("nao") => None,

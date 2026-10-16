@@ -157,6 +157,9 @@ net = ["core", "quall-core/webrtc", "dep:quall-opus"]
 # O release sem a feature futura já exclui os módulos e payloads de driver; `loja` endurece
 # o contrato para a embalagem, inclusive quando alguém acrescentar features manualmente.
 loja = []
+# Edição empacotada: sem instalador administrativo, inclusive fora do pacote.
+# O MSI do site usa `loja` também, portanto esta restrição precisa ser separada.
+msix = ["loja"]
 # Código preservado para desenvolvimento futuro; ausente de todos os artefatos deste release.
 tela-estendida-futura = ["windows/Win32_Security_Cryptography", "windows/Win32_Security_WinTrust", "windows/Win32_Storage_Packaging_Appx"]
 
@@ -197,6 +200,10 @@ windows-core = "0.62"
 windows = { version = "0.62", features = [
     "Foundation",
     "Foundation_Collections",
+    "System",
+    "Storage",
+    "Storage_Search",
+    "Storage_Streams",
     # `CM_Get_Device_Interface_ListW` e o `Present` do nó PnP: abrir o adaptador do monitor
     # virtual pela interface de dispositivo, e testemunhar que o monitor saiu. Ver
     # `src/bin/receita_monitor.rs` e `docs/monitor-virtual-windows.md` §7.

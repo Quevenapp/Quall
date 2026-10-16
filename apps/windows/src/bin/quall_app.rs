@@ -65,12 +65,15 @@ fn rodar() -> windows::core::Result<()> {
     // exatos de `regras_da_instalacao_da_camera::ler_pedido`; qualquer outra coisa que comece com
     // `--camera-virtual` sai com 2 sem tocar em nada. **Não** depende de `loja`: o MSI do site é
     // compilado com `net,loja` (`construir-msi.ps1`) e é ele que instala pelo botão. Quem não instala
-    // é o processo com identidade de pacote (o MSIX), e a recusa dele mora em
-    // `instalador_da_camera::elevado::rodar`. Ver `instalador_da_camera.rs`.
+    // é a edição `msix`, que recusa antes de interpretar o pedido e não compila o
+    // instalador. O MSI também recusa em runtime se ganhar identidade de pacote.
     {
         use quall_capture_probe::regras_da_instalacao_da_camera as ri;
         let brutos: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
         if brutos.first().is_some_and(|a| a == ri::ARGUMENTO) {
+            #[cfg(feature = "msix")]
+            let codigo = ri::saida::RECUSADO;
+            #[cfg(not(feature = "msix"))]
             let codigo = match brutos.iter().map(|a| a.to_str().map(str::to_string)).collect::<Option<Vec<String>>>() {
                 Some(args) => quall_capture_probe::instalador_da_camera::elevado::rodar(&args),
                 None => ri::saida::RECUSADO,
@@ -171,6 +174,8 @@ fn rodar() -> windows::core::Result<()> {
     // (só OLE, arrastar-e-soltar e diálogos de shell exigem STA; o único diálogo de shell, o "Abrir
     // arquivo .txt…" do teleprompter, abre numa thread STA própria — `teleprompter/tela.rs`).
     let caminho = registro::abrir(argumentos.registro.as_deref());
+    #[cfg(feature = "msix")]
+    registro::linha("quall-msix-sem-instalador-administrativo-v1");
     #[cfg(feature = "tela-estendida-futura")]
     registro::linha("quall-distribuicao: desenvolvimento-tela-estendida-v1");
     #[cfg(not(feature = "tela-estendida-futura"))]

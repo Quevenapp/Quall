@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "product": "Quven.Quall",
+  "version": "1.0.29.0",
+  "scope": "Windows-source snapshot; not an app release or Store certification",
+  "status": "source-and-local-validation-record-with-unresolved-WACK-DPI-warning",
+  "package_family_name": "Quven.Quall_4bed071cmhnq6",
+  "exe_sha256": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+  "store_unsigned_msix_sha256": "8b89deda8bf4a9baf52dd64baaa8d13f13301bd3e28d172ab18c3ef424acc949",
+  "store_unsigned_msix_bytes": 7230141,
+  "actual_packager_script_sha256": "a7f78be39069c4ad73b880926fe14cf2853528d942a656bc788ab94d311230bc",
+  "actual_build_script_sha256": "575c6bc706d67475f4d974499902cba3ff10ee9ec659f97f7b1c5c6eda33c782",
+  "cargo_command": "cargo build --release --locked --offline --bin quall-app --features net,loja,msix --target-dir target/release-sem-monitor",
+  "environment": {
+    "QUALL_CAMERA_FONTE_DLL": "nao",
+    "CARGO_BUILD_JOBS": "3"
+  },
+  "payload_sha256": {
+    "AppxManifest.xml": "82bc8f0c12318ca2602ad5f2f089532188d520da88a3d1b9ee7907f467880b4b",
+    "Assets/Square150x150Logo.png": "81fab050ea0e733327027b5f659db9ad430d20f9277069de53dbc84c56b1fdf2",
+    "Assets/Square44x44Logo.png": "3c31192a9072d9f523b35f4ce69c3fa056b5fc9fb241b86dc6d16889f03ad4dc",
+    "Assets/StoreLogo.png": "05d2f2199cb4e7a17f7947688aece6d51026e02f3cd200352a62a1e2d3d321e2",
+    "LICENSE": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+    "LICENSE-SCOPE.md": "a2faf007187304624a9110ca2633ae4ecd164e3a90eb3f1a03ed25416ba1415d",
+    "NOTICE.txt": "ab39a47039a971fc9be6019b0a47cf80cc69da9a1be3b5ae9c5b8e54346b9844",
+    "quall-app.exe": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+    "THIRD_PARTY_NOTICES.txt": "108eb27bcfdf10344ba2aca4d818b2670bc8914664991ed97c8d398f3c6942f9"
+  },
+  "checks_exit_codes": {
+    "verificar_pe_exit": 0,
+    "verificar_crt_exit": 0,
+    "makeappx_exit": 0
+  },
+  "camera_component_embedded": false,
+  "administrative_camera_installer_compiled": false,
+  "external_opening_api": "Windows.System.Launcher",
+  "MFCreateVirtualCamera_import_present": true,
+  "blocked_executable_imports_present": false,
+  "wack": {
+    "complete": true,
+    "partial_run": false,
+    "overall_result": "WARNING",
+    "passed": false,
+    "pass_count": 23,
+    "fail_count": 0,
+    "optional_fail_count": 0,
+    "mandatory_fail_count": 0,
+    "nonoptional_warning_count": 1,
+    "blocked_executables_test_88": "PASS",
+    "dpi_awareness_test_92": "WARNING",
+    "report_sha256": "46c5ee7a6dc6dd9856dbf860a02679aea92295c510e02db1dd681728a0f5e1c1",
+    "sanitized_details": "WACK-SUMMARY.json"
+  },
+  "clean_machine_tested": false,
+  "source_text_normalization": "Changed source files and Markdown/JSON documents are UTF-8 with LF. The package manifest retains its exact payload bytes (CRLF), protected by -text in .gitattributes. Inventory hashes canonical Git blobs, preserving third-party .gitattributes rules. No bit-for-bit binary reproducibility claim.",
+  "store_submission_or_publication_by_source_release": false,
+  "build": {
+    "exit_code": 0,
+    "elapsed": "3m 04s",
+    "warnings_present": true
+  },
+  "banned_admin_imports": [],
+  "cmd_exe_ascii_utf16_absent": true,
+  "msix_marker_verified": "quall-msix-sem-instalador-administrativo-v1",
+  "manifest_change": "Identity Version only: 1.0.28.0 -> 1.0.29.0",
+  "targeted_tests": [
+    {
+      "filter": "msix_recusa_instalar_e_remover_sem_embutir_a_fonte",
+      "features": [
+        "net",
+        "loja",
+        "msix"
+      ],
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "filter": "instalacao_da_camera",
+      "features": [
+        "net",
+        "loja",
+        "msix"
+      ],
+      "passed": 13,
+      "failed": 0
+    }
+  ],
+  "msi_compatibility_cargo_check": {
+    "features": [
+      "net",
+      "loja"
+    ],
+    "exit_code": 0,
+    "elapsed": "1m 40s"
+  },
+  "qa_installation": {
+    "version": "1.0.29.0",
+    "package_full_name": "Quven.Quall_1.0.29.0_x64__4bed071cmhnq6",
+    "exe_sha256": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+    "first_launch_tested": true
+  },
+  "runtime_checks": {
+    "FirstLaunch": "PASS",
+    "ClosedViaAltF4": true,
+    "AdministrativeCameraInstallNotOffered": "PASS",
+    "OpenLogFolder": "PASS",
+    "OpenThirdPartyNotices": "PASS",
+    "OpenExternalCameraPage": "PASS",
+    "OpenPrivacyURL": "PASS"
+  },
+  "cli_administrative_camera_refusal": [
+    {
+      "Action": "instalar",
+      "ExitCode": 2,
+      "Expected": 2
+    },
+    {
+      "Action": "desinstalar",
+      "ExitCode": 2,
+      "Expected": 2
+    }
+  ],
+  "blocked_executable_import_names_checked": [
+    "CreateProcessW",
+    "ShellExecuteW",
+    "ShellExecuteExW"
+  ],
+  "separate_readonly_dpi_probe": {
+    "exe_sha256": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+    "window_awareness": 2,
+    "process_awareness": 2,
+    "window_per_monitor_v2": true,
+    "process_per_monitor_v2": true,
+    "window_dpi": 120,
+    "app_settings_changed": false,
+    "package_changed": false,
+    "does_not_override_WACK_warning": true
+  }
+}

@@ -37,38 +37,60 @@
 //! reanálise. A remoção apaga **só** o caminho nosso, nunca o que se leu do registro.
 
 use std::ffi::c_void;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+#[cfg(not(feature = "msix"))]
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicU64, Ordering};
+#[cfg(not(feature = "msix"))]
+use std::sync::Arc;
+use std::sync::Mutex;
+#[cfg(not(feature = "msix"))]
 use std::time::{Duration, Instant};
 
-use windows::core::{HSTRING, PCWSTR, PWSTR};
+use windows::core::{HSTRING, PCWSTR};
+#[cfg(not(feature = "msix"))]
+use windows::core::PWSTR;
+use windows::Win32::Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, HWND};
+#[cfg(not(feature = "msix"))]
 use windows::Win32::Foundation::{
-    CloseHandle, GetLastError, LocalFree, ERROR_ALREADY_EXISTS, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND, ERROR_MORE_DATA,
-    ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED, ERROR_SUCCESS, HANDLE, HLOCAL, HWND, WIN32_ERROR,
+    CloseHandle, GetLastError, LocalFree, ERROR_ALREADY_EXISTS, ERROR_CANCELLED, ERROR_FILE_NOT_FOUND,
+    ERROR_PIPE_BUSY, ERROR_PIPE_CONNECTED, HANDLE, HLOCAL, WIN32_ERROR,
 };
+#[cfg(not(feature = "msix"))]
 use windows::Win32::Security::Authorization::ConvertStringSecurityDescriptorToSecurityDescriptorW;
+#[cfg(not(feature = "msix"))]
 use windows::Win32::Security::{PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES};
+use windows::Win32::Storage::FileSystem::{GetFileAttributesW, FILE_ATTRIBUTE_DIRECTORY, INVALID_FILE_ATTRIBUTES};
+#[cfg(not(feature = "msix"))]
 use windows::Win32::Storage::FileSystem::{
-    CreateDirectoryW, CreateFileW, DeleteFileW, GetFileAttributesW, MoveFileExW, ReadFile, RemoveDirectoryW, WriteFile,
-    CREATE_NEW, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAGS_AND_ATTRIBUTES,
-    FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_NONE, FILE_SHARE_READ, INVALID_FILE_ATTRIBUTES,
+    CreateDirectoryW, CreateFileW, DeleteFileW, MoveFileExW, ReadFile, RemoveDirectoryW, WriteFile,
+    CREATE_NEW, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAGS_AND_ATTRIBUTES,
+    FILE_GENERIC_READ, FILE_GENERIC_WRITE, FILE_SHARE_NONE, FILE_SHARE_READ,
     MOVEFILE_DELAY_UNTIL_REBOOT, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, OPEN_EXISTING, PIPE_ACCESS_INBOUND,
     SECURITY_IDENTIFICATION, SECURITY_SQOS_PRESENT,
 };
+#[cfg(not(feature = "msix"))]
 use windows::Win32::System::Pipes::{ConnectNamedPipe, CreateNamedPipeW, PIPE_REJECT_REMOTE_CLIENTS, PIPE_TYPE_BYTE, PIPE_WAIT};
 use windows::Win32::System::Registry::{
-    RegCloseKey, RegCreateKeyExW, RegDeleteTreeW, RegGetValueW, RegOpenKeyExW, RegSetValueExW, HKEY, HKEY_LOCAL_MACHINE,
-    KEY_READ, KEY_WOW64_64KEY, KEY_WRITE, REG_OPTION_NON_VOLATILE, REG_SZ, RRF_RT_REG_SZ,
+    RegCloseKey, RegGetValueW, RegOpenKeyExW, HKEY, HKEY_LOCAL_MACHINE,
+    KEY_READ, KEY_WOW64_64KEY, RRF_RT_REG_SZ,
 };
-use windows::Win32::System::Threading::{CreateMutexW, GetCurrentProcess, GetExitCodeProcess, IsWow64Process2, WaitForSingleObject, INFINITE};
+#[cfg(not(feature = "msix"))]
+use windows::Win32::System::Registry::{RegCreateKeyExW, RegDeleteTreeW, RegSetValueExW, KEY_WRITE, REG_OPTION_NON_VOLATILE, REG_SZ};
+use windows::Win32::System::Threading::{GetCurrentProcess, IsWow64Process2};
+#[cfg(not(feature = "msix"))]
+use windows::Win32::System::Threading::{CreateMutexW, GetExitCodeProcess, WaitForSingleObject, INFINITE};
+#[cfg(not(feature = "msix"))]
 use windows::Win32::UI::Shell::{
     IsUserAnAdmin, SHGetKnownFolderPath, ShellExecuteExW, FOLDERID_ProgramData, FOLDERID_ProgramFiles, KF_FLAG_DEFAULT,
     SEE_MASK_NOASYNC, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW,
 };
+#[cfg(not(feature = "msix"))]
 use windows::Win32::UI::WindowsAndMessaging::SW_HIDE;
 
 use crate::registro;
-use crate::regras_da_instalacao_da_camera::{self as regras, Acao, Andamento, Leitura, Linha, Registro, Resultado, Situacao};
+use crate::regras_da_instalacao_da_camera::{self as regras, Acao, Andamento, Leitura, Registro, Resultado, Situacao};
+#[cfg(not(feature = "msix"))]
+use crate::regras_da_instalacao_da_camera::Linha;
 
 // =============================================================================================
 // A DLL embutida
@@ -82,8 +104,10 @@ pub const DLL_EMBUTIDA: &[u8] = include_bytes!(env!("QUALL_CAMERA_FONTE_DLL_EMBU
 pub const DLL_EMBUTIDA: &[u8] = &[];
 
 /// O mutex de uma instalação por vez, na máquina inteira (o botão e o avulso juntos, duas sessões).
+#[cfg(not(feature = "msix"))]
 const MUTEX: &str = r"Global\QuallCameraVirtualInstalador";
 
+#[cfg(not(feature = "msix"))]
 fn largo(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
 }
@@ -93,15 +117,18 @@ fn de_largo(b: &[u16]) -> String {
     String::from_utf16_lossy(&b[..fim])
 }
 
+#[cfg(not(feature = "msix"))]
 fn ultimo_erro() -> String {
     let e = unsafe { GetLastError() };
     format!("0x{:08X}", e.0)
 }
 
+#[cfg(not(feature = "msix"))]
 fn hr(e: &windows::core::Error) -> String {
     format!("0x{:08X}", e.code().0 as u32)
 }
 
+#[cfg(not(feature = "msix"))]
 fn w32(r: WIN32_ERROR) -> String {
     format!("0x{:08X}", r.0)
 }
@@ -190,7 +217,7 @@ pub fn ler_registro() -> Registro {
 
 /// **A situação de agora** (o pacote, a arquitetura, o registro). Barata: a janela a relê a cada 2 s.
 pub fn ler_situacao() -> Situacao {
-    regras::situacao(&Leitura { pacote: tem_pacote(), x64: x64_nativo(), registro: ler_registro() })
+    regras::situacao(&Leitura { pacote: cfg!(feature = "msix") || tem_pacote(), x64: x64_nativo(), registro: ler_registro() })
 }
 
 /// A situação para o **instalador avulso**: um exe à parte, nunca "da loja", mesmo com o Quall da
@@ -201,6 +228,7 @@ pub fn ler_situacao_do_instalador() -> Situacao {
 
 /// Uma pasta conhecida do Windows (`Program Files`, `ProgramData`), pelo shell e não pela variável
 /// de ambiente (que o perfil do usuário define).
+#[cfg(not(feature = "msix"))]
 fn pasta_conhecida(id: &windows::core::GUID) -> Result<String, String> {
     let p = unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, None) }.map_err(|e| format!("SHGetKnownFolderPath: {}", hr(&e)))?;
     let s = unsafe { p.to_string() }.unwrap_or_default();
@@ -215,6 +243,7 @@ fn pasta_conhecida(id: &windows::core::GUID) -> Result<String, String> {
 // O processo elevado
 // =============================================================================================
 
+#[cfg(not(feature = "msix"))]
 pub mod elevado {
     use super::*;
 
@@ -650,6 +679,7 @@ pub mod elevado {
     }
 }
 
+#[cfg(not(feature = "msix"))]
 fn aleatorio(b: &mut [u8]) -> Result<(), String> {
     use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
     let s = unsafe { BCryptGenRandom(None, b, BCRYPT_USE_SYSTEM_PREFERRED_RNG) };
@@ -703,8 +733,32 @@ pub fn corpo_de_instalar() -> String {
     [t(regras::CAIXA_CORPO_O_QUE_E), t(regras::CAIXA_CORPO_UAC), t(regras::CAIXA_CORPO_SAI)].join("\n\n")
 }
 
+// A edição MSIX conserva a leitura de estado da câmera externa, mas não contém
+// o instalador nem o caminho de elevação. Estas recusas também protegem um exe
+// de teste iniciado fora do pacote e chamadas futuras feitas pela interface.
+#[cfg(feature = "msix")]
+pub fn perguntar(_hwnd: HWND, _acao: Acao) -> bool {
+    false
+}
+
+#[cfg(feature = "msix")]
+pub fn comecar(_hwnd: HWND, acao: Acao, ao_acabar: impl FnOnce() + Send + 'static) {
+    comecar_aqui(acao);
+    ao_acabar();
+}
+
+#[cfg(feature = "msix")]
+pub fn comecar_aqui(acao: Acao) {
+    registro::linha("camera: a edição MSIX usa somente o componente instalado separadamente");
+    mudar(Andamento::Acabou {
+        acao,
+        resultado: Resultado::Falha(0, regras::MOTIVO_PACOTE.into(), "msix".into()),
+    });
+}
+
 /// **A caixa que explica antes.** `true` só com o clique em Instalar (ou Remover). O botão leva o
 /// escudo do UAC; o padrão é Cancelar (o Enter sem ler não instala).
+#[cfg(not(feature = "msix"))]
 pub fn perguntar(hwnd: HWND, acao: Acao) -> bool {
     use crate::idioma::t;
     use windows::Win32::Foundation::{LPARAM, S_OK, WPARAM};
@@ -766,6 +820,7 @@ pub fn perguntar(hwnd: HWND, acao: Acao) -> bool {
 }
 
 /// O SID do usuário deste processo, em texto (para a DACL do cano).
+#[cfg(not(feature = "msix"))]
 fn sid_do_usuario() -> Option<String> {
     use windows::Win32::Security::Authorization::ConvertSidToStringSidW;
     use windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY, TOKEN_USER};
@@ -787,9 +842,13 @@ fn sid_do_usuario() -> Option<String> {
     }
 }
 
+#[cfg(not(feature = "msix"))]
 struct Handle(HANDLE);
+#[cfg(not(feature = "msix"))]
 unsafe impl Send for Handle {}
+#[cfg(not(feature = "msix"))]
 unsafe impl Sync for Handle {}
+#[cfg(not(feature = "msix"))]
 impl Drop for Handle {
     fn drop(&mut self) {
         unsafe {
@@ -800,6 +859,7 @@ impl Drop for Handle {
 
 /// **Começa** a instalação ou a remoção pelo app: o UAC, o processo elevado e o cano, numa thread.
 /// `ao_acabar` roda na thread, no fim.
+#[cfg(not(feature = "msix"))]
 pub fn comecar(hwnd: HWND, acao: Acao, ao_acabar: impl FnOnce() + Send + 'static) {
     if !regras::pode_comecar(&andamento()) {
         registro::linha("camera: já há uma instalação ou remoção em andamento; o clique fica sem efeito");
@@ -822,6 +882,7 @@ pub fn comecar(hwnd: HWND, acao: Acao, ao_acabar: impl FnOnce() + Send + 'static
 
 /// **Começa no próprio processo** (o instalador avulso, já elevado): o mesmo andamento de
 /// [`comecar`], sem UAC nem cano.
+#[cfg(not(feature = "msix"))]
 pub fn comecar_aqui(acao: Acao) {
     if !regras::pode_comecar(&andamento()) {
         return;
@@ -837,6 +898,7 @@ pub fn comecar_aqui(acao: Acao) {
     }
 }
 
+#[cfg(not(feature = "msix"))]
 fn lancar(hwnd: HWND, acao: Acao) -> Resultado {
     let falha = |c: &str, t: String| Resultado::Falha(0, c.to_string(), t);
     // O cano: nome aleatório, uma instância só, só entrada, sem cliente remoto, e a DACL deste
@@ -960,4 +1022,49 @@ fn lancar(hwnd: HWND, acao: Acao) -> Resultado {
     let codigo = unsafe { GetExitCodeProcess(processo.0, &mut codigo) }.ok().map(|_| codigo);
     registro::linha(format!("camera: o processo elevado saiu com {codigo:?}"));
     regras::resultado(fim.as_ref(), ultimo_passo, codigo)
+}
+
+#[cfg(all(test, feature = "msix"))]
+mod testes_msix {
+    use super::*;
+    use std::sync::atomic::AtomicUsize;
+    use std::sync::Arc;
+
+    /// Exercita o limite da edição fora do pacote: nenhum clique pode depender da identidade
+    /// instalada para impedir uma instalação. O teste só lê o registro real da câmera.
+    #[test]
+    fn msix_recusa_instalar_e_remover_sem_embutir_a_fonte() {
+        assert!(DLL_EMBUTIDA.is_empty(), "a edição MSIX não pode transportar a DLL do instalador");
+        let registro_antes = ler_registro();
+        let estado_antes = andamento();
+        let versao_antes = versao();
+
+        for acao in [Acao::Instalar, Acao::Desinstalar] {
+            assert!(!perguntar(HWND::default(), acao), "a edição MSIX não deve abrir confirmação administrativa");
+        }
+        assert_eq!(andamento(), estado_antes, "perguntar não deve iniciar trabalho");
+        assert_eq!(versao(), versao_antes);
+
+        for acao in [Acao::Instalar, Acao::Desinstalar] {
+            let retornos = Arc::new(AtomicUsize::new(0));
+            let retornos_do_clique = Arc::clone(&retornos);
+            comecar(HWND::default(), acao, move || {
+                retornos_do_clique.fetch_add(1, Ordering::SeqCst);
+            });
+            assert_eq!(retornos.load(Ordering::SeqCst), 1, "a recusa precisa concluir o pedido da interface");
+            let recusado = Andamento::Acabou {
+                acao,
+                resultado: Resultado::Falha(0, regras::MOTIVO_PACOTE.into(), "msix".into()),
+            };
+            assert_eq!(andamento(), recusado);
+            assert_eq!(ler_registro(), registro_antes, "a tentativa MSIX não pode mudar o registro da fonte");
+
+            comecar_aqui(acao);
+            assert_eq!(andamento(), recusado, "a entrada direta também precisa recusar");
+            assert_eq!(ler_registro(), registro_antes);
+        }
+        // Mantém o estado compartilhado do teste para não afetar verificações posteriores.
+        *ANDAMENTO.lock().expect("andamento do teste MSIX") = estado_antes;
+        VERSAO.store(versao_antes, Ordering::SeqCst);
+    }
 }

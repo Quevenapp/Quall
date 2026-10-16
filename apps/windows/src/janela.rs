@@ -49,7 +49,6 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::os::windows::ffi::OsStrExt;
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -2219,29 +2218,89 @@ fn pasta_do_diario(registro_pedido: Option<&Path>) -> Option<PathBuf> {
     arquivo.parent().map(Path::to_path_buf)
 }
 
-/// "Abrir a pasta" do diário, pelo Explorador.
+enum AlvoExterno {
+    Pasta(PathBuf),
+    Arquivo(PathBuf),
+    Pagina(String),
+}
+
+/// O Windows escolhe o aplicativo associado. A espera das operações WinRT fica numa thread MTA,
+/// sem bloquear a janela nem incorporar o lançador genérico de processos da biblioteca Rust.
+fn abrir_por_associacao(alvo: AlvoExterno, ao_terminar: impl Fn(std::result::Result<(), String>) + Send + Sync + 'static) {
+    let ao_terminar = Arc::new(ao_terminar);
+    let retorno = ao_terminar.clone();
+    let fio = std::thread::Builder::new().name("quall.abrir-externo".into()).spawn(move || {
+        retorno(match abrir_externo_no_winrt(alvo) {
+            Ok(true) => Ok(()),
+            Ok(false) => Err("Windows.System.Launcher não abriu o destino".into()), // i18n: fora (diário)
+            Err(e) => Err(e.to_string()),
+        });
+    });
+    if let Err(e) = fio {
+        ao_terminar(Err(format!("thread de abertura: {e}"))); // i18n: fora (diário)
+    }
+}
+
+fn abrir_externo_no_winrt(alvo: AlvoExterno) -> Result<bool> {
+    use windows::core::HSTRING;
+    use windows::Foundation::Uri;
+    use windows::Storage::{StorageFile, StorageFolder};
+    use windows::System::Launcher;
+    use windows::Win32::System::WinRT::{RoInitialize, RoUninitialize, RO_INIT_MULTITHREADED};
+
+    struct WinRt;
+    impl Drop for WinRt {
+        fn drop(&mut self) {
+            unsafe { RoUninitialize(); }
+        }
+    }
+    unsafe { RoInitialize(RO_INIT_MULTITHREADED)?; }
+    let _winrt = WinRt;
+    match alvo {
+        AlvoExterno::Pasta(pasta) => {
+            let caminho = HSTRING::from(std::path::absolute(pasta)?.as_os_str());
+            let pasta = StorageFolder::GetFolderFromPathAsync(&caminho)?.join()?;
+            Launcher::LaunchFolderAsync(&pasta)?.join()
+        }
+        AlvoExterno::Arquivo(arquivo) => {
+            let caminho = HSTRING::from(std::path::absolute(arquivo)?.as_os_str());
+            let arquivo = StorageFile::GetFileFromPathAsync(&caminho)?.join()?;
+            Launcher::LaunchFileAsync(&arquivo)?.join()
+        }
+        AlvoExterno::Pagina(url) => {
+            let uri = Uri::CreateUri(&HSTRING::from(url))?;
+            Launcher::LaunchUriAsync(&uri)?.join()
+        }
+    }
+}
+
+/// "Abrir a pasta" do diário, pelo aplicativo associado pelo Windows.
 fn abrir_a_pasta_do_diario(app: Option<&App>) {
     let Some(app) = app else { return };
     let Some(pasta) = pasta_do_diario(app.emissor.argumentos.registro.as_deref()) else { return };
-    if let Err(e) = std::process::Command::new("explorer.exe").arg(&pasta).spawn() {
-        registro::linha(format!("janela: !! a pasta do diário não abriu ({}): {e}", pasta.display()));
-    }
+    abrir_por_associacao(AlvoExterno::Pasta(pasta.clone()), move |resultado| {
+        if let Err(e) = resultado {
+            registro::linha(format!("janela: !! a pasta do diário não abriu ({}): {e}", pasta.display()));
+        }
+    });
 }
 
 /// Os avisos que acompanham o app no MSI/MSIX. Abre o texto existente, sem baixar nem escrever.
 fn abrir_as_licencas(hwnd: HWND) {
     let arquivo = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|p| p.join("THIRD_PARTY_NOTICES.txt")));
-    let erro = match arquivo {
-        Some(arquivo) if arquivo.is_file() => {
-            let caminho: Vec<u16> = arquivo.as_os_str().encode_wide().chain(Some(0)).collect();
-            let r = unsafe {
-                windows::Win32::UI::Shell::ShellExecuteW(Some(hwnd), w!("open"), PCWSTR(caminho.as_ptr()), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL)
-            };
-            if (r.0 as isize) > 32 { return; }
-            format!("ShellExecuteW: {} ({})", r.0 as isize, arquivo.display()) // i18n: fora (diário)
-        }
-        _ => "THIRD_PARTY_NOTICES.txt ausente ao lado do executável".to_string(), // i18n: fora (diário)
+    let Some(arquivo) = arquivo.filter(|arquivo| arquivo.is_file()) else {
+        falha_ao_abrir_licencas(hwnd, "THIRD_PARTY_NOTICES.txt ausente ao lado do executável"); // i18n: fora (diário)
+        return;
     };
+    let janela = hwnd.0 as isize;
+    abrir_por_associacao(AlvoExterno::Arquivo(arquivo.clone()), move |resultado| {
+        if let Err(e) = resultado {
+            falha_ao_abrir_licencas(HWND(janela as *mut _), &format!("{e} ({})", arquivo.display()));
+        }
+    });
+}
+
+fn falha_ao_abrir_licencas(hwnd: HWND, erro: &str) {
     registro::linha(format!("licenças: !! não abriu: {erro}"));
     let mensagem = largo(&t("As licenças de terceiros não puderam ser abertas. Reinstale o Quall Studio para recuperar o arquivo de avisos."));
     unsafe { MessageBoxW(Some(hwnd), PCWSTR(mensagem.as_ptr()), w!("Quall Studio"), MB_OK | MB_ICONERROR); } // i18n: fora (nome do produto)
@@ -2249,14 +2308,15 @@ fn abrir_as_licencas(hwnd: HWND) {
 
 /// Abre privacidade/suporte no navegador padrão. Falhas ficam no diário e em uma caixa da janela.
 fn abrir_a_pagina_dos_ajustes(hwnd: HWND, url: &str) {
-    let endereco = largo(url);
-    let r = unsafe {
-        windows::Win32::UI::Shell::ShellExecuteW(Some(hwnd), w!("open"), PCWSTR(endereco.as_ptr()), PCWSTR::null(), PCWSTR::null(), SW_SHOWNORMAL)
-    };
-    if (r.0 as isize) > 32 { return; }
-    registro::linha(format!("janela: !! a página dos Ajustes não abriu ({url}): código {}", r.0 as isize));
-    let mensagem = largo(&t("A página não pôde ser aberta no navegador. Tente novamente ou escreva para suporte@queven.com.br."));
-    unsafe { MessageBoxW(Some(hwnd), PCWSTR(mensagem.as_ptr()), w!("Quall Studio"), MB_OK | MB_ICONERROR); } // i18n: fora (nome do produto)
+    let url = url.to_string();
+    let janela = hwnd.0 as isize;
+    abrir_por_associacao(AlvoExterno::Pagina(url.clone()), move |resultado| {
+        if let Err(e) = resultado {
+            registro::linha(format!("janela: !! a página dos Ajustes não abriu ({url}): {e}"));
+            let mensagem = largo(&t("A página não pôde ser aberta no navegador. Tente novamente ou escreva para suporte@queven.com.br."));
+            unsafe { MessageBoxW(Some(HWND(janela as *mut _)), PCWSTR(mensagem.as_ptr()), w!("Quall Studio"), MB_OK | MB_ICONERROR); } // i18n: fora (nome do produto)
+        }
+    });
 }
 
 /// A página do instalador avulso do driver no navegador padrão (a loja e o Windows sem suporte; o
@@ -2264,23 +2324,10 @@ fn abrir_a_pagina_dos_ajustes(hwnd: HWND, url: &str) {
 #[cfg(feature = "tela-estendida-futura")]
 fn abrir_a_pagina_do_instalador() {
     let url = crate::regras_da_tela_estendida::URL_DO_INSTALADOR_DO_DRIVER;
-    let largo_da_url = largo(url);
-    let r = unsafe {
-        windows::Win32::UI::Shell::ShellExecuteW(
-            None,
-            w!("open"),
-            PCWSTR(largo_da_url.as_ptr()),
-            PCWSTR::null(),
-            PCWSTR::null(),
-            windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL,
-        )
-    };
-    // O `ShellExecuteW` devolve mais que 32 quando deu certo.
-    if (r.0 as isize) <= 32 {
-        registro::linha(format!("janela: !! a página do instalador do driver não abriu ({url}): código {}", r.0 as isize));
-    } else {
-        registro::linha(format!("janela: a página do instalador do driver aberta no navegador ({url})"));
-    }
+    abrir_por_associacao(AlvoExterno::Pagina(url.to_string()), move |resultado| match resultado {
+        Err(e) => registro::linha(format!("janela: !! a página do instalador do driver não abriu ({url}): {e}")),
+        Ok(()) => registro::linha(format!("janela: a página do instalador do driver aberta no navegador ({url})")),
+    });
 }
 
 /// O que o cartão do teleprompter está fazendo, ou por que não abriu (o painel Teleprompter o

@@ -3,3 +3,5 @@
 docs/distribuicao/licencas/textos/crypto-v3/** -text -whitespace
 # Unified diffs have literal context prefixes, including blank and tabbed lines.
 *.patch -text -whitespace
+# Preserve the exact manifest bytes measured in the MSIX payload.
+release/windows-store-1.0.29.0/AppxManifest.xml -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

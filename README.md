@@ -1,12 +1,12 @@
-# Quall Studio — fontes Windows MSIX 1.0.28.0
+# Quall Studio — fontes Windows MSIX 1.0.29.0
 
 Este snapshot reúne os fontes próprios cobertos e os insumos locais da edição Windows
-MSIX **1.0.28.0**. É uma publicação **de código-fonte**, não uma release do aplicativo,
+MSIX **1.0.29.0**. É uma publicação **de código-fonte**, não uma release do aplicativo,
 um instalador, uma submissão à Microsoft ou uma aprovação de certificação.
 
-**English:** This is the corresponding Windows source snapshot for MSIX 1.0.28.0.
+**English:** This is the corresponding Windows source snapshot for MSIX 1.0.29.0.
 It contains source code and build inputs, not an application release or a Store approval.
-The virtual-camera component is not embedded in this Store package.
+The optional virtual-camera output uses a separately installed component. This Store package does not embed or install that component.
 
 ## Escopo
 
@@ -18,25 +18,30 @@ The virtual-camera component is not embedded in this Store package.
   preservando patches, fontes e avisos de terceiros.
 - Recursos de marca Windows, gerador de ícones e textos/avisos de licenciamento.
   Fontes locais de terceiros e modificações estão nas árvores `vendor` e `crates` correspondentes.
-- [Receita e limitações da build](release/windows-store-1.0.28.0/BUILD-AND-PACK.md),
+- [Receita e limitações da build](release/windows-store-1.0.29.0/BUILD-AND-PACK.md),
   manifesto exato do pacote e proveniência sem credenciais.
 
-Os arquivos de implementação foram copiados sem alterações funcionais. O inventário
-`release/windows-store-1.0.28.0/SOURCE-INVENTORY.json` registra hashes SHA-256 para
-conferir os arquivos deste snapshot, exceto o próprio inventário. Alterações de fim
-  de linha feitas pelo cliente Git podem afetar hashes; o arquivo ZIP do commit conserva
-os bytes dos blobs publicados.
+A correção desta versão separa `msix` de `loja`, exclui o instalador administrativo
+do pacote e usa `Windows.System.Launcher` para pastas, arquivos e páginas.
+Os fontes alterados e documentos Markdown/JSON usam UTF-8 com LF. O manifesto
+conserva os bytes exatos do payload, conforme `.gitattributes`. O inventário
+`release/windows-store-1.0.29.0/SOURCE-INVENTORY.json` considera os bytes dos blobs
+Git publicados, preservando as regras de `.gitattributes` dos materiais de terceiros.
+Conversões de fim de linha no checkout podem alterar hashes; o arquivo do commit
+conserva os blobs. A normalização não implica identidade binária entre builds.
 
-## Build efetivamente usada
+## Build da edição
 
-A compilação original executou `cargo build --release --locked --offline --bin quall-app
---features net,loja`, com `QUALL_CAMERA_FONTE_DLL=nao`, `CARGO_BUILD_JOBS=3` e target separado
-`apps/windows/target/release-sem-monitor`. O processo terminou com código 0.
+A receita usa `cargo build --release --locked --offline --bin quall-app
+--features net,loja,msix`, com `QUALL_CAMERA_FONTE_DLL=nao`, `CARGO_BUILD_JOBS=3` e
+target separado `apps/windows/target/release-sem-monitor`.
 
-O `.d` produzido pela compilação registra 161 entradas locais únicas: os arquivos de
-origem estão presentes; `bindings.rs` em OUT_DIR é gerado pelo build de datachannel-sys.
-Não há promessa de reprodutibilidade **binária** bit a bit nem de build offline em uma
-máquina sem o cache das dependências do Cargo.
+Build, 14 testes dirigidos, check de compatibilidade MSI, PE/CRT e MakeAppx
+concluíram com sucesso. Abertura do app, associações e recusa de instalação
+administrativa foram conferidas. O WACK completo retornou **WARNING**:
+23 PASS, zero FAIL e um WARNING não opcional de DPI; não é PASS geral.
+Consulte o registro específico da versão antes de usar estes fontes. Não há promessa
+de reprodutibilidade binária bit a bit nem de build offline sem cache do Cargo.
 
 ## O que não está incluído
 
@@ -54,7 +59,7 @@ máquina sem o cache das dependências do Cargo.
   completo de distribuição deste snapshot.
 
 `preparar_msix.py` e sua documentação histórica conservam guardas de uma edição antiga
-sem API de câmera virtual. Não descrevem integralmente a receita da 1.0.28.0.
+sem API de câmera virtual. Não descrevem integralmente a receita da 1.0.29.0.
 Use a receita específica desta versão; uma falha dessas guardas não equivale,
 por si só, a uma decisão de certificação da Microsoft.
 
@@ -71,12 +76,17 @@ nem declaração de nova licença sobre código ou recursos de terceiros.
 
 ## Validação local e limites
 
-A build foi instalada em sessão interativa e recebeu vídeo real de um iPhone na rede.
-O WACK completo retornou **WARNING**, não PASS limpo: 22 testes PASS, um FAIL opcional de
-executáveis bloqueados e um WARNING de análise DPI, sem FAIL obrigatório identificado.
-Uma sonda separada encontrou processo/janela PerMonitorV2; isso não elimina o aviso do WACK.
+O pacote 1.0.29.0 foi instalado e teve sua abertura funcional conferida.
+O teste WACK de Executáveis bloqueados passou. O aviso DPIAwarenessValidation
+permanece: falha ao processar o binário e reconhecimento de DPI não identificado.
+O [resumo WACK](release/windows-store-1.0.29.0/WACK-SUMMARY.json) preserva
+`OverallResult=WARNING`, `PartialRun=FALSE` e `Passed=false`. Uma sonda separada
+encontrou processo/janela PerMonitorV2 e DPI 120; isso não anula o aviso do WACK.
+O histórico 1.0.28.0 permanece na pasta de sua versão;
+seus resultados não são atribuídos ao pacote novo.
 
-Não foi executado teste em máquina limpa. O computador de teste já tinha um componente
-externo de câmera virtual. O pacote Store não embute essa DLL nem drivers de tela estendida;
-a API de câmera virtual continua presente no executável. Disponibilizar fontes não
-certifica o aplicativo, seus recursos opcionais ou sua elegibilidade na Store.
+Não se alega teste em máquina limpa. A saída opcional de câmera virtual depende de
+um componente separado, cuja instalação pode exigir administrador. Os recursos
+principais funcionam sem ele. O pacote Store não embute essa DLL nem drivers de
+tela estendida; disponibilizar fontes não certifica o aplicativo ou a elegibilidade
+de seus recursos na Store.

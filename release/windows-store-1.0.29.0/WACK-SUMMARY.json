@@ -1,0 +1,197 @@
+{
+  "schema": 1,
+  "product": "Quven.Quall",
+  "version": "1.0.29.0",
+  "scope": "Sanitized summary of the local WACK receipt; not Microsoft Store approval",
+  "run_utc": "2026-10-16T00:14:29.3179554Z",
+  "package_full_name": "Quven.Quall_1.0.29.0_x64__4bed071cmhnq6",
+  "exe_sha256": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+  "wack_version": "10.0.26100.7705 (WinBuild.160101.0800)",
+  "report_sha256": "46c5ee7a6dc6dd9856dbf860a02679aea92295c510e02db1dd681728a0f5e1c1",
+  "raw_local_receipt_sha256": "4c310fc88070aac6a9205d6603e198124d302b7d2fe5356b1c164e1eb54bda5a",
+  "complete": true,
+  "partial_run": false,
+  "overall_result": "WARNING",
+  "passed": false,
+  "test_counts": {
+    "PASS": 23,
+    "FAIL": 0,
+    "WARNING": 1
+  },
+  "mandatory_fail_count": 0,
+  "optional_fail_count": 0,
+  "nonoptional_warning_count": 1,
+  "tests": [
+    {
+      "index": 2,
+      "name": "Instale drivers assinados e arquivos executáveis",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 11,
+      "name": "Nível de execução de controle de conta de usuário",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 77,
+      "name": "Conta do aplicativo",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 31,
+      "name": "Manifesto do aplicativo",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 87,
+      "name": "Verbos da associação de arquivo",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 86,
+      "name": "Verificações do Registro",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 91,
+      "name": "Recursos Empresariais",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 90,
+      "name": "Pacotes de Recursos",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 70,
+      "name": "Analisador de arquivos banidos",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 62,
+      "name": "Assinatura de código privado",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 45,
+      "name": "Recursos do aplicativo",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 61,
+      "name": "Identidade visual",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 46,
+      "name": "Configuração de depuração",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 52,
+      "name": "Recursos de uso especial",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 56,
+      "name": "Atributo ExclusiveTo",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 57,
+      "name": "Localização de tipo",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 55,
+      "name": "Diferenciação de maiúsculas e minúsculas de nome de tipo",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 54,
+      "name": "Correção de nome de tipo",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 58,
+      "name": "Correção de metadados gerais",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 53,
+      "name": "Propriedades",
+      "optional": false,
+      "result": "PASS"
+    },
+    {
+      "index": 89,
+      "name": "Uso de arquivo morto",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 88,
+      "name": "Executáveis bloqueados",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 63,
+      "name": "Arquivos adequados da plataforma",
+      "optional": true,
+      "result": "PASS"
+    },
+    {
+      "index": 92,
+      "name": "DPIAwarenessValidation",
+      "optional": false,
+      "result": "WARNING"
+    }
+  ],
+  "warning": {
+    "index": 92,
+    "name": "DPIAwarenessValidation",
+    "optional": false,
+    "result": "WARNING",
+    "messages_sanitized": [
+      "Falha em processar o binário quall-app.exe.",
+      "O app não tem Reconhecimento de DPI."
+    ],
+    "status": "Unresolved WACK warning; not treated as a clean PASS"
+  },
+  "separate_readonly_dpi_probe": {
+    "exe_sha256": "31a2ccf858ca4c8e567c4672b6a68c2b2476073e1521029499050d090e94b393",
+    "window_awareness": 2,
+    "process_awareness": 2,
+    "window_per_monitor_v2": true,
+    "process_per_monitor_v2": true,
+    "window_dpi": 120,
+    "app_settings_changed": false,
+    "package_changed": false,
+    "does_not_override_WACK_warning": true
+  },
+  "helper_status_interpretation": "The local helper requires an overall PASS. Its failure status reflects this strict gate, not a FAIL result among the 24 WACK tests.",
+  "store_approval_proven": false,
+  "clean_machine_tested": false,
+  "store_submitted": false,
+  "omitted": "Machine paths, user/session details, raw report/log contents, certificates and binary artifacts"
+}
