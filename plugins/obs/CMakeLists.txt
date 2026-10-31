@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(quall-obs VERSION 1.0.0 LANGUAGES C)
+project(quall-obs VERSION 1.0.29 LANGUAGES C)
 
 # =================================================================================================
 # Fonte nativa de OBS que embute o receptor do Quall.
@@ -131,7 +131,10 @@ set(QUALL_FONTES
   src/tempo-do-som.c
   src/texto.c
   src/camera-remota.c
-  src/camera-remota-regras.c)
+  src/camera-remota-regras.c
+  src/qr-desenho.c
+  src/recusa-do-vinculo.c
+  src/rotulo-da-lista.c)
 if(APPLE)
   # `anexob.c` é do caminho do VideoToolbox: o `CMVideoFormatDescription` quer SPS/PPS **fora** da
   # amostra e NALs prefixados por comprimento. O MFT do Windows come Annex-B como veio da rede.

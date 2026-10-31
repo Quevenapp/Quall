@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--
+  Distribuição do .pkg do plugin do OBS (macOS). `construir-pkg.sh` troca os @…@ e passa este
+  arquivo ao `productbuild`.
+
+  O molde é o do obs-plugintemplate (`cmake/macos/resources/distribution.in`, conferido em
+  14/10/2026): só o domínio do usuário (`enable_currentUserHome`), sem personalizar, sem script
+  externo, e o `installCheck()` recusando macOS antigo. O que entra a mais aqui: o OBS aberto
+  recusa, o OBS de versão menor que a dos cabeçalhos recusa, e o OBS fora de /Applications só avisa
+  (ele pode estar em outro lugar, e o plugin fica na pasta do usuário de qualquer jeito).
+
+  Os textos vêm de `Resources/<idioma>.lproj/Localizable.strings` (en e pt), pelo idioma do Mac.
+-->
+<installer-gui-script minSpecVersion="1.0">
+    <options
+        rootVolumeOnly="true"
+        hostArchitectures="@ARQUITETURAS@"
+        customize="never"
+        allow-external-scripts="no" />
+    <domains enable_currentUserHome="true" enable_anywhere="false" enable_localSystem="false" />
+    <title>QUALL_TITULO</title>
+    <welcome file="welcome.html" mime-type="text/html" />
+    <conclusion file="conclusion.html" mime-type="text/html" />
+    <choices-outline>
+        <line choice="quall-obs" />
+    </choices-outline>
+    <choice id="quall-obs" title="QUALL_TITULO" description="">
+        <pkg-ref id="@ID@" />
+    </choice>
+    <pkg-ref id="@ID@" version="@VERSAO@" onConclusion="none">#quall-obs.pkg</pkg-ref>
+    <installation-check script="conferir();" />
+    <script>
+        function recusar(tipo, chaveTitulo, mensagem) {
+            my.result.title = system.localizedString(chaveTitulo);
+            my.result.message = mensagem;
+            my.result.type = tipo;
+            return false;
+        }
+
+        function obsAberto() {
+            var r = system.applications.fromIdentifier('com.obsproject.obs-studio');
+            if (!r) { return false; }
+            // A referência diz "a primeira aplicação"; algumas versões devolvem lista. As duas.
+            if (typeof r.length === 'number') { return r.length > 0; }
+            return true;
+        }
+
+        function conferir() {
+            if (system.compareVersions(system.version.ProductVersion, '@MACOS_MINIMO@') == -1) {
+                return recusar('Fatal', 'QUALL_MACOS_TITULO',
+                    system.localizedStringWithFormat('QUALL_MACOS_MENSAGEM', '@MACOS_MINIMO@'));
+            }
+            if (obsAberto()) {
+                return recusar('Fatal', 'QUALL_ABERTO_TITULO',
+                    system.localizedString('QUALL_ABERTO_MENSAGEM'));
+            }
+            var obs = system.files.bundleAtPath('/Applications/OBS.app');
+            if (!obs) {
+                return recusar('Warning', 'QUALL_SEM_OBS_TITULO',
+                    system.localizedStringWithFormat('QUALL_SEM_OBS_MENSAGEM', '@OBS_MINIMO@'));
+            }
+            var versao = obs.CFBundleShortVersionString;
+            if (versao &amp;&amp; system.compareVersions(versao, '@OBS_MINIMO@') == -1) {
+                return recusar('Fatal', 'QUALL_OBS_VELHO_TITULO',
+                    system.localizedStringWithFormat('QUALL_OBS_VELHO_MENSAGEM', '@OBS_MINIMO@', versao));
+            }
+            return true;
+        }
+    </script>
+</installer-gui-script>

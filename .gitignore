@@ -26,10 +26,8 @@ cmake-build-*/
 plugins/obs/build-portao/
 plugins/obs/.libobs/
 
-# Worktrees e configuração local de agentes
-.claude/
-.codex/
-.agents/
+# Worktrees das frentes paralelas
+.claude/worktrees/
 
 # macOS
 .DS_Store
@@ -82,3 +80,5 @@ keystore.properties
 *.dSYM/
 .kotlin/
 /apps/ios/Receptor/saida/
+/qa-receptor/
+/apps/macos/qa-receptor/

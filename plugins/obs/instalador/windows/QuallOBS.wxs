@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ================================================================================================
+  INSTALADOR DO PLUGIN DO OBS PARA WINDOWS — MSI (WiX v5, o mesmo de apps/windows/scripts/instalador)
+  ================================================================================================
+
+  Põe o plugin onde o OBS 28+ procura plugins de todos os usuários (decisão do Bruno, 14/10/2026):
+
+    C:\ProgramData\obs-studio\plugins\quall-obs\bin\64bit\quall-obs.dll
+    C:\ProgramData\obs-studio\plugins\quall-obs\data\locale\en-US.ini, pt-BR.ini
+    C:\ProgramData\obs-studio\plugins\quall-obs\data\LICENSE, LICENSE-SCOPE.md,
+                                                    LICENSE-MPL-2.0.txt, THIRD_PARTY_NOTICES.txt
+
+  `%ProgramData%`, e não `%APPDATA%`: o OBS nunca olha em `%APPDATA%` no Windows (armadilha 4 do
+  README do plugin). Por isso o pacote é perMachine e pede elevação.
+
+  O que ele faz além de copiar:
+    - recusa sem OBS 64 bits instalado, ou com OBS mais velho que os cabeçalhos do plugin (o OBS
+      recusa major/minor de API mais novos que ele); `QUALL_SEM_CONFERIR_OBS=1` pula as duas
+      conferências, para OBS portátil ou da Steam fora dos caminhos de sempre;
+    - com o OBS aberto, mostra "feche o OBS" com Anular/Repetir/Ignorar; sem interface (`/qn`),
+      recusa. Não fecha o OBS sozinho: ele pode estar transmitindo;
+    - atualiza por cima (MajorUpgrade: a versão maior tira a menor; a menor recusa);
+    - desinstala pelo "Aplicativos instalados", com o nome "Quall Studio OBS plugin";
+    - apaga, na instalação, o que uma cópia manual do ZIP deixou na pasta (RemoveFile): um
+      `quall-obs.dll` antigo copiado à mão poderia sobreviver à regra de arquivo sem versão.
+
+  Os textos vão em inglês com o português na mesma mensagem: o WiX deste projeto não tem catálogo
+  de idiomas (`-culture en-US`, ver o `construir-msi.ps1` do app), e o pacote não tem diálogo próprio.
+
+  NADA NESTE ARQUIVO FOI COMPILADO no Mac onde foi escrito (14/10/2026). Ver LEIA.md, ao lado.
+  ================================================================================================
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <?ifndef Versao ?><?define Versao = "1.0.29" ?><?endif?>
+  <?ifndef Estagio ?><?define Estagio = "estagio" ?><?endif?>
+  <?ifndef ObsMinimo ?><?define ObsMinimo = "32.2" ?><?endif?>
+  <!-- Uma versão abaixo do mínimo, para o `MinVersion`: ver o comentário das buscas. -->
+  <?ifndef ObsAbaixoDoMinimo ?><?define ObsAbaixoDoMinimo = "32.1.65535.65535" ?><?endif?>
+
+  <Package Name="Quall Studio OBS plugin"
+           Manufacturer="Veneri &amp; Quellis Ltda."
+           Version="$(var.Versao)"
+           Language="1033"
+           Codepage="1252"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500"
+           UpgradeCode="E7338E00-5412-4380-916A-CCCDCE1708C0">
+
+    <!-- FIXO PARA SEMPRE: é por ele que a 1.1 sabe tirar a 1.0. Não é o do app (78BDE14D-…): os
+         dois convivem na mesma máquina. -->
+    <MajorUpgrade
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer Quall Studio OBS plugin is already installed. / Já há uma versão mais nova do plugin do Quall Studio para OBS instalada." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- O mesmo mínimo do plugin publicado (README do ZIP: Windows 11 x64, build 22000+), lido do
+         registro como no Quall.wxs: `VersionNT` e `WindowsBuild` não distinguem 10 de 11. -->
+    <Property Id="QUALL_BUILD_DO_WINDOWS">
+      <RegistrySearch Id="BuscaBuildDoWindows" Root="HKLM"
+                      Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber"
+                      Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR (VersionNT64 AND QUALL_BUILD_DO_WINDOWS &gt;= 22000)"
+            Message="The Quall Studio OBS plugin requires 64-bit Windows 11 (build 22000 or later). / O plugin do Quall Studio para OBS exige Windows 11 de 64 bits (build 22000 ou mais novo)." />
+
+    <!--
+      O OBS INSTALADO. O instalador do OBS (NSIS) grava a pasta em `HKLM\SOFTWARE\OBS Studio`
+      (valor padrão); como o NSIS é 32 bits, ela pode estar na vista de 32 ou na de 64, e as duas
+      são lidas. A terceira busca é o caminho padrão, para quando o registro falta.
+
+      Duas propriedades: `QUALL_OBS` (achou `obs64.exe`) e `QUALL_OBS_OK` (achou com a versão
+      mínima). Assim a mensagem diz qual dos dois faltou.
+
+      `MinVersion` recebe UMA VERSÃO ABAIXO do mínimo (32.1.65535.65535 para 32.2): a comparação do
+      Windows Installer com versão exatamente igual tem fama de ambígua, e com o valor de baixo ela
+      dá o mesmo resultado sendo estrita ou não.
+    -->
+    <Property Id="QUALL_OBS">
+      <RegistrySearch Id="ObsReg64" Root="HKLM" Key="SOFTWARE\OBS Studio" Type="directory" Bitness="always64">
+        <DirectorySearch Id="ObsBinReg64" Path="bin\64bit" Depth="0">
+          <FileSearch Id="ObsExeReg64" Name="obs64.exe" />
+        </DirectorySearch>
+      </RegistrySearch>
+      <RegistrySearch Id="ObsReg32" Root="HKLM" Key="SOFTWARE\OBS Studio" Type="directory" Bitness="always32">
+        <DirectorySearch Id="ObsBinReg32" Path="bin\64bit" Depth="0">
+          <FileSearch Id="ObsExeReg32" Name="obs64.exe" />
+        </DirectorySearch>
+      </RegistrySearch>
+      <DirectorySearch Id="ObsBinPadrao" Path="[ProgramFiles64Folder]obs-studio\bin\64bit" Depth="0">
+        <FileSearch Id="ObsExePadrao" Name="obs64.exe" />
+      </DirectorySearch>
+    </Property>
+    <Property Id="QUALL_OBS_OK">
+      <RegistrySearch Id="ObsReg64V" Root="HKLM" Key="SOFTWARE\OBS Studio" Type="directory" Bitness="always64">
+        <DirectorySearch Id="ObsBinReg64V" Path="bin\64bit" Depth="0">
+          <FileSearch Id="ObsExeReg64V" Name="obs64.exe" MinVersion="$(var.ObsAbaixoDoMinimo)" />
+        </DirectorySearch>
+      </RegistrySearch>
+      <RegistrySearch Id="ObsReg32V" Root="HKLM" Key="SOFTWARE\OBS Studio" Type="directory" Bitness="always32">
+        <DirectorySearch Id="ObsBinReg32V" Path="bin\64bit" Depth="0">
+          <FileSearch Id="ObsExeReg32V" Name="obs64.exe" MinVersion="$(var.ObsAbaixoDoMinimo)" />
+        </DirectorySearch>
+      </RegistrySearch>
+      <DirectorySearch Id="ObsBinPadraoV" Path="[ProgramFiles64Folder]obs-studio\bin\64bit" Depth="0">
+        <FileSearch Id="ObsExePadraoV" Name="obs64.exe" MinVersion="$(var.ObsAbaixoDoMinimo)" />
+      </DirectorySearch>
+    </Property>
+    <Launch Condition="Installed OR QUALL_SEM_CONFERIR_OBS OR QUALL_OBS"
+            Message="OBS Studio (64-bit) was not found. Install OBS Studio $(var.ObsMinimo) or later (obsproject.com) and run this installer again. / O OBS Studio (64 bits) não foi encontrado. Instale o OBS Studio $(var.ObsMinimo) ou mais novo (obsproject.com) e rode este instalador de novo." />
+    <Launch Condition="Installed OR QUALL_SEM_CONFERIR_OBS OR QUALL_OBS_OK"
+            Message="The Quall Studio plugin requires OBS Studio $(var.ObsMinimo) or later. Update OBS (obsproject.com) and run this installer again. / O plugin do Quall Studio exige o OBS Studio $(var.ObsMinimo) ou mais novo. Atualize o OBS (obsproject.com) e rode este instalador de novo." />
+
+    <!--
+      O OBS ABERTO. Com ele aberto, o `quall-obs.dll` está travado (numa atualização ou na
+      desinstalação) ou o plugin novo só carrega no próximo início. `PromptToContinue` mostra a
+      `Description` com Anular/Repetir/Ignorar enquanto o `obs64.exe` estiver de pé; nada de
+      `CloseMessage` nem `TerminateProcess`, ao contrário do `FecharQuall` do app: fechar o OBS
+      de alguém no meio de uma transmissão não é decisão de instalador. `RebootPrompt="no"`: o
+      padrão é sim.
+
+      Sem interface (`msiexec /qn`) não há a quem perguntar, e o `OBS_ABERTO` que sobra recusa a
+      instalação pela ação `RecusarObsAberto`, logo depois. `QUALL_IGNORAR_OBS_ABERTO=1` deixa
+      seguir (o arquivo travado vai para o reinício, como em qualquer MSI).
+
+      A ação sai do lugar padrão da biblioteca para logo depois de `InstallInitialize`, pelo mesmo
+      motivo do Quall.wxs: no lugar padrão, na desinstalação, ela rodaria depois de `RemoveFiles`.
+    -->
+    <util:CloseApplication Id="ObsAberto"
+                           Target="obs64.exe"
+                           PromptToContinue="yes"
+                           RebootPrompt="no"
+                           Property="OBS_ABERTO"
+                           Description="OBS Studio is open. Close OBS Studio, then click Retry. / O OBS Studio está aberto. Feche o OBS Studio e clique em Repetir." />
+    <CustomAction Id="RecusarObsAberto"
+                  Error="OBS Studio is open: close it and run the installer again. / O OBS Studio está aberto: feche-o e rode o instalador de novo." />
+
+    <InstallExecuteSequence>
+      <Custom Action="override Wix4CloseApplications_X64" After="InstallInitialize"
+              Condition="VersionNT &gt; 400" />
+      <Custom Action="RecusarObsAberto" After="Wix4CloseApplications_X64"
+              Condition="OBS_ABERTO AND UILevel = 2 AND NOT QUALL_IGNORAR_OBS_ABERTO" />
+    </InstallExecuteSequence>
+
+    <Property Id="ARPPRODUCTICON" Value="IconeQuall.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://queven.com.br/quall/obs/" />
+    <Property Id="ARPHELPLINK" Value="https://queven.com.br/quall/obs/" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+    <Icon Id="IconeQuall.ico" SourceFile="$(var.Estagio)\quall.ico" />
+
+    <Feature Id="Plugin" Title="Quall Studio OBS plugin" Level="1">
+      <ComponentGroupRef Id="Plugin" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DirObsStudio" Name="obs-studio">
+        <Directory Id="DirPlugins" Name="plugins">
+          <Directory Id="INSTALLFOLDER" Name="quall-obs">
+            <Directory Id="DirBin" Name="bin">
+              <Directory Id="DirBin64" Name="64bit" />
+            </Directory>
+            <Directory Id="DirData" Name="data">
+              <Directory Id="DirLocale" Name="locale" />
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- A lista de arquivos é fechada: `construir-msi.ps1` recusa um estágio com arquivo a mais ou a
+         menos, para um locale novo não ficar de fora calado. -->
+    <ComponentGroup Id="Plugin">
+      <Component Id="CompDll" Directory="DirBin64" Guid="B22FD5E3-10E6-4FD4-8933-FEFF0CB5CA43" Bitness="always64">
+        <File Id="quall_obs.dll" Source="$(var.Estagio)\quall-obs\bin\64bit\quall-obs.dll" KeyPath="yes" />
+        <RemoveFile Id="LimparDllManual" Name="quall-obs.dll" On="install" />
+        <RemoveFile Id="LimparPdbManual" Name="quall-obs.pdb" On="both" />
+        <RemoveFolder Id="RemoverBin64" On="uninstall" />
+        <RemoveFolder Id="RemoverBin" Directory="DirBin" On="uninstall" />
+        <RemoveFolder Id="RemoverPlugin" Directory="INSTALLFOLDER" On="uninstall" />
+      </Component>
+      <Component Id="CompLicencas" Directory="DirData" Guid="4E04A81A-13C8-46C1-9ED5-8537C5D4F5F1" Bitness="always64">
+        <RemoveFile Id="LimparDataManual" Name="*" On="install" />
+        <File Id="license_gpl" Source="$(var.Estagio)\quall-obs\data\LICENSE" KeyPath="yes" />
+        <File Id="license_scope" Source="$(var.Estagio)\quall-obs\data\LICENSE-SCOPE.md" />
+        <File Id="license_mpl" Source="$(var.Estagio)\quall-obs\data\LICENSE-MPL-2.0.txt" />
+        <File Id="third_party_notices" Source="$(var.Estagio)\quall-obs\data\THIRD_PARTY_NOTICES.txt" />
+        <RemoveFolder Id="RemoverData" On="uninstall" />
+      </Component>
+      <Component Id="CompLocale" Directory="DirLocale" Guid="4B310CBD-237A-4E8E-9DEC-FAAF17B91DC3" Bitness="always64">
+        <RemoveFile Id="LimparLocaleManual" Name="*.ini" On="install" />
+        <File Id="locale_en" Source="$(var.Estagio)\quall-obs\data\locale\en-US.ini" KeyPath="yes" />
+        <File Id="locale_pt" Source="$(var.Estagio)\quall-obs\data\locale\pt-BR.ini" />
+        <RemoveFolder Id="RemoverLocale" On="uninstall" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

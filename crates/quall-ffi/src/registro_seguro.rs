@@ -22,7 +22,7 @@ mod tests {
     #[test]
     fn diagnostico_de_panico_preserva_local_sem_caminho_pessoal() {
         assert_eq!(
-            mensagem_da_origem(Some(("/Users/pessoa-exemplo/crates/quall-ffi/src/lib.rs", 4315, 7))),
+            mensagem_da_origem(Some(("/Users/pessoa/crates/quall-ffi/src/lib.rs", 4315, 7))),
             "pânico no núcleo do Quall: conteúdo oculto; origem=lib.rs:4315:7"
         );
         assert_eq!(

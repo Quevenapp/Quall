@@ -4,15 +4,15 @@
 # pelo libobs do OBS instalado. Não executa construir.sh, nem instala plugins.
 set -euo pipefail
 if (( $# != 2 )); then
-  echo "uso: prova-compatibilidade.sh <quall-obs.plugin> <pasta nova sob /tmp>" >&2
+  echo "uso: prova-compatibilidade.sh <quall-obs.plugin> <pasta nova sob /tmp ou /Volumes/Dev/tmp>" >&2
   exit 2
 fi
 AQUI="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN="$(cd "$1" && pwd)"
 SAIDA="$2"
 case "$SAIDA" in
-  /tmp/*|/private/tmp/*) ;;
-  *) echo "A saída precisa ser uma pasta nova de bancada sob /tmp." >&2; exit 2 ;;
+  /tmp/*|/private/tmp/*|/Volumes/Dev/tmp/*) ;;
+  *) echo "A saída precisa ser uma pasta nova de bancada sob /tmp ou /Volumes/Dev/tmp." >&2; exit 2 ;;
 esac
 if [[ -e "$SAIDA" ]]; then
   echo "A pasta de saída já existe; use uma pasta nova para isolar a configuração." >&2

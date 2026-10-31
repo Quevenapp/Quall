@@ -1,10 +1,10 @@
 QUALL STUDIO — AVISOS DE COMPONENTES DE TERCEIROS
-Snapshot fonte público: https://github.com/Quevenapp/Quall
-Inventário atualizado para a seleção de fontes de 2026-10-05.
-Os textos legais upstream e seus titulares são preservados; a licença própria é independente.
-Inclui componentes potenciais de runtime, construção, testes e plugin; não afirma que todos estão em cada app.
-Driver, antigos assets Material e mídias históricas não integram esta seleção.
-Este snapshot fonte não comprova build, teste em aparelho ou correspondência a binário histórico.
+Revisão de inventário: 2026-10-05
+Este arquivo preserva avisos recebidos dos projetos indicados. A licença do Quall Studio é independente.
+O inventário inclui componentes de construção, teste e plugin OBS; isso não afirma que todos estão em cada app.
+A distribuição de cada binário deve levar estes avisos e os fontes/instruções exigidos pela licença aplicável.
+Há etapas pendentes em docs/distribuicao/licencas.md; este arquivo não certifica redistribuição do driver SudoVDA.
+Acréscimo de 2026-10-14: qrcode 0.14.1 (Windows) e com.google.zxing:core 3.5.3 (Android); ver docs/distribuicao/licencas.md.
 
 Android Gradle Plugin 8.7.0 — Apache-2.0
 Fonte: https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/8.7.0/gradle-8.7.0.pom
@@ -12,7 +12,7 @@ Ferramenta de compilação; não integra o runtime do APK.
 Avisos: cfc7749b96f63bd3
 Android NDK:libc++_shared.so (libc++/libc++abi/libunwind/compiler-rt) 27.2.12479018 (r27c, LLVM 18.0.3) — Apache-2.0 WITH LLVM-exception AND (MIT OR NCSA)
 Fonte: https://android.googlesource.com/toolchain/llvm-project/+/d8003a456d14a3deb8054cdaa529ffbf02d9b262/libcxx/LICENSE.TXT
-Licenças do runtime NDK indicado, preservadas para a receita. O snapshot não redistribui nem verifica binários NDK.
+Duas ABIs do app têm SHA256 idêntico ao runtime deste NDK. Licenças confirmadas no commit LLVM oficial usado pelo NDK r27c e reproduzidas integralmente; SDK completo não é distribuído.
 Avisos: 1a8f1058753f1ba8, 539dd7aed86e8a4f, b5efebcaca808792, e2b35be49f7284a4
 CameraX:libyuv incorporada em camera-core 1.4.2; revisão não identificada no POM — BSD-3-Clause
 Fonte: https://chromium.googlesource.com/libyuv/libyuv/+/refs/heads/main/LICENSE
@@ -24,7 +24,7 @@ Preserva os avisos de libm.h/mathematics.c. A licença dispensa inclusão para m
 Avisos: 95d0556ea821e27d
 FFmpeg:Independent JPEG Group integrado no FFmpeg 9.0.1 — IJG
 Fonte: https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavcodec/jrevdct.c
-Aviso obrigatório preservado: This software is based in part on the work of the Independent JPEG Group. Não declara incorporação em binário novo.
+jrevdct.o, jfdctfst.o e jfdctint.o estão na obra. Crédito obrigatório: This software is based in part on the work of the Independent JPEG Group. Nenhuma modificação local do fonte.
 Avisos: 6ea618f1db60eefd
 FFmpeg:SHA1/SHA2 (Steve Reid/Aaron Gifford) 9.0.1 — LGPL-2.1-or-later AND BSD-3-Clause
 Fonte: https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/sha.c
@@ -38,14 +38,14 @@ Fonte: https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/fixed_dsp.c
 Avisos: 246041b6ecf9bc32, 56a970f45f97b7d0
 FFmpeg:libavcodec/libavformat/libavutil 9.0.1 — LGPL-2.1-or-later
 Fonte: https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz
-Fonte oficial 9.0.1 e receita incluídos. A receita seleciona bibliotecas dinâmicas sem componentes GPL/nonfree; nenhum binário do snapshot foi compilado ou verificado.
+Arm64, bibliotecas compartilhadas. Tar/hash/assinatura/fonte/config/binários conferidos. GPL=0, NONFREE=0, VERSION3=0. Falta realizar a oferta de fonte e aprovar termos permissivos de modificação/engenharia reversa.
 Avisos: 246041b6ecf9bc32, 2e1d16c72fd74e12
 FFmpeg:uuid (Theodore Ts'o) 9.0.1 — BSD-3-Clause AND LGPL-2.1-or-later
 Fonte: https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavutil/uuid.c
 Avisos: 246041b6ecf9bc32, 8fc01ed21f9e60c6
 Fontes e símbolos de plataforma fornecidos pelos sistemas — Termos Apple/Microsoft/Android de plataforma; sem arquivos de fonte redistribuídos
 Fonte: https://developer.apple.com/design/human-interface-guidelines/sf-symbols; https://learn.microsoft.com/en-us/typography/fonts/font-faq
-Fontes/símbolos fornecidos pela plataforma; este snapshot não contém arquivos de fonte redistribuídos. Marcas e recursos de sistema não recebem a licença própria.
+Apple .system/SF Symbols, Windows Segoe/Fluent/MDL2, Android fontes de sistema. Nenhum TTF/OTF/WOFF rastreado. Restrição Apple: não converter SF Symbols em marca/app icon.
 Avisos: PENDENTE
 Gradle 8.10.2 — Apache-2.0
 Fonte: https://github.com/gradle/gradle/blob/v8.10.2/LICENSE
@@ -55,16 +55,28 @@ Kotlin Gradle plugin 2.0.21 — Apache-2.0
 Fonte: https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.0.21/kotlin-gradle-plugin-2.0.21.pom
 Ferramenta de compilação; não integra o runtime do APK.
 Avisos: cfc7749b96f63bd3
+Material Icons (vetores Android) 44 vetores ic_q_*; revisão 2026-10-05 — Apache-2.0
+Fonte: https://developers.google.com/fonts/docs/material_icons; docs/telas-android-como-ios.md
+Coelho e tartaruga têm geometria própria e ficam fora da contagem Material. Conversões VectorDrawable preservam atribuição.
+Avisos: 7d5450cb2d142651
 OpenSSL 3.6.3 — Apache-2.0
 Fonte: openssl-src 300.6.1+3.6.3/openssl
 Avisos: 42002d9aea75f09f, 7d5450cb2d142651, 901ed2a99f9e79a6, a1a321135f789eb8, b4a44196989ae0b9, d2029febc2c39327, f6a5e232c2b67688
+Recursos gráficos de docs/testes vendor 19 PNG/SVG em libdatachannel/plog — Licença e atribuição específica por recurso pendentes; não empacotados no app
+Fonte: vendor/datachannel-sys/libdatachannel/pages/content/images; test/uwp; deps/plog/doc
+Inventariados como recursos da árvore de fontes; scripts apps não os copiam. Manter fora de materiais de loja e confirmar licença específica caso reutilizados.
+Avisos: PENDENTE
 Rust standard library e dependências internas 1.98.0 (88d9e12ae) — MIT OR Apache-2.0; outras licenças por componente no COPYRIGHT-library
-Fonte: COPYRIGHT-library distribuído com o toolchain indicado; textos e titulares upstream preservados
-Avisos do toolchain inventariado; a versão de qualquer binário futuro precisa ser conferida na release.
+Fonte: rustc sysroot/share/doc/rust/COPYRIGHT-library.html; original SHA256 68129500b616d5838629e68f55ff3aed5e096dacf60ce9eb41bbe599a563afa6
+Texto original distribuído com o toolchain, convertido de HTML a texto sem remover avisos. Inclui componentes internos potenciais; conferir toolchain do binário final.
 Avisos: 9819bdd19651feb4
 SIMDe (plugin OBS) v0.8.2 — MIT e avisos por arquivo
 Fonte: plugins/obs/.libobs/simde/COPYING
 Avisos: 0301df734d677bba, 0a461c30a82c5342, 0ef97cd9e35de978, 0fbf59554f8b5891, 101f9d628d6f3afa, 16c7489bbeb7902c, 1986043bc781245a, 2141c38ca2041864, 228371574767b63a, 28b80c0884f03352, 30b1dbb7603a4543, 33a6285a17d7bf30, 37716018659adc50, 37b3de53cd820a10, 384dca24e35d4711, 3b83e79d593c69c7, 41c857352441bec9, 4438a39f28811249, 4aa31ea15c9f4b35, 4e8fd257d24fbabf, 4fac0466cbc0b1da, 522a74c6b9b4e2ee, 5ae819ff9abec348, 5dd23966438e7b6a, 5e0c5e41c18f164c, 674cc5725c313a48, 6a450f92b42a97af, 6c31b93a3911f588, 6cb2ab2d6630aed1, 6e8363763eeb8848, 6f6dbf01f84da14d, 722715dc95b90511, 73f547975005a365, 746e3c1388496a03, 75ce0a8c5a7bff42, 7672e1348f515fe8, 79144bded2708296, 8401d624ec9f46ae, 8acabaff8873a2db, 90806f1a5abe57c8, 930616037ebaba34, 943573296041c0f4, 9c3d5379ced028e6, a82e47ff22a46a8b, a86e2c8fa7bc2355, a898dbf226ea455c, a8be4b63902aac1a, a9c545ba59bbd2cc, ab3bffefda837cc1, ad399abdb7ea6ae7, adc3fa46ec712307, aea8a4e920203b92, bae0708c1b075f00, bb0af8f7d16235be, bb61f1d014fe79d0, c657efdf1d560034, ca4117d9c4cc48b5, d245c4b11dbf45de, d3db3f3a7bdb41e6, d5839b93358e12ad, d9f887264dfbb6f5, e7d84e75da63b7bc, ea1b4b64ca365d5f, edaee6cb53c9716f, f0213ecde6549953, f1bc95a752293b9c, f5ac0a4f22d37162, f7ccc3cb249a6994, f8551f473b4f0c28, fbad331938852d0e, fbb77a1906b891f4, fc75a7e55b9e4b5a
+SudoVDA 1.10.9.289 — MIT (alterações SudoMaker); MS-PL (base Microsoft); procedência EDID pendente
+Fonte: apps/windows/terceiros/sudovda/LEIAME.md; https://github.com/SudoMaker/SudoVDA/tree/a4b09fa
+Somente x64; fora do pacote Microsoft Store. Redistribuição pública e assinatura ainda pendentes de comprovação; ver docs/distribuicao/licencas/sudovda.md.
+Avisos: f1e02b43da8bc548
 aho-corasick 1.1.5 — Unlicense OR MIT
 Fonte: https://crates.io/crates/aho-corasick/1.1.5
 Avisos: 01c266bced4a434d, 0f96a83840e146e4
@@ -372,6 +384,10 @@ com.google.guava:listenablefuture 1.0 — Apache-2.0
 Fonte: https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/1.0/listenablefuture-1.0.pom
 Licença herdada do POM pai, conferida no repositório Maven Central oficial.
 Avisos: cfc7749b96f63bd3
+com.google.zxing:core 3.5.3 — Apache-2.0
+Fonte: https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.pom
+Leitor do QR no Android (Java puro, sem .so). Licença Apache-2.0 declarada no POM pai zxing-parent 3.5.3 (tag zxing-3.5.3, https://github.com/zxing/zxing); o JAR não traz LICENSE nem NOTICE. SHA256 JAR 8d8064c1636fdaef7189dd9055c7d59950a8940a12f2293956446ec3c109fd82.
+Avisos: cfc7749b96f63bd3
 const-oid 0.10.2 — Apache-2.0 OR MIT
 Fonte: https://crates.io/crates/const-oid/0.10.2
 Avisos: 73b9dc2e79c73089, a9040321c3712d8f
@@ -673,6 +689,9 @@ Avisos: 23f18e03dc49df91, 62c7a1e35f564068
 proc-macro2 1.0.107 — MIT OR Apache-2.0
 Fonte: https://crates.io/crates/proc-macro2/1.0.107
 Avisos: 23f18e03dc49df91, 62c7a1e35f564068
+qrcode 0.14.1 — MIT OR Apache-2.0
+Fonte: https://crates.io/crates/qrcode/0.14.1
+Avisos: 7f865e72ab3644ea, cfc7749b96f63bd3
 quote 1.0.47 — MIT OR Apache-2.0
 Fonte: https://crates.io/crates/quote/1.0.47
 Avisos: 23f18e03dc49df91, 62c7a1e35f564068
@@ -7577,8 +7596,8 @@ Origens: vendor/datachannel-sys/libdatachannel/deps/libsrtp/include/stream_list_
 ==============================================================================
 AVISO 7d5450cb2d142651
 SHA256 7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a
-Componentes: OpenSSL 3.6.3; r-efi 5.3.0; r-efi 6.0.0
-Origens: Texto padrão Apache-2.0; alternativa declarada nos README/Cargo.toml publicados de r-efi 5.3.0 e 6.0.0; cargo-registry/openssl-src-300.6.1+3.6.3/openssl/LICENSE.txt
+Componentes: Material Icons (vetores Android) 44 vetores ic_q_*; revisão 2026-10-05; OpenSSL 3.6.3; r-efi 5.3.0; r-efi 6.0.0
+Origens: Texto padrão Apache-2.0; alternativa declarada nos README/Cargo.toml publicados de r-efi 5.3.0 e 6.0.0; cargo-registry/openssl-src-300.6.1+3.6.3/openssl/LICENSE.txt; docs/distribuicao/licencas/textos/Apache-2.0.txt
 
 
                                  Apache License
@@ -7841,6 +7860,31 @@ Origens: vendor/datachannel-sys/libdatachannel/deps/libsrtp/test/test_srtp.c (av
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+==============================================================================
+AVISO 7f865e72ab3644ea
+SHA256 7f865e72ab3644ea5887aa1f352aa435b36d139c35a964f47091e7dc02722e9a
+Componentes: qrcode 0.14.1
+Origens: cargo-registry/qrcode-0.14.1/LICENSE-MIT.txt
+
+Copyright (c) 2016 kennytm
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ==============================================================================
 AVISO 7fea0ee51a4ca5d5
@@ -45562,8 +45606,8 @@ SOFTWARE.
 ==============================================================================
 AVISO cfc7749b96f63bd3
 SHA256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
-Componentes: Android Gradle Plugin 8.7.0; Gradle 8.10.2; Kotlin Gradle plugin 2.0.21; androidx.activity:activity 1.9.3; androidx.activity:activity-ktx 1.9.3; androidx.annotation:annotation 1.8.1; androidx.annotation:annotation-experimental 1.4.1; androidx.annotation:annotation-jvm 1.8.1; androidx.appcompat:appcompat 1.7.0; androidx.appcompat:appcompat-resources 1.7.0; androidx.arch.core:core-common 2.2.0; androidx.arch.core:core-runtime 2.2.0; androidx.camera:camera-camera2 1.4.2; androidx.camera:camera-core 1.4.2; androidx.camera:camera-lifecycle 1.4.2; androidx.camera:camera-video 1.4.2; androidx.camera:camera-view 1.4.2; androidx.cardview:cardview 1.0.0; androidx.collection:collection 1.1.0; androidx.concurrent:concurrent-futures 1.1.0; androidx.concurrent:concurrent-futures-ktx 1.1.0; androidx.constraintlayout:constraintlayout 2.0.1; androidx.constraintlayout:constraintlayout-solver 2.0.1; androidx.coordinatorlayout:coordinatorlayout 1.1.0; androidx.core:core 1.13.1; androidx.core:core-ktx 1.13.1; androidx.cursoradapter:cursoradapter 1.0.0; androidx.customview:customview 1.1.0; androidx.customview:customview-poolingcontainer 1.0.0; androidx.databinding:viewbinding 8.7.0; androidx.documentfile:documentfile 1.0.0; androidx.drawerlayout:drawerlayout 1.1.1; androidx.dynamicanimation:dynamicanimation 1.0.0; androidx.emoji2:emoji2 1.3.0; androidx.emoji2:emoji2-views-helper 1.3.0; androidx.exifinterface:exifinterface 1.3.2; androidx.fragment:fragment 1.5.4; androidx.interpolator:interpolator 1.0.0; androidx.legacy:legacy-support-core-utils 1.0.0; androidx.lifecycle:lifecycle-common 2.8.7; androidx.lifecycle:lifecycle-common-jvm 2.8.7; androidx.lifecycle:lifecycle-livedata 2.8.7; androidx.lifecycle:lifecycle-livedata-core 2.8.7; androidx.lifecycle:lifecycle-livedata-core-ktx 2.8.7; androidx.lifecycle:lifecycle-process 2.8.7; androidx.lifecycle:lifecycle-runtime 2.8.7; androidx.lifecycle:lifecycle-runtime-android 2.8.7; androidx.lifecycle:lifecycle-runtime-ktx 2.8.7; androidx.lifecycle:lifecycle-runtime-ktx-android 2.8.7; androidx.lifecycle:lifecycle-service 2.8.7; androidx.lifecycle:lifecycle-viewmodel 2.8.7; androidx.lifecycle:lifecycle-viewmodel-android 2.8.7; androidx.lifecycle:lifecycle-viewmodel-ktx 2.8.7; androidx.lifecycle:lifecycle-viewmodel-savedstate 2.8.7; androidx.loader:loader 1.0.0; androidx.localbroadcastmanager:localbroadcastmanager 1.0.0; androidx.print:print 1.0.0; androidx.profileinstaller:profileinstaller 1.3.1; androidx.recyclerview:recyclerview 1.3.2; androidx.resourceinspection:resourceinspection-annotation 1.0.1; androidx.savedstate:savedstate 1.2.1; androidx.savedstate:savedstate-ktx 1.2.1; androidx.startup:startup-runtime 1.1.1; androidx.tracing:tracing 1.2.0; androidx.tracing:tracing-ktx 1.2.0; androidx.transition:transition 1.5.0; androidx.vectordrawable:vectordrawable 1.1.0; androidx.vectordrawable:vectordrawable-animated 1.1.0; androidx.versionedparcelable:versionedparcelable 1.1.1; androidx.viewpager2:viewpager2 1.1.0-beta02; androidx.viewpager:viewpager 1.0.0; clang-sys 1.9.1; com.google.android.material:material 1.12.0; com.google.auto.value:auto-value-annotations 1.6.3; com.google.errorprone:error_prone_annotations 2.15.0; com.google.guava:listenablefuture 1.0; org.jetbrains.kotlin:kotlin-bom 1.8.22; org.jetbrains.kotlin:kotlin-stdlib 2.0.21; org.jetbrains.kotlin:kotlin-stdlib-common 2.0.21; org.jetbrains.kotlin:kotlin-stdlib-jdk7 1.8.22; org.jetbrains.kotlin:kotlin-stdlib-jdk8 1.8.22; org.jetbrains.kotlinx:kotlinx-coroutines-android 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-bom 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-core 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm 1.7.3; org.jetbrains:annotations 23.0.0; utf8_iter 1.0.4; zeroize 1.9.0
-Origens: cargo-registry/clang-sys-1.9.1/LICENSE.txt; cargo-registry/utf8_iter-1.0.4/LICENSE-APACHE; cargo-registry/zeroize-1.9.0/LICENSE-APACHE; docs/distribuicao/licencas/textos/android/Apache-2.0.txt
+Componentes: Android Gradle Plugin 8.7.0; Gradle 8.10.2; Kotlin Gradle plugin 2.0.21; androidx.activity:activity 1.9.3; androidx.activity:activity-ktx 1.9.3; androidx.annotation:annotation 1.8.1; androidx.annotation:annotation-experimental 1.4.1; androidx.annotation:annotation-jvm 1.8.1; androidx.appcompat:appcompat 1.7.0; androidx.appcompat:appcompat-resources 1.7.0; androidx.arch.core:core-common 2.2.0; androidx.arch.core:core-runtime 2.2.0; androidx.camera:camera-camera2 1.4.2; androidx.camera:camera-core 1.4.2; androidx.camera:camera-lifecycle 1.4.2; androidx.camera:camera-video 1.4.2; androidx.camera:camera-view 1.4.2; androidx.cardview:cardview 1.0.0; androidx.collection:collection 1.1.0; androidx.concurrent:concurrent-futures 1.1.0; androidx.concurrent:concurrent-futures-ktx 1.1.0; androidx.constraintlayout:constraintlayout 2.0.1; androidx.constraintlayout:constraintlayout-solver 2.0.1; androidx.coordinatorlayout:coordinatorlayout 1.1.0; androidx.core:core 1.13.1; androidx.core:core-ktx 1.13.1; androidx.cursoradapter:cursoradapter 1.0.0; androidx.customview:customview 1.1.0; androidx.customview:customview-poolingcontainer 1.0.0; androidx.databinding:viewbinding 8.7.0; androidx.documentfile:documentfile 1.0.0; androidx.drawerlayout:drawerlayout 1.1.1; androidx.dynamicanimation:dynamicanimation 1.0.0; androidx.emoji2:emoji2 1.3.0; androidx.emoji2:emoji2-views-helper 1.3.0; androidx.exifinterface:exifinterface 1.3.2; androidx.fragment:fragment 1.5.4; androidx.interpolator:interpolator 1.0.0; androidx.legacy:legacy-support-core-utils 1.0.0; androidx.lifecycle:lifecycle-common 2.8.7; androidx.lifecycle:lifecycle-common-jvm 2.8.7; androidx.lifecycle:lifecycle-livedata 2.8.7; androidx.lifecycle:lifecycle-livedata-core 2.8.7; androidx.lifecycle:lifecycle-livedata-core-ktx 2.8.7; androidx.lifecycle:lifecycle-process 2.8.7; androidx.lifecycle:lifecycle-runtime 2.8.7; androidx.lifecycle:lifecycle-runtime-android 2.8.7; androidx.lifecycle:lifecycle-runtime-ktx 2.8.7; androidx.lifecycle:lifecycle-runtime-ktx-android 2.8.7; androidx.lifecycle:lifecycle-service 2.8.7; androidx.lifecycle:lifecycle-viewmodel 2.8.7; androidx.lifecycle:lifecycle-viewmodel-android 2.8.7; androidx.lifecycle:lifecycle-viewmodel-ktx 2.8.7; androidx.lifecycle:lifecycle-viewmodel-savedstate 2.8.7; androidx.loader:loader 1.0.0; androidx.localbroadcastmanager:localbroadcastmanager 1.0.0; androidx.print:print 1.0.0; androidx.profileinstaller:profileinstaller 1.3.1; androidx.recyclerview:recyclerview 1.3.2; androidx.resourceinspection:resourceinspection-annotation 1.0.1; androidx.savedstate:savedstate 1.2.1; androidx.savedstate:savedstate-ktx 1.2.1; androidx.startup:startup-runtime 1.1.1; androidx.tracing:tracing 1.2.0; androidx.tracing:tracing-ktx 1.2.0; androidx.transition:transition 1.5.0; androidx.vectordrawable:vectordrawable 1.1.0; androidx.vectordrawable:vectordrawable-animated 1.1.0; androidx.versionedparcelable:versionedparcelable 1.1.1; androidx.viewpager2:viewpager2 1.1.0-beta02; androidx.viewpager:viewpager 1.0.0; clang-sys 1.9.1; com.google.android.material:material 1.12.0; com.google.auto.value:auto-value-annotations 1.6.3; com.google.errorprone:error_prone_annotations 2.15.0; com.google.guava:listenablefuture 1.0; com.google.zxing:core 3.5.3; org.jetbrains.kotlin:kotlin-bom 1.8.22; org.jetbrains.kotlin:kotlin-stdlib 2.0.21; org.jetbrains.kotlin:kotlin-stdlib-common 2.0.21; org.jetbrains.kotlin:kotlin-stdlib-jdk7 1.8.22; org.jetbrains.kotlin:kotlin-stdlib-jdk8 1.8.22; org.jetbrains.kotlinx:kotlinx-coroutines-android 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-bom 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-core 1.7.3; org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm 1.7.3; org.jetbrains:annotations 23.0.0; qrcode 0.14.1; utf8_iter 1.0.4; zeroize 1.9.0
+Origens: cargo-registry/clang-sys-1.9.1/LICENSE.txt; cargo-registry/qrcode-0.14.1/LICENSE-APACHE.txt; cargo-registry/utf8_iter-1.0.4/LICENSE-APACHE; cargo-registry/zeroize-1.9.0/LICENSE-APACHE; docs/distribuicao/licencas/textos/android/Apache-2.0.txt
 
 
                                  Apache License
@@ -47306,6 +47350,69 @@ Origens: plugins/obs/.libobs/simde/simde/arm/neon/fma_n.h (aviso em comentário)
 *   2021      Evan Nemerson <evan@nemerson.com>
 *   2023      Yi-Yen Chung <eric681@andestech.com> (Copyright owned by Andes Technology)
 */
+
+==============================================================================
+AVISO f1e02b43da8bc548
+SHA256 f1e02b43da8bc5484c61defc6f06ff026b7f020fc00555748039cb965715d970
+Componentes: SudoVDA 1.10.9.289
+Origens: docs/distribuicao/licencas/textos/SudoVDA-NOTICES.txt
+
+SudoVDA 1.10.9.289 — avisos de terceiros
+
+Base: Microsoft Indirect Display Driver Sample.
+Alterações do SudoMaker: o README upstream declara MIT e CC0 ou domínio público,
+somente para as alterações do autor, e remete à Microsoft para a licença da base.
+Esta cópia preserva os termos MIT e Microsoft Public License (MS-PL); não estabelece
+a correspondência entre fonte e binário nem confirma a validade da assinatura.
+
+Fontes consultadas em 2026-10-05:
+https://github.com/SudoMaker/SudoVDA/tree/a4b09fa
+https://raw.githubusercontent.com/SudoMaker/SudoVDA/a4b09fa/README.md
+https://raw.githubusercontent.com/microsoft/Windows-driver-samples/main/LICENSE
+
+Microsoft Indirect Display Driver Sample
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+MIT — alterações declaradas pelo SudoMaker
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the
+Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+The Microsoft Public License (MS-PL)
+Copyright (c) 2015 Microsoft
+
+This license governs use of the accompanying software. If you use the software, you
+ accept this license. If you do not accept the license, do not use the software.
+1. Definitions
+ The terms "reproduce," "reproduction," "derivative works," and "distribution" have the
+ same meaning here as under U.S. copyright law.
+ A "contribution" is the original software, or any additions or changes to the software.
+ A "contributor" is any person that distributes its contribution under this license.
+ "Licensed patents" are a contributor's patent claims that read directly on its contribution.
+2. Grant of Rights
+ (A) Copyright Grant- Subject to the terms of this license, including the license conditions and limitations in section 3, each contributor grants you a non-exclusive, worldwide, royalty-free copyright license to reproduce its contribution, prepare derivative works of its contribution, and distribute its contribution or any derivative works that you create.
+ (B) Patent Grant- Subject to the terms of this license, including the license conditions and limitations in section 3, each contributor grants you a non-exclusive, worldwide, royalty-free license under its licensed patents to make, have made, use, sell, offer for sale, import, and/or otherwise dispose of its contribution in the software or derivative works of the contribution in the software.
+3. Conditions and Limitations
+ (A) No Trademark License- This license does not grant you rights to use any contributors' name, logo, or trademarks.
+ (B) If you bring a patent claim against any contributor over patents that you claim are infringed by the software, your patent license from such contributor to the software ends automatically.
+ (C) If you distribute any portion of the software, you must retain all copyright, patent, trademark, and attribution notices that are present in the software.
+ (D) If you distribute any portion of the software in source code form, you may do so only under this license by including a complete copy of this license with your distribution. If you distribute any portion of the software in compiled or object code form, you may only do so under a license that complies with this license.
+ (E) The software is licensed "as-is." You bear the risk of using it. The contributors give no express warranties, guarantees or conditions. You may have additional consumer rights under your local laws which this license cannot change. To the extent permitted by your local laws, the contributors exclude the implied warranties of merchantability, fitness for a particular purpose and non-infringement.
 
 ==============================================================================
 AVISO f367c1b8e1aa2624

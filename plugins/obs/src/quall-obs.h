@@ -57,6 +57,9 @@ void descoberta_iniciar(void);
 void descoberta_parar(void);
 /// JSON dos aparelhos vistos, alocado com `bmalloc` (libere com `bfree`). NULL se nada ainda.
 char *descoberta_aparelhos_json(void);
+/// **"Atualizar lista"** (`docs/v3-no-privado.md` §8.9): a varredura da /24 recomeça na próxima volta
+/// da thread (`quall_browser_rescan`). Sozinha, ela só sai com a lista vazia, uma vez.
+void descoberta_procurar_de_novo(void);
 
 // -------------------------------------------------------------------------------------------------
 // Pareamento persistido e identidade deste OBS.
@@ -65,6 +68,16 @@ char *descoberta_aparelhos_json(void);
 char *pares_ler(void);
 /// Funde `novo_json` com o que está no disco (`quall_known_peers_merge`) e grava.
 void pares_gravar_fundindo(const char *novo_json);
+/// **"Esquecer este aparelho"** (`docs/v3-no-privado.md` §3.5): tira só o vínculo de `device_id`
+/// (`quall_known_peers_forget`) e grava **sem fundir** — a fusão traria a entrada de volta. `false`
+/// se nada foi gravado.
+bool pares_esquecer(const char *device_id);
+/// A tabela de pares mudou (pareou, esqueceu): a descoberta a entrega de novo ao navegador
+/// (`quall_browser_set_known`, `docs/v3-no-privado.md` §5.4) na próxima volta.
+void descoberta_pares_mudaram(void);
+/// O `known_device_id` do item da lista com este `endpoint` (`bmalloc`'d), ou NULL: o par guardado que
+/// a sonda reconheceu ali.
+char *descoberta_par_conhecido(const char *endpoint);
 /// `device_id` estável desta instalação do OBS. Vive enquanto o módulo estiver carregado.
 const char *identidade_device_id(void);
 void identidade_soltar(void);
@@ -111,6 +124,39 @@ void receptor_conectar_agora(struct receptor *r);
 void receptor_destruir(struct receptor *r);
 /// Texto curto do estado atual, copiado para `buf`.
 void receptor_estado(struct receptor *r, char *buf, size_t cap);
+
+/// **O cartão do código de 4 dígitos** (`docs/conexao.md` §4), como o painel o desenha: a fase do
+/// núcleo (`"mostrando"`, `"confirmado_aqui"`…), os dígitos, quem está do outro lado e a tentativa a
+/// que o toque pertence (revisão de 12/10, M2).
+struct codigo_na_tela {
+	char fase[24];
+	char codigo[8];
+	char par[128];
+	uint32_t tentativa;
+	/// O toque tentou reconectar e o outro não reconheceu: o código é para parear de novo
+	/// (`"notice": "previous_pairing_invalid"`, `docs/v3-no-privado.md` §8.6).
+	bool pareamento_anterior;
+};
+/// Há cartão a desenhar agora? Copia o estado para `out` (thread de quem pede as propriedades).
+bool receptor_codigo(struct receptor *r, struct codigo_na_tela *out);
+/// O botão **Recusar** do cartão. Vale só para a tentativa do cartão. Não há Confirmar: este OBS é
+/// sempre o convidado, e quem confirma é o anfitrião, escolhendo o número entre três
+/// (`docs/v3-no-privado.md` §3.6).
+void receptor_codigo_recusar(struct receptor *r);
+
+/// **"Esquecer este aparelho"** (`docs/v3-no-privado.md` §3.5): o painel mostra o botão depois de a
+/// sessão salva falhar fechado. Esquecer tira o vínculo de `pares.json` e o id da sessão salva (thread
+/// da interface); o próximo Conectar é PIN ou código, como com um aparelho novo.
+bool receptor_pode_esquecer(struct receptor *r);
+void receptor_esquecer_o_salvo(struct receptor *r);
+
+/// **O QR invertido** (`docs/conexao.md` §10): o botão "Mostrar o QR para o celular" (`mostrar`) e
+/// "Esconder o QR". O QR aparece na imagem da fonte, que a janela de propriedades mostra em cima.
+void receptor_mostrar_qr(struct receptor *r, bool mostrar);
+/// O `.activate` da fonte (ela entrou no ar): com o QR na imagem, ele sai na hora (revisão da
+/// integração, baixo 5).
+void receptor_ativou(struct receptor *r);
+bool receptor_qr_ativo(struct receptor *r);
 
 /// A fonte do OBS que este receptor serve. Existe para que `propriedades()` possa ler os ajustes
 /// **atuais** e reconstruir o painel no estado em que ele estava — sem isto, toda reconstrução

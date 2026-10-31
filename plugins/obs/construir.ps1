@@ -12,10 +12,12 @@
 #    `dumpbin /exports` → `.def` → `lib /def`. Mesma coisa para `w32-pthreads.lib`.
 # 2. **`util/threading.h` inclui `<pthread.h>` sem condição**, e no MSVC esse cabeçalho é o do
 #    `deps/w32-pthreads/` do obs-studio. `buscar-libobs.ps1` traz os dois.
-# 3. vcvars64.bat e importado neste processo quando as ferramentas MSVC nao estao no PATH.
+# 3. **O ambiente do MSVC não está na sessão do SSH.** `vcvars64.bat` é importado para dentro deste
+#    processo, senão `cl`, `lib` e `dumpbin` não existem.
 #
-# -SemInstalar compila e copia documentos para build/data sem tocar o OBS instalado.
-# O portao de compilacao usa esta opcao. A instalacao manual e uma etapa separada.
+# `-SemInstalar` compila e para, com o plugin em `build\quall-obs.dll`: é o que a T3 no Dell usa
+# (`bancada/t3-no-dell.ps1`), que troca o plugin instalado só durante a corrida e devolve o do Bruno.
+# Sem a opção, o comportamento de sempre (o portão com `-ComObs` chama assim, e **instala**).
 param([switch]$SemInstalar)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
@@ -108,13 +110,13 @@ Gerar-Lib (Join-Path $obsBin "w32-pthreads.dll") "w32-pthreads"
 Write-Host "== compilando o núcleo (LTO desligado: dívida 17)"
 $env:CARGO_PROFILE_RELEASE_LTO = "false"
 Push-Location $raiz
-Rodar { cargo build -p quall-ffi --release --locked --jobs 2 } "cargo build do quall-ffi"
+Rodar { cargo build -p quall-ffi --release } "cargo build do quall-ffi"
 Pop-Location
 
 # --- cmake ------------------------------------------------------------------------------------
 Write-Host "== cmake"
 Rodar { cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo "-DQUALL_OBS_DIR=$obsDir" } "cmake configure" | Out-Null
-Rodar { cmake --build build --parallel 2 } "cmake --build"
+Rodar { cmake --build build } "cmake --build"
 
 $avisosEmpacotados = Join-Path $PSScriptRoot "build\data\THIRD_PARTY_NOTICES.txt"
 if (-not (Test-Path -LiteralPath $avisosEmpacotados -PathType Leaf) -or

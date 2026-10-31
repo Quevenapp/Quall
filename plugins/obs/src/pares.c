@@ -82,6 +82,36 @@ void pares_gravar_fundindo(const char *novo_json)
 	bfree(c);
 }
 
+bool pares_esquecer(const char *device_id)
+{
+	if (!device_id || !*device_id)
+		return false;
+	char *c = caminho_de("pares.json");
+	if (!c)
+		return false;
+	pthread_mutex_lock(&trava);
+	char *disco = os_quick_read_utf8_file(c);
+	bool gravou = true; // sem arquivo, não há o que esquecer
+	if (disco && *disco) {
+		gravou = false;
+		intptr_t precisa = quall_known_peers_forget(disco, device_id, NULL, 0);
+		if (precisa > 0) {
+			char *sem = bmalloc((size_t)precisa);
+			intptr_t n = quall_known_peers_forget(disco, device_id, sem, (size_t)precisa);
+			if (n > 0 && n <= precisa)
+				gravou = os_quick_write_utf8_file(c, sem, strlen(sem), false);
+			bfree(sem);
+		}
+		if (!gravou)
+			diga(LOG_WARNING, "não consegui esquecer o par: status %d: %s", (int)quall_last_status(),
+			     registro_causa_status(quall_last_status()));
+	}
+	bfree(disco);
+	pthread_mutex_unlock(&trava);
+	bfree(c);
+	return gravou;
+}
+
 /// Nome curto desta máquina. `gethostname` é POSIX e não existe no MSVC; `GetComputerNameA` é
 /// Win32 e não existe no macOS. O ponto do nome (`.local`) some nos dois — o que vai para o painel
 /// é "MacBook-Air", não "MacBook-Air.local".

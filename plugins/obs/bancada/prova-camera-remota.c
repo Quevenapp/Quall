@@ -12,6 +12,7 @@
 
 #include "../src/camera-remota-regras.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -80,6 +81,28 @@ int main(void)
 	n = degraus_do_obturador(122070, 31250000, true, false, 0, d, 64);
 	lista(d, n, b, sizeof b);
 	confere_texto("obturador log2", b, "122070 244141 488281 976563 1953125 3906250 7812500 15625000 31250000");
+	// 13/10 (§3.1): com "Travar fps" desligado o `max` é o teto efetivo, 1/piso. A 30 fps, 1/15 s:
+	// entram o 1/15 e o 1/20 (com o 1/24 e o 1/25 de antes); um teto fora da lista entra ele mesmo.
+	n = degraus_do_obturador(10000000, 66666667, false, false, 0, d, 64);
+	lista(d, n, b, sizeof b);
+	confere_texto("obturador até 1/15", b, "10000000 16666667 20000000 20833333 33333333 40000000 41666667 "
+					       "50000000 66666667");
+	n = degraus_do_obturador(10000000, 83333333, false, false, 0, d, 64);
+	confere_int("obturador até 1/12: o teto e o 1/15", d[n - 1] == 83333333 && d[n - 2] == 66666667, 1);
+	// log2 até o teto novo: 1/16 s a 30 fps destravado.
+	n = degraus_do_obturador(1000000, 66666667, true, false, 0, d, 64);
+	confere_int("obturador log2 até 1/16", d[n - 1], 62500000);
+
+	// O `ev` remoto (13/10, §3.3): sem a dica, só com Auto e destravado; com ela, sempre.
+	confere_int("ev sem dica, Auto", ev_remoto_livre(false, true, false), 1);
+	confere_int("ev sem dica, Manual", ev_remoto_livre(false, false, false), 0);
+	confere_int("ev sem dica, travado", ev_remoto_livre(false, true, true), 0);
+	confere_int("ev com dica, Manual", ev_remoto_livre(true, false, false), 1);
+	confere_int("ev com dica, travado", ev_remoto_livre(true, true, true), 1);
+	confere_int("nota de destravar sem dica", nota_de_destravar_o_ev(false, true, true), 1);
+	confere_int("nota de destravar com dica", nota_de_destravar_o_ev(true, true, true), 0);
+	confere_int("nota de destravar no Manual", nota_de_destravar_o_ev(false, false, true), 0);
+
 	n = degraus_do_obturador(1000000, 2000000, false, true, 1234567.4, d, 64);
 	lista(d, n, b, sizeof b);
 	confere_texto("obturador com atual", b, "1000000 1234567 2000000");
@@ -127,6 +150,42 @@ int main(void)
 	confere_int("area focoPosicao", area_do_campo("focoPosicao"), AREA_FOCO);
 	confere_int("area toque", area_do_campo("toque"), AREA_NENHUMA);
 	confere_int("area travaIso (leitura)", area_do_campo("travaIso"), AREA_NENHUMA);
+	// Os ajustes de imagem (R9 §3.7, 13/10).
+	confere_int("area gama", area_do_campo("gama"), AREA_IMAGEM);
+	confere_int("area nitidez", area_do_campo("nitidez"), AREA_IMAGEM);
+	confere_int("area contraluz", area_do_campo("contraluz"), AREA_IMAGEM);
+	confere_int("imagem saturacao", e_ajuste_de_imagem("saturacao"), 1);
+	confere_int("imagem contraste", e_ajuste_de_imagem("contraste"), 1);
+	confere_int("imagem contraluz não é de -100 a 100", e_ajuste_de_imagem("contraluz"), 0);
+	confere_int("imagem ev", e_ajuste_de_imagem("ev"), 0);
+	confere_int("imagem nulo", e_ajuste_de_imagem(NULL), 0);
+
+	// O zoom (R9 §3.8, 13/10): na área Foco, o ausente é o 1× cortado na faixa, o texto com o separador
+	// e o "×", e as paradas lidas sem o locale.
+	confere_int("area zoom", area_do_campo("zoom"), AREA_FOCO);
+	confere_int("zoom", e_zoom("zoom"), 1);
+	confere_int("zoom nulo", e_zoom(NULL), 0);
+	confere_int("zoom não é imagem", e_ajuste_de_imagem("zoom"), 0);
+	confere_int("neutro 0,6..100", llround(zoom_neutro(0.6, 100) * 100), 100);
+	confere_int("neutro 2..10", llround(zoom_neutro(2, 10) * 100), 200);
+	texto_do_zoom(0.6, ',', b, sizeof b);
+	confere_texto("zoom 0,6", b, "0,6\xc3\x97");
+	texto_do_zoom(1.0, ',', b, sizeof b);
+	confere_texto("zoom 1", b, "1\xc3\x97");
+	texto_do_zoom(2.38, '.', b, sizeof b);
+	confere_texto("zoom 2.4 em inglês", b, "2.4\xc3\x97");
+	texto_do_zoom(23.6, ',', b, sizeof b);
+	confere_texto("zoom 24", b, "24\xc3\x97");
+	{
+		double z[ZOOM_PARADAS_MAX];
+		size_t k = json_lista_de_numeros("[0.6, 1,3 ,5e0,\"x\",{\"a\":1},-2.5E-1]", z, ZOOM_PARADAS_MAX);
+		confere_int("paradas lidas", (long long)k, 5);
+		confere_int("parada 0", llround(z[0] * 100), 60);
+		confere_int("parada 3", llround(z[3] * 100), 500);
+		confere_int("parada 4", llround(z[4] * 100), -25);
+		confere_int("não é lista", (long long)json_lista_de_numeros("{\"a\":1}", z, 4), 0);
+		confere_int("cap", (long long)json_lista_de_numeros("[1,2,3,4,5]", z, 2), 2);
+	}
 
 	// Limites.
 	confere_int("limite macos", frase_do_limite("macos"), LIMITE_MACOS);
@@ -149,7 +208,7 @@ int main(void)
 	// chaves na ordem que for, porque o leitor não pode depender de quem escreveu.
 	{
 		const char *estado =
-			"{\"situacao\":\"pronto\",\"autor\":\"Pixel \\\"do\\\" {Pessoa Exemplo} [x]\","
+			"{\"situacao\":\"pronto\",\"autor\":\"Pixel \\\"do\\\" {Bruno} [x]\","
 			"\"capacidades\":{\"controles\":{\"ev\":{\"max\":2.0,\"min\":-2.0},"
 			"\"foco\": {\"passo\":1, \"valores\": [\"auto\", \"travado\",\"manual\"]},"
 			"\"iso\":{\"inteiro\":true}},\"limites\":{}},"
@@ -182,6 +241,69 @@ int main(void)
 		n = json_lista_de_textos("[\"luzDoDia\",\"um-texto-comprido-demais-para-caber\"]",
 					 &curtos[0][0], 8, 4);
 		confere_texto("texto cortado na largura", n == 2 ? curtos[1] : "", "um-text");
+	}
+
+	// "Travar fps" (R9 §3.1.1): a frase e o botão do aviso da pouca luz.
+	{
+		confere_int("area travarFps", area_do_campo("travarFps"), AREA_EXPOSICAO);
+		struct pouca_luz p = pouca_luz_do_filmador(true, 15, 15, true, 30, true, false, true, true);
+		confere_int("clareando: frase", p.frase, POUCA_LUZ_CLAREANDO);
+		confere_int("clareando: o fps que chega", p.numero_da_frase, 15);
+		confere_int("clareando: botão", p.botao, BOTAO_DA_LUZ_TRAVAR_EM);
+		confere_int("clareando: o fps escolhido", p.numero_do_botao, 30);
+		confere_int("clareando: o botão trava", p.botao_trava, 1);
+		p = pouca_luz_do_filmador(true, 30, 15, true, 30, true, true, true, true);
+		confere_int("travada: frase", p.frase, POUCA_LUZ_ESCURA);
+		confere_int("travada: a 30", p.numero_da_frase, 30);
+		confere_int("travada: botão", p.botao, BOTAO_DA_LUZ_CLAREAR);
+		confere_int("travada: o piso", p.numero_do_botao, 15);
+		confere_int("travada: o botão destrava", p.botao_trava, 0);
+		p = pouca_luz_do_filmador(true, 15, 15, false, 0, true, false, true, true);
+		confere_int("sem o fps: botão sem número", p.botao, BOTAO_DA_LUZ_TRAVAR);
+		p = pouca_luz_do_filmador(true, 15, 15, true, 30, false, false, true, true);
+		confere_int("manual: nada", p.frase, POUCA_LUZ_NADA);
+		p = pouca_luz_do_filmador(true, 15, 15, true, 30, true, false, false, true);
+		confere_int("sem a trava: a frase", p.frase, POUCA_LUZ_CLAREANDO);
+		confere_int("sem a trava: sem botão", p.botao, BOTAO_DA_LUZ_NADA);
+		p = pouca_luz_do_filmador(true, 15, 15, true, 30, true, false, true, false);
+		confere_int("não permitido: sem botão", p.botao, BOTAO_DA_LUZ_NADA);
+		p = pouca_luz_do_filmador(false, 0, 0, false, 0, true, false, true, true);
+		confere_int("apagada: nada", p.frase, POUCA_LUZ_NADA);
+	}
+
+	// A prévia antes de conectar (13/10): o conjunto típico do R9, por área e sem repetir.
+	{
+		static const long long esperado[] = {5, 2, 3, 3, 5}; // o Foco com o zoom no alto (R9 §3.8)
+		size_t total = 0;
+		for (int area = AREA_EXPOSICAO; area < AREA_NENHUMA; area++) {
+			const char *campos[16];
+			size_t n = campos_da_previa((enum area_da_camera)area, campos, 16);
+			confere_int("prévia: campos da área", (long long)n, esperado[area]);
+			casos++;
+			if (!titulo_da_area((enum area_da_camera)area)) {
+				falhas++;
+				printf("FALHOU prévia: área %d sem título\n", area);
+			}
+			for (size_t i = 0; i < n; i++) {
+				confere_int("prévia: o campo é da área", (long long)area_do_campo(campos[i]), area);
+				casos++;
+				if (!rotulo_da_previa(campos[i])) {
+					falhas++;
+					printf("FALHOU prévia: %s sem rótulo\n", campos[i]);
+				}
+			}
+			total += n;
+		}
+		confere_int("prévia: total", (long long)total, 18);
+		const char *um[1];
+		confere_int("prévia: cap respeitado", (long long)campos_da_previa(AREA_EXPOSICAO, um, 1), 1);
+		confere_texto("prévia: primeiro da exposição", um[0], "exposicao");
+		confere_int("prévia: nenhuma área", (long long)campos_da_previa(AREA_NENHUMA, um, 1), 0);
+		casos++;
+		if (rotulo_da_previa("toque") || titulo_da_area(AREA_NENHUMA)) {
+			falhas++;
+			printf("FALHOU prévia: toque ou área nenhuma não são da prévia\n");
+		}
 	}
 
 	printf("%d casos, %d falhas\n", casos, falhas);

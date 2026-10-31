@@ -37,8 +37,8 @@ ficam excluídos dessa aplicação de licença própria. Preserve os avisos das 
 `THIRD_PARTY_NOTICES.txt` do candidato correspondente.
 
 `bancada/prova-remendo-sps.c` está **excluído desta nova aplicação de GPL/SPDX**: a proveniência
-integral dos literais da fixture ainda não foi demonstrada. O arquivo foi omitido deste
-snapshot público. Sua inclusão futura exige revisão/autorização; ausência de aviso externo
+integral dos literais da fixture ainda não foi demonstrada. O arquivo não foi alterado por esta
+decisão. Sua revisão/autorização permanece um gate de publicação; ausência de aviso externo
 nos arquivos revisados não é certificação de autoria ou titularidade.
 
 Veneri & Quellis Ltda. é a responsável pelo produto e por sua preparação para distribuição.
@@ -61,7 +61,3 @@ por esta alteração de fontes: precisam de nova preparação e conferência aut
 
 O GPLv3 integral foi copiado, sem alterar bytes, de
 [GNU](https://www.gnu.org/licenses/gpl-3.0.txt); este aviso declara a opção or-later aprovada.
-
-Este snapshot fonte destina-se a https://github.com/Quevenapp/Quall, repositório público da
-organização Quevenapp. Sua publicação foi autorizada; nenhum texto desta pasta certifica
-build, assinatura, teste em aparelho ou correspondência automática a um plugin binário antigo.

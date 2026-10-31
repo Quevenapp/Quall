@@ -20,11 +20,6 @@ if [[ -f "$DESTINO/.tag" && "$(cat "$DESTINO/.tag")" == "$TAG" ]]; then
   exit 0
 fi
 
-if [[ "${QUALL_OFFLINE:-0}" == "1" ]]; then
-  echo "Cabeçalhos libobs $TAG ausentes no cache; permita rede explicitamente para obtê-los." >&2
-  exit 1
-fi
-
 rm -rf "$DESTINO"
 mkdir -p "$DESTINO"
 cd "$DESTINO"

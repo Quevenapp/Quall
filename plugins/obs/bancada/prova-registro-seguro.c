@@ -97,7 +97,7 @@ int main(void)
 	sem_valor("IPv6 link-local e escopo", "conectar fe80::1234%en99 status=-2", "1234%en99", "status=-2");
 	sem_valor("IPv6 loopback", "conectar ::1 status=-2", "::1", "status=-2");
 	sem_valor("IPv6 não especificado", "bind :: status=-2", "::", "status=-2");
-	sem_valor("caminho POSIX", "open /Users/pessoa-exemplo Sintética/config/pares.json: Permission denied (13)", "Sintética", "Permission denied (13)");
+	sem_valor("caminho POSIX", "open /Users/Pessoa Sintética/config/pares.json: Permission denied (13)", "Sintética", "Permission denied (13)");
 	sem_valor("caminho Windows", "open C:\\Users\\Pessoa Sintética\\config\\pares.json: Permission denied (13)", "Sintética", "Permission denied (13)");
 	sem_valor("caminho UNC", "open \\\\servidor-sintetico\\Pessoa Sintética\\pares.json: Access denied (5)", "servidor-sintetico", "Access denied (5)");
 	sem_valor("URL com credencial", "erro https://pessoa:senha@example.invalid/cfg?key=secreto status=403", "senha", "status=403");

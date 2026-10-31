@@ -1,10 +1,10 @@
 #pragma once
-// **O primeiro tamanho da fonte fica, e os seguintes entram encaixados** (decisão do Pessoa Exemplo de
+// **O primeiro tamanho da fonte fica, e os seguintes entram encaixados** (decisão do Bruno de
 // 21/09/2026, depois do controle da troca de tamanho).
 //
 // Quando o emissor troca o tamanho da imagem no meio da sessão (a câmera do Windows em 16:9 ↔ 4:3),
 // o plugin publicava cada quadro no tamanho dele, e a fonte mudava de tamanho na cena. No controle
-// de 21/09 o Pessoa Exemplo viu isso acontecer. Um item de cena com `OBS_BOUNDS_NONE` guarda escala, não
+// de 21/09 o Bruno viu isso acontecer. Um item de cena com `OBS_BOUNDS_NONE` guarda escala, não
 // tamanho, e o enquadramento de quem transmite pula a cada troca; o §8.56 da bancada já tinha
 // recusado trocar a geometria no ar por esse motivo.
 //

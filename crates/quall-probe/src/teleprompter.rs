@@ -1,9 +1,8 @@
-// Os identificadores e endereços de exemplos/fixtures são sintéticos; não identificam a bancada privada.
 //! A bancada do teleprompter (F6a): **só mensagens, nenhum vídeo**.
 //!
 //! ```text
 //! quall-probe teleprompter --pin 424242 --porta 7979 --segundos 60 --sem-mdns   # hospeda
-//! quall-probe controle --ip 192.168.57.20:7979 --pin 424242 --carga 100000       # conecta
+//! quall-probe controle --ip 192.168.15.20:7979 --pin 424242 --carga 100000       # conecta
 //! ```
 //!
 //! O prompter hospeda com o papel, liga o espelho e relata uma posição que anda enquanto

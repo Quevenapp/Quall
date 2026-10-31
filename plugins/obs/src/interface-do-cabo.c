@@ -1,4 +1,3 @@
-// Os identificadores e endereços de exemplos/fixtures são sintéticos; não identificam a bancada privada.
 #include "interface-do-cabo.h"
 
 #include <stdio.h>
@@ -170,8 +169,8 @@ struct escolha_de_interface decidir_interface(const struct interface_local *ifs,
 	// **"o par que funciona" não é "o par que a pessoa quis".**
 	//
 	// A10s ancorado por USB no Dell, sinalização apontada para o endereço do cabo
-	// (`192.168.58.57`, que é **privado** e não link-local), e a mídia saiu por
-	// `192.168.56.103 <-> 192.168.56.159` — LAN do Dell contra Wi-Fi do telefone. Os dois pares
+	// (`192.168.152.57`, que é **privado** e não link-local), e a mídia saiu por
+	// `192.168.1.103 <-> 192.168.1.159` — LAN do Dell contra Wi-Fi do telefone. Os dois pares
 	// funcionavam; o ICE ficou com o rádio. Resultado: 190 trancos e 1,89 % de perda numa
 	// corrida que só precisava de `--ligar-em` para dar zero e zero.
 	//

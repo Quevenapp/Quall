@@ -16,10 +16,16 @@ enum area_da_camera area_do_campo(const char *campo)
 	} mapa[] = {
 		{"exposicao", AREA_EXPOSICAO},  {"ev", AREA_EXPOSICAO},
 		{"travaExposicao", AREA_EXPOSICAO}, {"antiCintilacao", AREA_EXPOSICAO},
+		{"travarFps", AREA_EXPOSICAO},
 		{"iso", AREA_ISO_E_OBTURADOR}, {"obturadorNs", AREA_ISO_E_OBTURADOR},
 		{"balanco", AREA_BALANCO},      {"kelvin", AREA_BALANCO},
 		{"travaBalanco", AREA_BALANCO}, {"foco", AREA_FOCO},
 		{"focoPosicao", AREA_FOCO},
+		{"gama", AREA_IMAGEM},          {"contraste", AREA_IMAGEM},
+		{"saturacao", AREA_IMAGEM},     {"nitidez", AREA_IMAGEM},
+		{"contraluz", AREA_IMAGEM},
+		// O zoom (R9 §3.8) fica no alto da área Foco: enquadramento e lente juntos.
+		{"zoom", AREA_FOCO},
 	};
 	if (!campo)
 		return AREA_NENHUMA;
@@ -27,6 +33,80 @@ enum area_da_camera area_do_campo(const char *campo)
 		if (strcmp(campo, mapa[i].campo) == 0)
 			return mapa[i].area;
 	return AREA_NENHUMA;
+}
+
+bool e_ajuste_de_imagem(const char *campo)
+{
+	static const char *const imagem[] = {"gama", "contraste", "saturacao", "nitidez"};
+	if (!campo)
+		return false;
+	for (size_t i = 0; i < sizeof imagem / sizeof imagem[0]; i++)
+		if (strcmp(campo, imagem[i]) == 0)
+			return true;
+	return false;
+}
+
+bool e_zoom(const char *campo)
+{
+	return campo && strcmp(campo, "zoom") == 0;
+}
+
+double zoom_neutro(double min, double max)
+{
+	double z = 1.0;
+	if (z < min)
+		z = min;
+	if (z > max)
+		z = max;
+	return z;
+}
+
+void texto_do_zoom(double z, char separador, char *buf, size_t cap)
+{
+	if (!buf || cap == 0)
+		return;
+	if (z >= 9.95) {
+		snprintf(buf, cap, "%lld\xc3\x97", (long long)llround(z));
+		return;
+	}
+	double d = round(z * 10.0) / 10.0;
+	if (d == floor(d)) {
+		snprintf(buf, cap, "%lld\xc3\x97", (long long)llround(d));
+		return;
+	}
+	char n[32];
+	numero_com_separador(d, 1, separador, n, sizeof n);
+	snprintf(buf, cap, "%s\xc3\x97", n);
+}
+
+struct pouca_luz pouca_luz_do_filmador(bool ha, double chegando, double piso, bool tem_fps, double fps,
+					bool exposicao_auto, bool travado, bool oferece_trava, bool permitido)
+{
+	struct pouca_luz p = {POUCA_LUZ_NADA, 0, BOTAO_DA_LUZ_NADA, 0, false};
+	// Em Manual o manual já segura o fps: sem aviso (R9 §3.1.1).
+	if (!ha || !exposicao_auto || !isfinite(chegando) || !isfinite(piso) || chegando < 1 || piso < 1)
+		return p;
+	bool fps_ok = tem_fps && isfinite(fps) && fps >= 1;
+	if (travado) {
+		p.frase = POUCA_LUZ_ESCURA;
+		p.numero_da_frase = llround(fps_ok ? fps : chegando);
+	} else {
+		p.frase = POUCA_LUZ_CLAREANDO;
+		p.numero_da_frase = llround(chegando);
+	}
+	if (!oferece_trava || !permitido)
+		return p;
+	p.botao_trava = !travado;
+	if (travado) {
+		p.botao = BOTAO_DA_LUZ_CLAREAR;
+		p.numero_do_botao = llround(piso);
+	} else if (fps_ok) {
+		p.botao = BOTAO_DA_LUZ_TRAVAR_EM;
+		p.numero_do_botao = llround(fps);
+	} else {
+		p.botao = BOTAO_DA_LUZ_TRAVAR;
+	}
+	return p;
 }
 
 bool metros_do_foco(double dioptrias_em_1, double posicao, double *metros)
@@ -78,12 +158,23 @@ size_t degraus_de_iso(double min, double max, bool tem_atual, double atual, int6
 	return n;
 }
 
+bool ev_remoto_livre(bool independente, bool exposicao_auto, bool trava_exposicao)
+{
+	return independente || (exposicao_auto && !trava_exposicao);
+}
+
+bool nota_de_destravar_o_ev(bool independente, bool exposicao_auto, bool trava_exposicao)
+{
+	return !independente && exposicao_auto && trava_exposicao;
+}
+
 size_t degraus_do_obturador(double min, double max, bool log2, bool tem_atual, double atual,
 			    int64_t *out, size_t cap)
 {
-	// R9 §3.1, literal: as frações de cinema e vídeo.
-	static const int denominadores[] = {24,  25,  30,  48,   50,   60,   100,  120,
-					    125, 250, 500, 1000, 2000, 4000, 8000};
+	// R9 §3.1: as frações de cinema e vídeo, e (13/10) o 1/15 e o 1/20, que só cabem quando o
+	// teto de quem filma passa de 1/fps ("Travar fps" desligado).
+	static const int denominadores[] = {15,  20,  24,   25,   30,   48,   50,  60,  100,
+					    120, 125, 250, 500, 1000, 2000, 4000, 8000};
 	size_t n = 0;
 	if (!(min <= max) || !isfinite(min) || !isfinite(max) || max <= 0)
 		return 0;
@@ -287,6 +378,70 @@ static const char *valor_da_chave(const char *p, const char *chave)
 	}
 }
 
+/// Um número JSON em `p`, sem o locale: sinal, dígitos, fração e expoente. Devolve o fim, ou NULL.
+static const char *ler_numero(const char *p, double *out)
+{
+	double sinal = 1, v = 0;
+	bool algum = false;
+	if (*p == '-') {
+		sinal = -1;
+		p++;
+	}
+	while (*p >= '0' && *p <= '9') {
+		v = v * 10 + (*p++ - '0');
+		algum = true;
+	}
+	if (*p == '.') {
+		double peso = 0.1;
+		p++;
+		while (*p >= '0' && *p <= '9') {
+			v += (*p++ - '0') * peso;
+			peso /= 10;
+			algum = true;
+		}
+	}
+	if (!algum)
+		return NULL;
+	if (*p == 'e' || *p == 'E') {
+		p++;
+		int sinal_e = 1, e = 0;
+		if (*p == '+' || *p == '-')
+			sinal_e = *p++ == '-' ? -1 : 1;
+		while (*p >= '0' && *p <= '9' && e < 400)
+			e = e * 10 + (*p++ - '0');
+		v *= pow(10.0, sinal_e * e);
+	}
+	*out = sinal * v;
+	return p;
+}
+
+size_t json_lista_de_numeros(const char *valor, double *out, size_t cap)
+{
+	const char *p = pular_espacos(valor);
+	size_t n = 0;
+	if (!p || *p != '[')
+		return 0;
+	p++;
+	for (;;) {
+		p = pular_espacos(p);
+		if (!p || !*p || *p == ']')
+			return n;
+		double v;
+		const char *fim = (*p == '-' || (*p >= '0' && *p <= '9')) ? ler_numero(p, &v) : NULL;
+		if (fim) {
+			if (n < cap && isfinite(v))
+				out[n++] = v;
+			p = fim;
+		} else {
+			p = pular_valor(p);
+		}
+		p = pular_espacos(p);
+		if (!p || *p != ',')
+			return n;
+		p++;
+	}
+}
+
 size_t json_tamanho_do_valor(const char *valor)
 {
 	const char *p = pular_espacos(valor);
@@ -334,4 +489,73 @@ size_t json_lista_de_textos(const char *valor, char *out, size_t largura, size_t
 			return n;
 		p++;
 	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// A prévia antes de conectar
+// -------------------------------------------------------------------------------------------------
+static const struct {
+	const char *campo, *rotulo;
+} PREVIA[] = {
+	// Exposição, na ordem da montagem (`camera_remota_propriedades`).
+	{"exposicao", "Quall.Camera.Modo"},
+	{"ev", "Quall.Camera.Ev"},
+	{"travaExposicao", "Quall.Camera.TravarExposicao"},
+	{"travarFps", "Quall.Camera.TravarFps"},
+	{"antiCintilacao", "Quall.Camera.AntiCintilacao"},
+	// ISO e obturador.
+	{"iso", "Quall.Camera.Iso"},
+	{"obturadorNs", "Quall.Camera.Obturador"},
+	// Balanço.
+	{"balanco", "Quall.Camera.Modo"},
+	{"kelvin", "Quall.Camera.Kelvin"},
+	{"travaBalanco", "Quall.Camera.TravarBalanco"},
+	// Foco, com o zoom no alto (R9 §3.8), como na montagem.
+	{"zoom", "Quall.Camera.Zoom"},
+	{"foco", "Quall.Camera.Modo"},
+	{"focoPosicao", "Quall.Camera.PertoLonge"},
+	// Imagem (R9 §3.7).
+	{"gama", "Quall.Camera.Gama"},
+	{"contraste", "Quall.Camera.Contraste"},
+	{"saturacao", "Quall.Camera.Saturacao"},
+	{"nitidez", "Quall.Camera.Nitidez"},
+	{"contraluz", "Quall.Camera.Contraluz"},
+};
+
+size_t campos_da_previa(enum area_da_camera area, const char **out, size_t cap)
+{
+	size_t n = 0;
+	for (size_t i = 0; i < sizeof PREVIA / sizeof PREVIA[0] && n < cap; i++)
+		if (area_do_campo(PREVIA[i].campo) == area)
+			out[n++] = PREVIA[i].campo;
+	return n;
+}
+
+const char *rotulo_da_previa(const char *campo)
+{
+	if (!campo)
+		return NULL;
+	for (size_t i = 0; i < sizeof PREVIA / sizeof PREVIA[0]; i++)
+		if (strcmp(campo, PREVIA[i].campo) == 0)
+			return PREVIA[i].rotulo;
+	return NULL;
+}
+
+const char *titulo_da_area(enum area_da_camera area)
+{
+	switch (area) {
+	case AREA_EXPOSICAO:
+		return "Quall.Camera.Exposicao";
+	case AREA_ISO_E_OBTURADOR:
+		return "Quall.Camera.IsoEObturador";
+	case AREA_BALANCO:
+		return "Quall.Camera.Balanco";
+	case AREA_FOCO:
+		return "Quall.Camera.Foco";
+	case AREA_IMAGEM:
+		return "Quall.Camera.Imagem";
+	case AREA_NENHUMA:
+		break;
+	}
+	return NULL;
 }

@@ -48,14 +48,14 @@ echo "== OBS instalado: $VERSAO_OBS (cabeçalhos na tag $QUALL_OBS_TAG)"
 # não é rápido, é errado, e o `cargo` já é incremental: quando nada mudou isto custa décimos.
 echo "== compilando o núcleo (LTO desligado: dívida 17)"
 ( cd "$RAIZ" && MACOSX_DEPLOYMENT_TARGET=13.0 CARGO_PROFILE_RELEASE_LTO=false \
-    cargo build -p quall-ffi --release --locked --jobs 2 --target "$ALVO" )
+    cargo build -p quall-ffi --release --target "$ALVO" )
 
 echo "== cmake"
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DQUALL_ALVO_RUST="$ALVO" \
   -DQUALL_OBS_APP="$OBS_APP" >/dev/null
-cmake --build build --parallel 2
+cmake --build build
 
 # Não instalar nem assinar um bundle que perdeu licenças/avisos depois da compilação.
 cmp "$RAIZ/THIRD_PARTY_NOTICES.txt" \

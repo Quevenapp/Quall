@@ -34,6 +34,7 @@
 // Os textos de verdade, das `.ini` (`texto_formato` confere as conversões contra o `pt-BR`).
 #include "../src/texto.c"
 
+#include <math.h>
 #include <stdio.h>
 
 obs_module_t *obs_current_module(void)
@@ -217,6 +218,67 @@ static char *estado_android(const char *situacao, const char *ajuste, const char
 	return d.array;
 }
 
+/// **Rótulos curtos** (foto do Bruno no Dell, 13/10): todo controle e botão do grupo com no máximo
+/// `TETO_DO_ROTULO` caracteres; as linhas de texto quebram (word wrap).
+#define TETO_DO_ROTULO 18
+static void rotulos_curtos(const char *caso, obs_properties_t *props)
+{
+	for (obs_property_t *p = obs_properties_first(props); p; obs_property_next(&p)) {
+		enum obs_property_type tipo = obs_property_get_type(p);
+		if (tipo == OBS_PROPERTY_GROUP) {
+			rotulos_curtos(caso, obs_property_group_content(p));
+			continue;
+		}
+		char t[256];
+		if (tipo == OBS_PROPERTY_TEXT && obs_property_text_type(p) == OBS_TEXT_INFO) {
+			snprintf(t, sizeof t, "%s: a linha %s quebra", caso, obs_property_name(p));
+			confere(t, obs_property_text_info_word_wrap(p));
+			continue;
+		}
+		const char *r = obs_property_description(p);
+		size_t n = 0;
+		for (const char *x = r; x && *x; x++)
+			n += ((unsigned char)*x & 0xC0) != 0x80;
+		snprintf(t, sizeof t, "%s: o rótulo de %s é curto (\"%s\", %zu)", caso, obs_property_name(p), r, n);
+		confere(t, n <= TETO_DO_ROTULO);
+	}
+}
+
+/// A prévia antes de conectar (13/10): o grupo existe, a frase está no topo, os campos típicos
+/// aparecem desabilitados, e nada é escrito no `settings` (nem a prévia, nem o ajuste de verdade).
+static void confere_previa(const char *caso, obs_source_t *fonte, obs_properties_t *props, bool antes)
+{
+	char t[160];
+	snprintf(t, sizeof t, "%s: o grupo da prévia", caso);
+	confere(t, obs_properties_get(props, "camera.grupo") != NULL);
+	obs_property_t *aviso = obs_properties_get(props, "camera.previa.aviso");
+	snprintf(t, sizeof t, "%s: a frase de depois da conexão", caso);
+	confere(t, aviso && strcmp(obs_property_description(aviso), "Configurar os parâmetros após a conexão") == 0);
+	static const char *const campos[] = {"exposicao", "ev", "travarFps", "iso", "obturadorNs", "kelvin",
+					     "focoPosicao", "contraste", "contraluz", "zoom"};
+	obs_data_t *s = obs_source_get_settings(fonte);
+	for (size_t i = 0; i < sizeof campos / sizeof campos[0]; i++) {
+		char chave[64];
+		snprintf(chave, sizeof chave, "camera.previa.%s", campos[i]);
+		obs_property_t *p = obs_properties_get(props, chave);
+		snprintf(t, sizeof t, "%s: %s aparece, desabilitado", caso, campos[i]);
+		confere(t, p && !obs_property_enabled(p));
+		snprintf(t, sizeof t, "%s: %s sem valor de usuário (nada escrito)", caso, campos[i]);
+		confere(t, !obs_data_has_user_value(s, chave));
+		// Antes da primeira sessão, nem as chaves do ajuste de verdade existem (depois, a sessão as
+		// escreveu na montagem dela, e o `.save` as tira).
+		if (antes) {
+			snprintf(chave, sizeof chave, "camera.%s", campos[i]);
+			snprintf(t, sizeof t, "%s: camera.%s intocado", caso, campos[i]);
+			confere(t, !obs_data_has_user_value(s, chave));
+		}
+	}
+	obs_property_t *r = obs_properties_get(props, "camera.previa.restaurar");
+	snprintf(t, sizeof t, "%s: Restaurar desabilitado", caso);
+	confere(t, r && !obs_property_enabled(r));
+	obs_data_release(s);
+}
+
 int main(void)
 {
 	base_set_log_handler(NULL, NULL);
@@ -241,9 +303,18 @@ int main(void)
 			      "\"obturadorNs\":16666666,\"antiCintilacao\":\"auto\",\"balanco\":\"auto\","
 			      "\"kelvin\":null,\"travaBalanco\":false,\"foco\":\"auto\",\"focoPosicao\":null}";
 
-	// 1. Sem estado, nada de grupo.
+	// 1. Sem estado (antes de conectar): a prévia — os campos típicos, desabilitados, com a frase, e
+	//    a montagem não pede, não escreve nem pede refazer (13/10).
+	int refazeres_antes = refazeres;
 	obs_properties_t *props = montar(fonte);
-	confere("sem estado: sem grupo", obs_properties_get(props, "camera.grupo") == NULL);
+	confere_previa("antes de conectar", fonte, props, true);
+	rotulos_curtos("prévia", props);
+	confere_pedidos("prévia não pede", 0, NULL);
+	confere("prévia não pede refazer", refazeres == refazeres_antes);
+	obs_properties_destroy(props);
+	props = montar(fonte);
+	confere_previa("prévia remontada", fonte, props, true);
+	confere_pedidos("prévia remontada não pede", 0, NULL);
 	obs_properties_destroy(props);
 
 	// 2. `esperando` também não mostra.
@@ -262,6 +333,7 @@ int main(void)
 	props = montar(fonte);
 	confere("pronto: grupo", obs_properties_get(props, "camera.grupo") != NULL);
 	confere_pedidos("montagem não pede", 0, NULL);
+	rotulos_curtos("pronto", props);
 	confere("título com o nome da câmera",
 		strcmp(descricao(props, "camera.grupo"), "Câmera do aparelho — Traseira") == 0);
 	confere("ISO visível com Manual", obs_property_visible(obs_properties_get(props, "camera.iso")));
@@ -496,13 +568,100 @@ int main(void)
 	}
 	mexer(props, fonte, "camera.ev");
 	confere_pedidos("Windows: brilho volta sem a origem", 6, "{\"ev\":12}");
+	confere("Windows sem imagem: sem a área", obs_properties_get(props, "camera.area.imagem") == NULL);
 	obs_properties_destroy(props);
 
-	// 14. O fim da sessão: o remoto sai, o estado some, e o grupo também.
-	camera_remota_acabar(c, false);
+	// 13b. Os ajustes de imagem (R9 §3.7, 13/10): a área "Imagem" só com o que o filmador oferece;
+	//      o ausente abre no 0 sem pedir; a `origem` em texto não desloca nada; a contraluz lida
+	//      (o padrão da câmera) aparece na caixa sem virar pedido; o gesto pede só o campo, inteiro.
+	por_estado(c,
+		   "{\"situacao\":\"pronto\",\"capacidades\":{\"plataforma\":\"windows\",\"controles\":{"
+		   "\"exposicao\":{\"valores\":[\"auto\",\"manual\"]},"
+		   "\"gama\":{\"min\":-100,\"max\":100,\"passo\":1,\"inteiro\":true,\"origem\":\"camera\"},"
+		   "\"contraste\":{\"min\":-100,\"max\":100,\"passo\":1,\"origem\":\"quall\"},"
+		   "\"nitidez\":{\"min\":0,\"max\":100,\"passo\":1,\"inteiro\":true,\"origem\":\"camera\"},"
+		   "\"contraluz\":{\"origem\":\"camera\"}},\"limites\":{}},"
+		   "\"ajuste\":{\"exposicao\":\"manual\",\"gama\":-20},\"pendente\":{},"
+		   "\"lido\":{\"contraluz\":true}}");
 	props = montar(fonte);
-	confere("depois da sessão, sem grupo", obs_properties_get(props, "camera.grupo") == NULL);
+	confere_pedidos("imagem: a montagem não pede", 6, NULL);
+	confere("imagem: a área", strcmp(descricao(props, "camera.area.imagem"), "Imagem") == 0);
+	confere("imagem: Gama", strcmp(descricao(props, "camera.gama"), "Gama") == 0);
+	confere("imagem: sem saturação (não oferecida)", obs_properties_get(props, "camera.saturacao") == NULL);
+	confere("imagem: a contraluz é caixa",
+		obs_property_get_type(obs_properties_get(props, "camera.contraluz")) == OBS_PROPERTY_BOOL);
+	confere("imagem: viva em Manual", obs_property_enabled(obs_properties_get(props, "camera.contraste")));
+	{
+		obs_data_t *s = obs_source_get_settings(fonte);
+		confere("imagem: gama no aplicado", obs_data_get_int(s, "camera.gama") == -20);
+		confere("imagem: contraste ausente abre no 0", obs_data_get_int(s, "camera.contraste") == 0);
+		confere("imagem: contraluz da leitura", obs_data_get_bool(s, "camera.contraluz"));
+		obs_data_set_int(s, "camera.contraste", 25);
+		obs_data_release(s);
+	}
+	mexer(props, fonte, "camera.contraluz");
+	confere_pedidos("imagem: a contraluz lida não vira pedido", 6, NULL);
+	mexer(props, fonte, "camera.contraste");
+	confere_pedidos("imagem: contraste inteiro", 7, "{\"contraste\":25}");
+	{
+		obs_data_t *s = obs_source_get_settings(fonte);
+		obs_data_set_bool(s, "camera.contraluz", false);
+		obs_data_release(s);
+	}
+	mexer(props, fonte, "camera.contraluz");
+	confere_pedidos("imagem: desligar a contraluz", 8, "{\"contraluz\":false}");
 	obs_properties_destroy(props);
+
+	// 13c. O zoom (R9 §3.8, 13/10): no alto da área Foco, só com o descritor; o ausente abre no 1×
+	//      sem pedir; as paradas são botões que pedem o fator e põem o deslizante nele.
+	por_estado(c,
+		   "{\"situacao\":\"pronto\",\"capacidades\":{\"plataforma\":\"android\",\"controles\":{"
+		   "\"exposicao\":{\"valores\":[\"auto\",\"manual\"]},"
+		   "\"foco\":{\"valores\":[\"auto\",\"travado\"]},"
+		   "\"zoom\":{\"min\":0.6,\"max\":100,\"passo\":0.1,\"paradas\":[0.6,1,3,5,10],"
+		   "\"opticas\":[0.6,1,3,5],\"origem\":\"camera\"}},\"limites\":{}},"
+		   "\"ajuste\":{\"exposicao\":\"manual\"},\"pendente\":{},\"lido\":{}}");
+	props = montar(fonte);
+	confere_pedidos("zoom: a montagem não pede", 8, NULL);
+	confere("zoom: o deslizante", strcmp(descricao(props, "camera.zoom"), "Zoom") == 0);
+	confere("zoom: é float", obs_property_get_type(obs_properties_get(props, "camera.zoom")) == OBS_PROPERTY_FLOAT);
+	confere("zoom: a parada 0,6×", strcmp(descricao(props, "camera.zoom_parada.0"), "0,6\xc3\x97") == 0);
+	confere("zoom: a parada 10×", strcmp(descricao(props, "camera.zoom_parada.4"), "10\xc3\x97") == 0);
+	confere("zoom: cinco paradas", obs_properties_get(props, "camera.zoom_parada.5") == NULL);
+	confere("zoom: viva em Manual", obs_property_enabled(obs_properties_get(props, "camera.zoom")));
+	{
+		obs_data_t *s = obs_source_get_settings(fonte);
+		confere("zoom: o ausente abre no 1×", fabs(obs_data_get_double(s, "camera.zoom") - 1.0) < 1e-9);
+		obs_data_release(s);
+	}
+	mexer(props, fonte, "camera.zoom");
+	confere_pedidos("zoom: o 1× ausente não vira pedido", 8, NULL);
+	obs_property_button_clicked(obs_properties_get(props, "camera.zoom_parada.2"), fonte);
+	confere_pedidos("zoom: a parada 3×", 9, "{\"zoom\":3.0}");
+	{
+		obs_data_t *s = obs_source_get_settings(fonte);
+		confere("zoom: o deslizante foi para 3×", fabs(obs_data_get_double(s, "camera.zoom") - 3.0) < 1e-9);
+		obs_data_set_double(s, "camera.zoom", 2.5);
+		obs_data_release(s);
+	}
+	mexer(props, fonte, "camera.zoom");
+	confere_pedidos("zoom: o deslizante", 10, "{\"zoom\":2.5}");
+	obs_properties_destroy(props);
+
+	// 14. O fim da sessão: o remoto sai, o estado some, e o grupo volta à prévia desabilitada.
+	camera_remota_acabar(c, false);
+	int pedidos_antes = pedidos;
+	props = montar(fonte);
+	confere_previa("depois da sessão", fonte, props, false);
+	confere("depois da sessão, a prévia não pede", pedidos == pedidos_antes);
+	confere("depois da sessão, sem o ISO de verdade", obs_properties_get(props, "camera.iso") == NULL);
+	obs_properties_destroy(props);
+	// O `.save` não leva rastro da prévia.
+	obs_data_t *salvo = obs_data_create();
+	obs_data_set_string(salvo, "camera.previa.iso", "previa");
+	camera_remota_nao_salvar(salvo);
+	confere("o .save tira a prévia", !obs_data_has_user_value(salvo, "camera.previa.iso"));
+	obs_data_release(salvo);
 
 	obs_source_release(fonte);
 	obs_module_free_locale();

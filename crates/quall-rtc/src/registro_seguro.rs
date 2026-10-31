@@ -94,7 +94,7 @@ mod tests {
             "Rejected ICE candidate: candidate:1 UDP 192.0.2.10 12345 senha-livre",
             "Invalid fingerprint \"AA:BB:CC\", expected \"DD:EE:FF\"",
             "Uncaught exception in callback: o meu PIN pessoal era 901234",
-            "mensagem nova desconhecida segredo-livre fd00::123%en0 /Users/pessoa-exemplo/arquivo",
+            "mensagem nova desconhecida segredo-livre fd00::123%en0 /Users/pessoa/arquivo",
             "Send failed, buffer is full\npassword=901234",
         ] {
             let seguro = mensagem_nativa(texto);

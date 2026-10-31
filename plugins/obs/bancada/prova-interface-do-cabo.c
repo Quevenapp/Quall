@@ -1,4 +1,3 @@
-// Os identificadores e endereços de exemplos/fixtures são sintéticos; não identificam a bancada privada.
 // Banco de prova da **escolha automática da interface**, sem OBS, sem rede e sem aparelho.
 //
 // Mesma razão de `prova-janela-do-enlace.c`: a decisão que vai prender a mídia a uma interface —
@@ -19,10 +18,10 @@
 // A tabela de interfaces dos casos 4 a 7 é a **medida** desta bancada em 01/09/2026, com três
 // iOS no cabo (`docs/quall-pelo-cabo.md`):
 //
-//     en8  169.254.75.173  ->  iPad A16    169.254.20.3
-//     en10 169.254.20.226  ->  iPhone X    169.254.20.2
+//     en8  169.254.75.173  ->  iPad A16    169.254.164.151
+//     en10 169.254.20.226  ->  iPhone X    169.254.66.148
 //     en12 169.254.81.198  ->  iPhone 7    169.254.212.12
-//     en0  192.168.56.131   ->  a Wi-Fi
+//     en0  192.168.1.131   ->  a Wi-Fi
 //
 // As três primeiras são `169.254/16`: **as três "contêm" qualquer aparelho de qualquer cabo**, e
 // é exatamente por isso que a tabela de rotas não desempata.
@@ -138,9 +137,9 @@ int main(int argc, char **argv)
 
 	// --- 1. o endereço do par -----------------------------------------------------------
 	casos++;
-	if (separar_endereco_do_par("169.254.20.3:7877", &par, &porta) &&
+	if (separar_endereco_do_par("169.254.164.151:7877", &par, &porta) &&
 	    par == ip4(169, 254, 164, 151) && porta == 7877) {
-		printf("ok o endereço do par vira ip e porta\n  169.254.20.3 : 7877\n");
+		printf("ok o endereço do par vira ip e porta\n  169.254.164.151 : 7877\n");
 	} else {
 		falhas++;
 		printf("FALHOU o endereço do par vira ip e porta\n");
@@ -150,9 +149,9 @@ int main(int argc, char **argv)
 	{
 		// Um nome de máquina, um IPv6 com escopo, um endereço sem porta e lixo depois da
 		// porta. Nenhum é literal IPv4, e nenhum pode virar um `bind_address` chutado.
-		const char *ruins[] = {"iPad-de-Pessoa Exemplo.local:7877", "[fe80::1%en8]:7877",
-				       "169.254.20.3", "169.254.20.3:7877x",
-				       "169.254.300.1:7877", "169.254.20.3:0", NULL};
+		const char *ruins[] = {"iPad-de-Bruno.local:7877", "[fe80::1%en8]:7877",
+				       "169.254.164.151", "169.254.164.151:7877x",
+				       "169.254.300.1:7877", "169.254.164.151:0", NULL};
 		bool todos_recusados = true;
 		for (int i = 0; ruins[i]; i++) {
 			if (separar_endereco_do_par(ruins[i], &par, &porta)) {
@@ -176,13 +175,13 @@ int main(int argc, char **argv)
 	//
 	// Ele afirmava que o par de Wi-Fi **não** prende, com o argumento de que fora do link-local
 	// prender só tira candidato do ICE, "que sabe escolher sozinho". A bancada mediu o furo: o
-	// A10s ancorado por USB dá `192.168.58.57`, que é privado e não link-local, e o ICE
+	// A10s ancorado por USB dá `192.168.152.57`, que é privado e não link-local, e o ICE
 	// escolheu **o rádio** — 190 trancos numa corrida que só precisava de bind para dar zero.
 	// Fora do link-local prender não habilita o caminho, **seleciona**; e selecionar é o que a
 	// pessoa pediu ao digitar aquele endereço.
 	//
 	// A regra passou a ser o **enlace**: uma interface no enlace do par, um bind. Aqui `en0`
-	// contém 192.168.56.137 e é a única que contém, então prende em `en0` — e a sessão vai pela
+	// contém 192.168.1.137 e é a única que contém, então prende em `en0` — e a sessão vai pela
 	// Wi-Fi exatamente como antes, porque não havia outro caminho para ela ir.
 	//
 	// **O custo, e ele é real:** os candidatos IPv6 deixam de ser oferecidos. A sinalização
@@ -198,7 +197,7 @@ int main(int argc, char **argv)
 
 	// --- 2b. a ancoragem de Android, que é o caso que a regra antiga errava --------------
 	//
-	// `192.168.59.76` é o A10s ancorado por USB; `Ethernet 4` do Dell é `192.168.59.218/24`.
+	// `192.168.248.76` é o A10s ancorado por USB; `Ethernet 4` do Dell é `192.168.248.218/24`.
 	// Endereço **privado**, não link-local: pela regra antiga não prendia, e a mídia ia pelo
 	// rádio com o telefone alcançável pelos dois caminhos.
 	{

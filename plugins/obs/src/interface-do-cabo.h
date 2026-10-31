@@ -1,4 +1,3 @@
-// Os identificadores e endereços de exemplos/fixtures são sintéticos; não identificam a bancada privada.
 // -------------------------------------------------------------------------------------------------
 // **Por qual interface deste computador o par é alcançado, e o endereço local a prender.**
 //
@@ -117,7 +116,7 @@ struct escolha_de_interface {
 /// prender muda a resposta.
 bool par_e_de_cabo(uint32_t par);
 
-/// `"169.254.20.3:7877"` -> ip e porta. Falso em qualquer coisa que não seja literal IPv4.
+/// `"169.254.164.151:7877"` -> ip e porta. Falso em qualquer coisa que não seja literal IPv4.
 bool separar_endereco_do_par(const char *endpoint, uint32_t *ip, uint16_t *porta);
 
 /// Escreve `a.b.c.d` em `buf`.

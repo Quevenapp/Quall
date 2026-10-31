@@ -2,7 +2,7 @@
 
 // O som da fonte do Quall no OBS (S5 do `docs/som-no-receptor.md`, §7.3 e §18).
 //
-// # O desenho, depois da decisão do Pessoa Exemplo de 18/09/2026 (~22h30)
+// # O desenho, depois da decisão do Bruno de 18/09/2026 (~22h30)
 //
 // **A imagem espera o som; o som nunca empurra o buffer global de áudio do OBS.** O som é
 // publicado com carimbo **direto e adiantado**: cada bloco de 10 ms sai `SOM_ADIANTAMENTO_NS`

@@ -1,0 +1,9 @@
+"QUALL_TITULO" = "Quall Studio for OBS";
+"QUALL_MACOS_TITULO" = "This Mac's macOS is too old";
+"QUALL_MACOS_MENSAGEM" = "The Quall Studio plugin requires macOS %@ or later.";
+"QUALL_ABERTO_TITULO" = "OBS Studio is open";
+"QUALL_ABERTO_MENSAGEM" = "Quit OBS Studio and open this installer again. OBS only loads plugins when it starts.";
+"QUALL_SEM_OBS_TITULO" = "OBS Studio was not found in Applications";
+"QUALL_SEM_OBS_MENSAGEM" = "The plugin needs OBS Studio %@ or later. If OBS is installed somewhere else, you can continue: the plugin goes to your user folder either way.";
+"QUALL_OBS_VELHO_TITULO" = "OBS Studio is too old";
+"QUALL_OBS_VELHO_MENSAGEM" = "The plugin needs OBS Studio %@ or later, and this Mac has %@. Update OBS (obsproject.com) and open this installer again.";

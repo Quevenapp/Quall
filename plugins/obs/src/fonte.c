@@ -1,4 +1,5 @@
 #include "quall-obs.h"
+#include "rotulo-da-lista.h"
 
 #include <string.h>
 
@@ -41,7 +42,7 @@ static void padroes(obs_data_t *a)
 // `obs_source_get_audio_mixers` devolve para fonte sem som). Ao carregar, o padrão 0x3F só vale
 // quando a chave **falta** (`obs.c:2315-2317`): com o 0 salvo, a fonte do Quall abria com as
 // trilhas todas desligadas, o medidor andava e a gravação e a transmissão saíam **sem o som**, sem
-// aviso. É o caso da coleção do Pessoa Exemplo hoje.
+// aviso. É o caso da coleção do Bruno hoje.
 //
 // A migração é **uma vez por fonte**, no `.load` — que a libobs chama depois de aplicar o
 // `mixers` e as `private_settings` salvas (`obs.c:2317`, `:2359-2362`, `:2424`) —, com a marca
@@ -133,6 +134,12 @@ static void destruir(void *dados)
 	receptor_destruir(dados);
 }
 
+/// A fonte entrou no ar (cena do programa): o QR, se estiver na imagem, sai já.
+static void ativar(void *dados)
+{
+	receptor_ativou(dados);
+}
+
 static void atualizar(void *dados, obs_data_t *ajustes)
 {
 	receptor_atualizar(dados, ajustes);
@@ -165,18 +172,45 @@ static void povoar_lista(obs_property_t *lista)
 	for (size_t i = 0; i < n; i++) {
 		obs_data_t *ap = obs_data_array_item(lista_json, i);
 		const char *nome = obs_data_get_string(ap, "display_name");
+		// O nome que o aparelho escolheu para a rede (`docs/v3-no-privado.md` §8.7): vai na frente,
+		// com o código do alias entre parênteses — ele não autentica nada. `null` vira "".
+		const char *anunciado = obs_data_get_string(ap, "announced_name");
 		const char *ponta = obs_data_get_string(ap, "endpoint");
 		obs_data_t *cap = obs_data_get_obj(ap, "capabilities");
 		bool tela = cap && obs_data_get_bool(cap, "screen_source");
 		bool camera = cap && obs_data_get_bool(cap, "camera_source");
+		// A busca por três caminhos (`docs/conexao.md` §2): `accepts_code` é o aparelho que conecta
+		// sem PIN (os dois mostram o código), e `alive` falso é "visto há X s" — o item fica mais
+		// 30 s na lista em vez de piscar. Faltando (núcleo anterior), "não aceita" e "vivo".
+		bool sem_pin = obs_data_get_bool(ap, "accepts_code");
+		bool vivo = !obs_data_has_user_value(ap, "alive") || obs_data_get_bool(ap, "alive");
+		long long visto_ha_s = obs_data_get_int(ap, "seen_ms_ago") / 1000;
+		// O próprio anúncio não entra (§8.3); o item que a sonda reconheceu como par guardado diz
+		// "pareado" (§5.4) — e Conectar nele é a retomada com ele como alvo (`uma_sessao`).
+		bool proprio = obs_data_get_bool(ap, "own");
+		const char *conhecido = obs_data_get_string(ap, "known_device_id");
+		bool pareado = conhecido && *conhecido;
 
-		if (ponta && *ponta) {
+		if (ponta && *ponta && !proprio) {
+			// Curto, para o combo não espremer a coluna (13/10): o alias, o ip (a porta só quando não
+			// é a 7877 de sempre) e uma nota.
+			char onde[96];
+			snprintf(onde, sizeof onde, "%s", ponta);
+			size_t t = strlen(onde);
+			if (t > 5 && strcmp(onde + t - 5, ":7877") == 0)
+				onde[t - 5] = '\0';
+			char nota[96] = "";
+			if (!vivo)
+				snprintf(nota, sizeof nota, texto_formato("Quall.Lista.VistoHa"), visto_ha_s);
+			else if (pareado)
+				snprintf(nota, sizeof nota, "%s", obs_module_text("Quall.Lista.Pareado"));
+			else if (sem_pin && (tela || camera))
+				snprintf(nota, sizeof nota, "%s", obs_module_text("Quall.Lista.SemPin"));
+			// O código do alias sem o "Quall " (o mesmo da espera do outro aparelho), e o nome anunciado
+			// na frente quando há (`rotulo-da-lista.c`).
 			char rotulo[320];
-			if (tela || camera)
-				snprintf(rotulo, sizeof(rotulo), "%s — %s", nome && *nome ? nome : "?", ponta);
-			else
-				snprintf(rotulo, sizeof(rotulo), "%s — %s (%s)", nome && *nome ? nome : "?",
-					 ponta, obs_module_text("Quall.NaoEmite"));
+			rotulo_da_lista(rotulo, sizeof rotulo, nome, anunciado, onde,
+					tela || camera ? NULL : obs_module_text("Quall.NaoEmite"), nota);
 			obs_property_list_add_string(lista, rotulo, ponta);
 		}
 		obs_data_release(cap);
@@ -226,9 +260,95 @@ static bool ao_conectar(obs_properties_t *props, obs_property_t *p, void *dados)
 	return true;
 }
 
+/// Uma linha de texto que **quebra** (`OBS_TEXT_INFO` com word wrap): sem isto, uma frase longa
+/// alarga a coluna e espreme os controles (foto do Bruno no Dell, 13/10).
+static obs_property_t *info(obs_properties_t *props, const char *nome, const char *texto)
+{
+	obs_property_t *p = obs_properties_add_text(props, nome, texto, OBS_TEXT_INFO);
+	if (p)
+		obs_property_text_set_info_word_wrap(p, true);
+	return p;
+}
+
+/// O rótulo curto e a explicação na dica (`long_description`, o "?" do OBS).
+static obs_property_t *com_dica(obs_property_t *p, const char *chave_da_dica)
+{
+	if (p)
+		obs_property_set_long_description(p, obs_module_text(chave_da_dica));
+	return p;
+}
+
+/// **Recusar** do cartão do código (`docs/conexao.md` §4). O toque vai com a tentativa do cartão
+/// (`receptor_codigo_recusar`). Devolve `false`: quem refaz o painel é a vigia do código, quando a fase
+/// muda.
+static bool ao_recusar_codigo(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(props);
+	UNUSED_PARAMETER(p);
+	receptor_codigo_recusar(dados);
+	return false;
+}
+
+/// **O cartão do código**, logo abaixo do Conectar que o pediu: os dígitos numa linha só (um
+/// `OBS_TEXT_INFO` sem valor nem descrição longa ocupa a largura toda), o que fazer no outro aparelho e
+/// Recusar. Este OBS é sempre o **convidado** (`docs/v3-no-privado.md` §3.6): ele mostra o número, e
+/// quem confirma é o anfitrião, tocando nele entre três. O nome do anfitrião só chega no fim (M2).
+static void cartao_do_codigo(obs_properties_t *props, void *dados)
+{
+	struct codigo_na_tela c;
+	if (!dados || !receptor_codigo(dados, &c))
+		return;
+	// "04 27", como as outras telas mostram.
+	char grupos[8];
+	if (strlen(c.codigo) == 4)
+		snprintf(grupos, sizeof grupos, "%.2s %.2s", c.codigo, c.codigo + 2);
+	else
+		snprintf(grupos, sizeof grupos, "%s", c.codigo);
+	char linha[256];
+	snprintf(linha, sizeof linha, texto_formato("Quall.Codigo.Valor"), grupos,
+		 c.par[0] ? c.par : obs_module_text("Quall.Codigo.OutroAparelho"));
+	info(props, "codigo", linha);
+	info(props, "codigo_aviso",
+	     obs_module_text(c.pareamento_anterior ? "Quall.Codigo.PareamentoAnterior" : "Quall.Codigo.NoOutro"));
+	if (strcmp(c.fase, "mostrando") == 0)
+		obs_properties_add_button2(props, "codigo_recusar", obs_module_text("Quall.Codigo.Recusar"),
+					   ao_recusar_codigo, dados);
+}
+
+/// **"Esquecer este aparelho"** (`docs/v3-no-privado.md` §3.5), só depois de a sessão salva falhar
+/// fechado. Devolve `true`: o botão some e a linha de estado diz que esqueceu.
+static bool ao_esquecer(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(p);
+	struct receptor *r = dados;
+	if (!r)
+		return false;
+	receptor_esquecer_o_salvo(r);
+	obs_property_set_visible(obs_properties_get(props, "esquecer"), receptor_pode_esquecer(r));
+	char estado[256];
+	receptor_estado(r, estado, sizeof(estado));
+	if (estado[0])
+		obs_property_set_description(obs_properties_get(props, "estado"), estado);
+	return true;
+}
+
+/// **Mostrar o QR para o celular** / **Esconder o QR** (`docs/conexao.md` §10). Devolve `false`: quem
+/// refaz o painel é a `laco`, quando o QR entra ou sai da imagem — refazer daqui, de dentro do clique,
+/// apagaria o botão que está sendo clicado.
+static bool ao_alternar_qr(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(props);
+	UNUSED_PARAMETER(p);
+	receptor_mostrar_qr(dados, !receptor_qr_ativo(dados));
+	return false;
+}
+
 static bool ao_atualizar_lista(obs_properties_t *props, obs_property_t *p, void *dados)
 {
 	UNUSED_PARAMETER(p);
+	// A busca do módulo varre a /24 sozinha só com a lista vazia, uma vez (`docs/v3-no-privado.md`
+	// §8.9); o botão a recomeça. Quem aparecer entra na próxima vez que a lista for povoada.
+	descoberta_procurar_de_novo();
 	povoar_lista(obs_properties_get(props, "aparelho"));
 
 	struct receptor *r = dados;
@@ -248,8 +368,12 @@ static bool ao_atualizar_lista(obs_properties_t *props, obs_property_t *p, void 
 static obs_properties_t *propriedades(void *dados)
 {
 	obs_properties_t *props = obs_properties_create();
+	// **Dois grupos** (13/10): a conexão em cima, as opções embaixo, e entre eles o grupo da câmera
+	// do aparelho. Os botões tratam com o grupo em que estão (`p->parent`), por isso tudo o que um
+	// tratador procura — lista, endereço, estado, esquecer — mora no mesmo grupo "Conexão".
+	obs_properties_t *conexao = obs_properties_create();
 
-	obs_property_t *lista = obs_properties_add_list(props, "aparelho",
+	obs_property_t *lista = obs_properties_add_list(conexao, "aparelho",
 						       obs_module_text("Quall.Aparelho"),
 						       OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
 	povoar_lista(lista);
@@ -259,11 +383,12 @@ static obs_properties_t *propriedades(void *dados)
 	// depois de quatro caixas de ajuste, e quem não achasse o aparelho na lista tinha de procurar
 	// o botão que refaz a busca no outro extremo do diálogo. Um botão que age sobre um controle
 	// pertence ao lado dele; a distância era a única coisa que dizia que os dois se relacionam.
-	obs_properties_add_button2(props, "atualizar", obs_module_text("Quall.Atualizar"),
-				   ao_atualizar_lista, dados);
+	com_dica(obs_properties_add_button2(conexao, "atualizar", obs_module_text("Quall.Atualizar"),
+					    ao_atualizar_lista, dados),
+		 "Quall.Atualizar.Dica");
 
 	obs_property_t *endereco =
-		obs_properties_add_text(props, "endereco", obs_module_text("Quall.Endereco"),
+		obs_properties_add_text(conexao, "endereco", obs_module_text("Quall.Endereco"),
 					OBS_TEXT_DEFAULT);
 	// **A visibilidade sai do ajuste atual, e não do padrão.** `ao_trocar_aparelho` esconde este
 	// campo quando um aparelho da lista é escolhido, mas ele só dispara quando alguém MEXE no
@@ -280,7 +405,9 @@ static obs_properties_t *propriedades(void *dados)
 			obs_data_release(cfg);
 		}
 	}
-	obs_properties_add_text(props, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_PASSWORD);
+	com_dica(endereco, "Quall.Endereco.Dica");
+	com_dica(obs_properties_add_text(conexao, "pin", obs_module_text("Quall.Pin"), OBS_TEXT_PASSWORD),
+		 "Quall.Pin.Dica");
 
 	// **O botão vem colado no PIN, e a linha de estado vai DEPOIS dele.**
 	//
@@ -294,24 +421,53 @@ static obs_properties_t *propriedades(void *dados)
 	// Nada pode entrar entre o campo do PIN e o botão. Terminar de digitar e ter o botão sob o
 	// dedo é a ordem em que a mão trabalha, e um elemento de tamanho variável no meio é
 	// exatamente o que quebra isso.
-	obs_properties_add_button2(props, "conectar", obs_module_text("Quall.Conectar"), ao_conectar,
-				   dados);
+	com_dica(obs_properties_add_button2(conexao, "conectar", obs_module_text("Quall.Conectar"), ao_conectar,
+					    dados),
+		 "Quall.Conectar.Dica");
+	// O que o rótulo do PIN dizia, numa linha que quebra, logo abaixo do botão (nada entre o PIN e o
+	// Conectar: ver acima).
+	info(conexao, "pin_dica", obs_module_text("Quall.Pin.Dica"));
+	// O código de 4 dígitos (`docs/conexao.md` §4) vem colado no Conectar que o pediu.
+	cartao_do_codigo(conexao, dados);
+	// **O QR invertido** (§10), ao lado do caminho de sempre e não no lugar: para o celular que já
+	// espera (no suporte) ler, sem ninguém digitar nada aqui.
+	bool qr = dados && receptor_qr_ativo(dados);
+	com_dica(obs_properties_add_button2(conexao, "qr", obs_module_text(qr ? "Quall.Qr.Esconder" : "Quall.Qr.Mostrar"),
+					    ao_alternar_qr, dados),
+		 "Quall.Qr.Mostrar.Dica");
+	if (qr)
+		info(conexao, "qr_dica", obs_module_text("Quall.Qr.Dica"));
+	else if (dados && obs_source_active(receptor_fonte(dados)))
+		// O botão fica, e a frase diz antes do clique o que a `laco` vai recusar (revisão de 12/10, M1).
+		info(conexao, "qr_dica", obs_module_text("Quall.Qr.NoAr"));
 
 	char estado[256] = "";
 	if (dados)
 		receptor_estado(dados, estado, sizeof(estado));
-	obs_properties_add_text(props, "estado", estado[0] ? estado : obs_module_text("Quall.Estado"),
-				OBS_TEXT_INFO);
+	info(conexao, "estado", estado[0] ? estado : obs_module_text("Quall.Estado"));
+	// A sessão salva falhou fechado: a única porta de volta ao código e ao QR para este aparelho.
+	if (dados && receptor_pode_esquecer(dados))
+		com_dica(obs_properties_add_button2(conexao, "esquecer", obs_module_text("Quall.EsquecerAparelho"),
+						    ao_esquecer, dados),
+			 "Quall.EsquecerAparelho.Dica");
+	obs_properties_add_group(props, "grupo_conexao", obs_module_text("Quall.Grupo.Conexao"), OBS_GROUP_NORMAL,
+				 conexao);
 
 	// **A câmera do aparelho** (R9b): o grupo só existe numa sessão de vídeo cujo filmador
 	// responde, e vem logo abaixo da linha de estado, que é a da sessão. Ver `camera-remota.c`.
 	if (dados)
 		camera_remota_propriedades(receptor_camera(dados), props);
 
-	obs_properties_add_text(props, "nome", obs_module_text("Quall.Nome"), OBS_TEXT_DEFAULT);
-	obs_properties_add_bool(props, "sem_buffer", obs_module_text("Quall.SemBuffer"));
-	obs_properties_add_bool(props, "congelar", obs_module_text("Quall.Congelar"));
-	obs_properties_add_bool(props, "gravar", obs_module_text("Quall.Gravar"));
+	obs_properties_t *opcoes = obs_properties_create();
+	com_dica(obs_properties_add_text(opcoes, "nome", obs_module_text("Quall.Nome"), OBS_TEXT_DEFAULT),
+		 "Quall.Nome.Dica");
+	com_dica(obs_properties_add_bool(opcoes, "sem_buffer", obs_module_text("Quall.SemBuffer")),
+		 "Quall.SemBuffer.Dica");
+	com_dica(obs_properties_add_bool(opcoes, "congelar", obs_module_text("Quall.Congelar")),
+		 "Quall.Congelar.Dica");
+	com_dica(obs_properties_add_bool(opcoes, "gravar", obs_module_text("Quall.Gravar")), "Quall.Gravar.Dica");
+	obs_properties_add_group(props, "grupo_opcoes", obs_module_text("Quall.Grupo.Opcoes"), OBS_GROUP_NORMAL,
+				 opcoes);
 	return props;
 }
 
@@ -326,6 +482,7 @@ struct obs_source_info quall_fonte_info = {
 	.create = criar,
 	.destroy = destruir,
 	.update = atualizar,
+	.activate = ativar,
 	.load = carregar,
 	.save = salvar,
 	.get_defaults = padroes,

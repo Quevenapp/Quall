@@ -1,4 +1,3 @@
-// Os identificadores e endereços de exemplos/fixtures são sintéticos; não identificam a bancada privada.
 //! Sonda de bancada: prova que o núcleo do Quall **executa** no aparelho, não só que compila
 //! para ele. Feita para ser empurrada por `adb push` e rodada por `adb shell`, e para medir os
 //! dois números do M1 entre o MacBook e o Dell G3.
@@ -10,10 +9,10 @@
 //! quall-probe                       # ficha do núcleo (o que o M0 já fazia)
 //! quall-probe descobrir             # navega _quall._tcp por alguns segundos
 //! quall-probe emitir                # hospeda, mostra o PIN e mede a latência
-//! quall-probe receber --ip 192.168.56.131
+//! quall-probe receber --ip 192.168.1.131
 //! quall-probe receber --descobrir
 //! quall-probe emitir-video --entrada captura.json
-//! quall-probe receber-video --ip 192.168.56.131 --saida recebido.h264
+//! quall-probe receber-video --ip 192.168.1.131 --saida recebido.h264
 //! ```
 //!
 //! Os dois últimos são o M2: exercitam a **track de mídia** — RTP, RFC 6184, PLI — com um
@@ -156,6 +155,9 @@ fn codigo_de(e: &Error) -> &'static str {
         Error::Cancelled => "CANCELLED",
         Error::Io(_) => "IO",
         Error::Ocupado(_) => "BUSY",
+        Error::Interferencia(_) => "INTERFERENCE",
+        Error::ParNaoReconhecido(_) => "PAIR_NOT_RECOGNIZED",
+        Error::JaPareado(_) => "ALREADY_PAIRED",
     }
 }
 

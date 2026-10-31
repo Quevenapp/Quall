@@ -3,6 +3,7 @@
 #include <quall.h>
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 // =================================================================================================
@@ -42,7 +43,11 @@
 /// (`travaIso`, `travaObturadorNs`, `travaGanhos`) nunca são pedidos (§3.2) e não entram.
 static const char *const CAMPOS[] = {
 	"exposicao", "ev",     "travaExposicao", "antiCintilacao", "iso",         "obturadorNs",
-	"balanco",   "kelvin", "travaBalanco",   "foco",           "focoPosicao",
+	"balanco",   "kelvin", "travaBalanco",   "foco",           "focoPosicao", "travarFps",
+	// Os ajustes de imagem (R9 §3.7, 13/10): só os que o filmador oferece aparecem.
+	"gama",      "contraste", "saturacao",   "nitidez",        "contraluz",
+	// O zoom (R9 §3.8, 13/10), o fator; só se o filmador o declarar.
+	"zoom",
 };
 #define N_CAMPOS (sizeof CAMPOS / sizeof CAMPOS[0])
 
@@ -74,6 +79,11 @@ struct camera_remota {
 	char *estrutura_na_tela;
 	struct campo_na_tela campos[N_CAMPOS];
 	bool permitido;
+	/// O descritor de `ev` traz `independenteDaExposicao` (o "Brilho" do Windows, 13/10).
+	bool ev_independente;
+	/// As `paradas` do zoom (R9 §3.8) da última montagem: o botão `camera.zoom_parada.<i>` pede a `i`.
+	double paradas[ZOOM_PARADAS_MAX];
+	size_t n_paradas;
 	uint64_t ultimo_gesto_ns;
 	uint64_t ultimo_update_ns;
 
@@ -223,6 +233,12 @@ static void estrutura_do_estado(const char *json, obs_data_t *estado, struct dst
 			dstr_catf(out, "|%s|%s", motivo, obs_data_get_string(rec, "campo"));
 		obs_data_release(rec);
 	}
+	// A pouca luz do filmador (R9 §3.1.1) acende e apaga a linha e o botão: é estrutura. Só a
+	// presença: o fps que chega oscila, e refazer a cada número comeria teclas.
+	const char *const luz[] = {"lido", "poucaLuz"};
+	const char *lv = json_procurar(json, luz, 2);
+	if (lv && *lv == '{')
+		dstr_cat(out, "|luz");
 }
 
 static bool pendente_vazio(obs_data_t *estado)
@@ -378,7 +394,8 @@ void camera_remota_acabar(struct camera_remota *c, bool refazer)
 	pthread_mutex_lock(&c->trava);
 	QuallCameraRemote *remoto = c->remoto;
 	c->remoto = NULL;
-	bool tinha_grupo = c->estrutura_na_tela && strcmp(c->estrutura_na_tela, "oculto") != 0;
+	// Ao desconectar, o painel volta à prévia: refaz se a tela mostra outra coisa que ela.
+	bool tinha_grupo = c->estrutura_na_tela && strcmp(c->estrutura_na_tela, "previa") != 0;
 	bfree(c->estado);
 	c->estado = NULL;
 	uint64_t update = c->ultimo_update_ns;
@@ -419,6 +436,15 @@ void camera_remota_nao_salvar(obs_data_t *ajustes)
 		snprintf(chave, sizeof chave, PREFIXO "%s", CAMPOS[i]);
 		obs_data_erase(ajustes, chave);
 	}
+	// E as da prévia antes de conectar (`grupo_da_previa`): só padrão, mas sem rastro na cena.
+	for (int area = AREA_EXPOSICAO; area < AREA_NENHUMA; area++) {
+		const char *campos[16];
+		size_t n = campos_da_previa((enum area_da_camera)area, campos, 16);
+		for (size_t i = 0; i < n; i++) {
+			snprintf(chave, sizeof chave, PREFIXO "previa.%s", campos[i]);
+			obs_data_erase(ajustes, chave);
+		}
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -455,14 +481,16 @@ static const char *rotulo_do_valor(const char *v)
 }
 
 /// Na tela do Windows o `ev` é o "Brilho" e o `iso` é o "Ganho" (R9 §3.2, §3.3): pela `unidade`
-/// do descritor, ou, para um campo que só aparece em `limites`, pela plataforma.
+/// do descritor, ou, para um campo que só aparece em `limites`, pela plataforma. `ev_independente`:
+/// a dica `independenteDaExposicao` do descritor de `ev` (13/10), que só a dica liga — a plataforma
+/// não basta (um filmador Windows antigo não a manda, e o núcleo dele recusaria o pedido no Manual).
 struct unidades {
-	bool brilho, ganho;
+	bool brilho, ganho, ev_independente;
 };
 
 static struct unidades unidades_do_estado(obs_data_t *caps)
 {
-	struct unidades u = {false, false};
+	struct unidades u = {false, false, false};
 	if (!caps)
 		return u;
 	bool windows = strcmp(obs_data_get_string(caps, "plataforma"), "windows") == 0;
@@ -471,6 +499,7 @@ static struct unidades unidades_do_estado(obs_data_t *caps)
 	obs_data_t *iso = ctl ? obs_data_get_obj(ctl, "iso") : NULL;
 	u.brilho = ev ? strcmp(obs_data_get_string(ev, "unidade"), "brilho") == 0 : windows;
 	u.ganho = iso ? strcmp(obs_data_get_string(iso, "unidade"), "ganho") == 0 : windows;
+	u.ev_independente = ev && obs_data_get_bool(ev, "independenteDaExposicao");
 	obs_data_release(ev);
 	obs_data_release(iso);
 	obs_data_release(ctl);
@@ -491,8 +520,15 @@ static const char *nome_do_controle(const char *campo, struct unidades u)
 		{"toque", "Quall.Camera.Nome.Toque"},
 		{"travaExposicao", "Quall.Camera.Nome.TravaExposicao"},
 		{"travaBalanco", "Quall.Camera.Nome.TravaBalanco"},
+		{"travarFps", "Quall.Camera.Nome.TravarFps"},
 		{"foco", "Quall.Camera.Nome.TravaFoco"},
 		{"exposicao", "Quall.Camera.Nome.ExposicaoManual"},
+		{"gama", "Quall.Camera.Nome.Gama"},
+		{"contraste", "Quall.Camera.Nome.Contraste"},
+		{"saturacao", "Quall.Camera.Nome.Saturacao"},
+		{"nitidez", "Quall.Camera.Nome.Nitidez"},
+		{"contraluz", "Quall.Camera.Nome.Contraluz"},
+		{"zoom", "Quall.Camera.Nome.Zoom"},
 	};
 	if (!campo)
 		return obs_module_text("Quall.Camera.Nome.Outro");
@@ -559,7 +595,8 @@ static const char *texto_ou(obs_data_t *d, const char *k, const char *padrao)
 }
 
 /// Com `trava` na mão (só mexe nos `props`).
-static void aplicar_regras(obs_properties_t *props, obs_data_t *espelho, bool permitido)
+static void aplicar_regras(obs_properties_t *props, obs_data_t *espelho, bool permitido,
+			   bool ev_independente)
 {
 	// O modo que o registro não grava vale `auto` (§6, item 7).
 	const char *exp = texto_ou(espelho, "exposicao", "auto");
@@ -575,12 +612,22 @@ static void aplicar_regras(obs_properties_t *props, obs_data_t *espelho, bool pe
 		habilitar(props, chave, permitido);
 	}
 	habilitar(props, PREFIXO "restaurar", permitido);
+	for (size_t i = 0; i < ZOOM_PARADAS_MAX; i++) {
+		char nome[64];
+		snprintf(nome, sizeof nome, PREFIXO "zoom_parada.%zu", i);
+		habilitar(props, nome, permitido);
+	}
 	habilitar(props, PREFIXO "passar_manual", permitido);
 
-	// Exposição: o EV só com Auto e destravado; a trava só com Auto.
-	habilitar(props, PREFIXO "ev", permitido && auto_exp && !trava_exp);
-	mostrar(props, PREFIXO "nota_destrave", auto_exp && trava_exp);
+	// Exposição: o EV só com Auto e destravado, salvo o "Brilho" do Windows com a dica
+	// `independenteDaExposicao` (13/10), que vale em qualquer exposição; a trava só com Auto.
+	habilitar(props, PREFIXO "ev", permitido && ev_remoto_livre(ev_independente, auto_exp, trava_exp));
+	mostrar(props, PREFIXO "nota_destrave", nota_de_destravar_o_ev(ev_independente, auto_exp, trava_exp));
 	habilitar(props, PREFIXO "travaExposicao", permitido && auto_exp);
+	// "Travar fps" (R9 §3.1.1): vale em qualquer exposição. Desde 13/10 (§3.1) ele também decide o
+	// teto do obturador manual: destravado vai até o piso do automático (o fps cai junto), travado
+	// fica em 1/fps.
+	habilitar(props, PREFIXO "travarFps", permitido);
 	// ISO e obturador: só com Manual; com Auto, a nota e o "Passar para Manual".
 	mostrar(props, PREFIXO "iso", manual);
 	mostrar(props, PREFIXO "obturadorNs", manual);
@@ -672,7 +719,7 @@ static bool ao_mexer(void *priv, obs_properties_t *props, obs_property_t *p, obs
 	// regras e devolver `true` refaz os widgets **deste** `props`, sem chamar `get_properties`.
 	// Os deslizantes devolvem `false`: refazer no meio de um arraste o cortaria.
 	if (refazer)
-		aplicar_regras(props, c->espelho, c->permitido);
+		aplicar_regras(props, c->espelho, c->permitido, c->ev_independente);
 	pthread_mutex_unlock(&c->trava);
 	return refazer;
 }
@@ -716,12 +763,77 @@ static bool ao_passar_para_manual(obs_properties_t *props, obs_property_t *p, vo
 			saiu = true;
 		}
 		obs_data_release(q);
-		aplicar_regras(props, c->espelho, c->permitido);
+		aplicar_regras(props, c->espelho, c->permitido, c->ev_independente);
 	}
 	pthread_mutex_unlock(&c->trava);
 	if (saiu) {
 		obs_data_t *settings = obs_source_get_settings(c->fonte);
 		obs_data_set_string(settings, PREFIXO "exposicao", "manual");
+		obs_data_release(settings);
+	}
+	return saiu;
+}
+
+/// O botão do aviso da pouca luz (R9 §3.1.1): "Travar em 30 fps" liga a trava, "Clarear (até 15 fps)"
+/// desliga. O lado sai do espelho (o que a tela mostra), como as caixas.
+static bool ao_pouca_luz(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(p);
+	struct camera_remota *c = dados;
+	if (!c)
+		return false;
+	bool saiu = false, travar = false;
+	pthread_mutex_lock(&c->trava);
+	if (c->remoto && c->permitido) {
+		travar = !obs_data_get_bool(c->espelho, "travarFps");
+		obs_data_t *q = obs_data_create();
+		obs_data_set_bool(q, "travarFps", travar);
+		if (pedir(c, q)) {
+			copiar_item(q, c->espelho, "travarFps");
+			saiu = true;
+		}
+		obs_data_release(q);
+		aplicar_regras(props, c->espelho, c->permitido, c->ev_independente);
+	}
+	pthread_mutex_unlock(&c->trava);
+	if (saiu) {
+		// A caixa "Travar fps" acompanha, sem passar pelo `ao_mexer` (o espelho já é igual).
+		obs_data_t *settings = obs_source_get_settings(c->fonte);
+		obs_data_set_bool(settings, PREFIXO "travarFps", travar);
+		obs_data_release(settings);
+	}
+	return saiu;
+}
+
+#define PREFIXO_DA_PARADA PREFIXO "zoom_parada."
+
+/// **Um botão rápido do zoom** (R9 §3.8): pede a parada do nome do botão e põe o deslizante nela,
+/// como o botão da pouca luz (o espelho já é igual: o `ao_mexer` não pede de novo).
+static bool ao_parada(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(props);
+	struct camera_remota *c = dados;
+	const char *nome = p ? obs_property_name(p) : NULL;
+	if (!c || !nome || strncmp(nome, PREFIXO_DA_PARADA, strlen(PREFIXO_DA_PARADA)) != 0)
+		return false;
+	size_t i = (size_t)strtoul(nome + strlen(PREFIXO_DA_PARADA), NULL, 10);
+	bool saiu = false;
+	double z = 1;
+	pthread_mutex_lock(&c->trava);
+	if (c->remoto && c->permitido && i < c->n_paradas) {
+		z = c->paradas[i];
+		obs_data_t *q = obs_data_create();
+		obs_data_set_double(q, "zoom", z);
+		if (pedir(c, q)) {
+			copiar_item(q, c->espelho, "zoom");
+			saiu = true;
+		}
+		obs_data_release(q);
+	}
+	pthread_mutex_unlock(&c->trava);
+	if (saiu) {
+		obs_data_t *settings = obs_source_get_settings(c->fonte);
+		obs_data_set_double(settings, PREFIXO "zoom", z);
 		obs_data_release(settings);
 	}
 	return saiu;
@@ -739,6 +851,8 @@ struct montagem {
 	obs_data_t *espelho;
 	struct campo_na_tela campos[N_CAMPOS];
 	struct unidades u;
+	double paradas[ZOOM_PARADAS_MAX];
+	size_t n_paradas;
 };
 
 // A montagem escreve o valor do ajuste no `settings` (para o widget mostrar) ou, sem valor, só tira
@@ -846,7 +960,15 @@ static bool por_numero(struct montagem *m, obs_properties_t *g, const char *camp
 	double min = obs_data_get_double(d, "min"), max = obs_data_get_double(d, "max");
 	bool inteiro = obs_data_get_bool(d, "inteiro");
 	double passo = tem_valor(d, "passo") ? obs_data_get_double(d, "passo") : 0;
-	double origem = tem_valor(d, "origem") ? obs_data_get_double(d, "origem") : 0;
+	// A `origem` é o número do padrão do driver só no brilho do Windows; nos ajustes de imagem ela é o
+	// texto `camera`/`quall` (R9 §3.7), que não desloca nada.
+	double origem = tipo_do_item(d, "origem") == OBS_DATA_NUMBER ? obs_data_get_double(d, "origem") : 0;
+	// Os ajustes de imagem são inteiros de -100 a 100 com o 0 neutro: o ausente é o 0.
+	bool imagem = e_ajuste_de_imagem(campo);
+	if (imagem || strcmp(campo, "contraluz") == 0)
+		inteiro = true;
+	// O zoom (R9 §3.8): o ausente é o 1× (cortado na faixa), e não o mínimo.
+	bool zoom = e_zoom(campo);
 	bool log2 = strcmp(obs_data_get_string(d, "escala"), "log2") == 0;
 	bool tem_analogico = tem_valor(d, "analogicoMax");
 	double analogico = obs_data_get_double(d, "analogicoMax");
@@ -857,7 +979,7 @@ static bool por_numero(struct montagem *m, obs_properties_t *g, const char *camp
 	char chave[64];
 	snprintf(chave, sizeof chave, PREFIXO "%s", campo);
 	bool tem = tem_valor(m->ajuste, campo);
-	double atual = tem ? obs_data_get_double(m->ajuste, campo) : min;
+	double atual = tem ? obs_data_get_double(m->ajuste, campo) : (imagem ? 0 : zoom ? zoom_neutro(min, max) : min);
 	struct campo_na_tela info = {TIPO_NUMERO, false, inteiro, 0};
 	obs_property_t *p = NULL;
 
@@ -901,7 +1023,7 @@ static bool por_numero(struct montagem *m, obs_properties_t *g, const char *camp
 			p = obs_properties_add_int_slider(g, chave, rotulo, (int)llround(lo), (int)llround(hi),
 							  p_int);
 			info.guarda_inteiro = true;
-			obs_data_set_default_int(m->settings, chave, llround(lo));
+			obs_data_set_default_int(m->settings, chave, imagem ? 0 : llround(lo));
 			if (tem)
 				obs_data_set_int(m->settings, chave, llround(atual + origem));
 			else
@@ -910,7 +1032,9 @@ static bool por_numero(struct montagem *m, obs_properties_t *g, const char *camp
 			if (passo <= 0)
 				passo = strcmp(campo, "focoPosicao") == 0 ? 0.01 : 0.1;
 			p = obs_properties_add_float_slider(g, chave, rotulo, lo, hi, passo);
-			obs_data_set_default_double(m->settings, chave, lo);
+			if (zoom)
+				obs_property_float_set_suffix(p, "\xc3\x97");
+			obs_data_set_default_double(m->settings, chave, zoom ? zoom_neutro(lo, hi) : lo);
 			if (tem)
 				obs_data_set_double(m->settings, chave, atual + origem);
 			else
@@ -1009,6 +1133,52 @@ static void linhas_do_lido(struct montagem *m, obs_properties_t *g, obs_data_t *
 	obs_data_release(lido);
 }
 
+/// **A pouca luz do filmador** (R9 §3.1.1): a frase e, com o filmador oferecendo `travarFps`, o botão
+/// que trava ou destrava. Um retrato da montagem, como o lido; acender e apagar refazem o painel
+/// (`estrutura_do_estado`).
+static void linha_da_pouca_luz(struct montagem *m, obs_properties_t *g, obs_data_t *estado, bool permitido)
+{
+	obs_data_t *lido = obs_data_get_obj(estado, "lido");
+	obs_data_t *luz = lido ? obs_data_get_obj(lido, "poucaLuz") : NULL;
+	bool ha = luz && tipo_do_item(luz, "fpsChegando") == OBS_DATA_NUMBER &&
+		  tipo_do_item(luz, "piso") == OBS_DATA_NUMBER;
+	bool tem_fps = luz && tipo_do_item(luz, "fps") == OBS_DATA_NUMBER;
+	obs_data_t *d = descritor(m, "travarFps");
+	bool oferece = d != NULL;
+	obs_data_release(d);
+	struct pouca_luz p = pouca_luz_do_filmador(
+		ha, ha ? obs_data_get_double(luz, "fpsChegando") : 0, ha ? obs_data_get_double(luz, "piso") : 0,
+		tem_fps, tem_fps ? obs_data_get_double(luz, "fps") : 0,
+		strcmp(texto_ou(m->ajuste, "exposicao", "auto"), "auto") == 0,
+		obs_data_get_bool(m->ajuste, "travarFps"), oferece, permitido);
+	obs_data_release(luz);
+	obs_data_release(lido);
+	if (p.frase == POUCA_LUZ_NADA)
+		return;
+	char texto[256];
+	snprintf(texto, sizeof texto,
+		 texto_formato(p.frase == POUCA_LUZ_ESCURA ? "Quall.Camera.PoucaLuz.Escura"
+							   : "Quall.Camera.PoucaLuz.Clareando"),
+		 p.numero_da_frase);
+	linha(g, PREFIXO "pouca_luz", texto, false);
+	char rotulo[128];
+	switch (p.botao) {
+	case BOTAO_DA_LUZ_TRAVAR_EM:
+		snprintf(rotulo, sizeof rotulo, texto_formato("Quall.Camera.TravarEm"), p.numero_do_botao);
+		break;
+	case BOTAO_DA_LUZ_CLAREAR:
+		snprintf(rotulo, sizeof rotulo, texto_formato("Quall.Camera.ClarearAte"), p.numero_do_botao);
+		break;
+	case BOTAO_DA_LUZ_TRAVAR:
+		snprintf(rotulo, sizeof rotulo, "%s", obs_module_text("Quall.Camera.TravarFps"));
+		break;
+	case BOTAO_DA_LUZ_NADA:
+	default:
+		return;
+	}
+	obs_properties_add_button2(g, PREFIXO "pouca_luz_botao", rotulo, ao_pouca_luz, m->c);
+}
+
 /// A linha da recusa, por 3 s (§3.5). `nao_permitido` já tem a linha fixa da situação.
 static void linha_da_recusa(struct montagem *m, obs_properties_t *g, obs_data_t *estado,
 			    bool nao_permitido)
@@ -1046,6 +1216,25 @@ static void linha_da_recusa(struct montagem *m, obs_properties_t *g, obs_data_t 
 /// `calibrado`, as dioptrias da posição 1 (o mesmo contrato da casca Android). O deslizante do OBS
 /// não troca o texto dos valores, então a distância vai numa linha embaixo dele, um retrato da
 /// montagem como a do lido; sem calibração, só o "Perto ↔ Longe".
+/// **Os botões rápidos do zoom** (R9 §3.8): um por parada do descritor (`0,6×`, `1×`, `3×`…), só com
+/// mais de uma. As paradas ficam na montagem, e o botão as lê de `c` (posta no fim da montagem).
+static int botoes_das_paradas(struct montagem *m, obs_properties_t *g)
+{
+	const char *caminho[] = {"capacidades", "controles", "zoom", "paradas"};
+	const char *v = json_procurar(m->json, caminho, 4);
+	m->n_paradas = v ? json_lista_de_numeros(v, m->paradas, ZOOM_PARADAS_MAX) : 0;
+	if (m->n_paradas < 2)
+		return 0;
+	char sep = separador_decimal();
+	for (size_t i = 0; i < m->n_paradas; i++) {
+		char nome[64], texto[32];
+		snprintf(nome, sizeof nome, PREFIXO_DA_PARADA "%zu", i);
+		texto_do_zoom(m->paradas[i], sep, texto, sizeof texto);
+		obs_properties_add_button2(g, nome, texto, ao_parada, m->c);
+	}
+	return 1;
+}
+
 static void linha_dos_metros(struct montagem *m, obs_properties_t *g)
 {
 	obs_data_t *d = descritor(m, "focoPosicao");
@@ -1064,6 +1253,57 @@ static void linha_dos_metros(struct montagem *m, obs_properties_t *g)
 		snprintf(texto, sizeof texto, "%s", obs_module_text("Quall.Camera.FocoNoInfinito"));
 	}
 	linha(g, PREFIXO "foco_metros", texto, false);
+}
+
+/// **O grupo antes de conectar** (pedido do Bruno, 13/10): os campos típicos do R9, desabilitados e
+/// sem valor, com "Configurar os parâmetros após a conexão" no topo, para a pessoa saber que tem de
+/// voltar ali depois. Cada campo é um combo com um item só, "—" (`Quall.Camera.SemValor`), cujo valor é o padrão
+/// da chave: o item é achado — a view do OBS não "corrige" o combo (`AddList`) —, nenhum valor de
+/// usuário é escrito, nenhum `.update` nem pedido sai (os combos não têm `modified_callback`). As chaves ficam em
+/// `camera.previa.*`, fora das do ajuste, e saem do `.save` como todo `camera.*`. Ao conectar, a
+/// estrutura muda de `previa` para a do filmador e o painel se refaz (`talvez_refazer`).
+/// O clique de um botão desabilitado da prévia: nada (o OBS quer um tratador).
+static bool ao_nada(obs_properties_t *props, obs_property_t *p, void *dados)
+{
+	UNUSED_PARAMETER(props);
+	UNUSED_PARAMETER(p);
+	UNUSED_PARAMETER(dados);
+	return false;
+}
+
+static void grupo_da_previa(struct camera_remota *c, obs_properties_t *props)
+{
+	// O valor do item é também o **padrão** da chave (nunca valor de usuário): a view acha o item e
+	// não escreve nada. Padrão não dispara `.update`, e o `.save` tira todo `camera.*`.
+	obs_data_t *settings = obs_source_get_settings(c->fonte);
+	obs_properties_t *grupo = obs_properties_create();
+	linha(grupo, PREFIXO "previa.aviso", obs_module_text("Quall.Camera.AposConectar"), true);
+	for (int area = AREA_EXPOSICAO; area < AREA_NENHUMA; area++) {
+		const char *campos[16];
+		size_t n = campos_da_previa((enum area_da_camera)area, campos, 16);
+		if (n == 0)
+			continue;
+		obs_properties_t *a = obs_properties_create();
+		for (size_t i = 0; i < n; i++) {
+			char chave[64];
+			snprintf(chave, sizeof chave, PREFIXO "previa.%s", campos[i]);
+			obs_property_t *p = obs_properties_add_list(a, chave, obs_module_text(rotulo_da_previa(campos[i])),
+								    OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+			obs_property_list_add_string(p, obs_module_text("Quall.Camera.SemValor"), "previa");
+			if (settings)
+				obs_data_set_default_string(settings, chave, "previa");
+			obs_property_set_enabled(p, false);
+		}
+		char nome[64];
+		snprintf(nome, sizeof nome, PREFIXO "previa.area.%d", area);
+		obs_properties_add_group(grupo, nome, obs_module_text(titulo_da_area((enum area_da_camera)area)),
+					 OBS_GROUP_NORMAL, a);
+	}
+	obs_property_t *r = obs_properties_add_button2(grupo, PREFIXO "previa.restaurar",
+						       obs_module_text("Quall.Camera.Restaurar"), ao_nada, NULL);
+	obs_property_set_enabled(r, false);
+	obs_properties_add_group(props, PREFIXO "grupo", obs_module_text("Quall.Camera"), OBS_GROUP_NORMAL, grupo);
+	obs_data_release(settings);
 }
 
 static void fechar_area(obs_properties_t *grupo, obs_properties_t *area, int itens, const char *nome,
@@ -1095,6 +1335,12 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 	m.espelho = obs_data_create();
 	bool mostra = situacao_mostra(situacao) && caps && strcmp(estrutura.array, "oculto") != 0;
 	bool permitido = strcmp(situacao, "pronto") == 0;
+	// **Fora de sessão não há estado do filmador**: o grupo aparece na prévia, desabilitado.
+	bool previa = !json;
+	if (previa) {
+		grupo_da_previa(c, props);
+		dstr_copy(&estrutura, "previa");
+	}
 
 	if (mostra) {
 		m.settings = obs_source_get_settings(c->fonte);
@@ -1103,6 +1349,14 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 		if (!m.ajuste)
 			m.ajuste = obs_data_create();
 		m.u = unidades_do_estado(caps);
+		// A contraluz ausente do ajuste é o padrão da câmera (R9 §3.7): a caixa mostra a lida do
+		// filmador. Ela entra no ajuste **e** no espelho, para a montagem não virar pedido.
+		if (!tem_valor(m.ajuste, "contraluz")) {
+			obs_data_t *lido = obs_data_get_obj(estado, "lido");
+			if (lido && tem_valor(lido, "contraluz"))
+				copiar_item(lido, m.ajuste, "contraluz");
+			obs_data_release(lido);
+		}
 		for (size_t i = 0; i < N_CAMPOS; i++)
 			copiar_item(m.ajuste, m.espelho, CAMPOS[i]);
 
@@ -1111,6 +1365,7 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 			linha(grupo, PREFIXO "nao_permitido", obs_module_text("Quall.Camera.NaoPermite"), true);
 		linha_da_recusa(&m, grupo, estado, !permitido);
 		linhas_do_lido(&m, grupo, estado);
+		linha_da_pouca_luz(&m, grupo, estado, permitido);
 
 		obs_data_t *limites = obs_data_get_obj(caps, "limites");
 
@@ -1124,6 +1379,7 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 		if (ev)
 			linha(a, PREFIXO "nota_destrave", obs_module_text("Quall.Camera.Destrave"), false);
 		n += por_caixa(&m, a, "travaExposicao", obs_module_text("Quall.Camera.TravarExposicao"));
+		n += por_caixa(&m, a, "travarFps", obs_module_text("Quall.Camera.TravarFps"));
 		n += por_lista(&m, a, "antiCintilacao", obs_module_text("Quall.Camera.AntiCintilacao"));
 		n += linhas_de_limite(&m, a, limites, AREA_EXPOSICAO);
 		fechar_area(grupo, a, n, PREFIXO "area.exposicao", obs_module_text("Quall.Camera.Exposicao"));
@@ -1162,9 +1418,11 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 		n += linhas_de_limite(&m, a, limites, AREA_BALANCO);
 		fechar_area(grupo, a, n, PREFIXO "area.balanco", obs_module_text("Quall.Camera.Balanco"));
 
-		// Foco
+		// Foco, com o zoom no alto (R9 §3.8): o deslizante e as paradas, só se o filmador declarar.
 		a = obs_properties_create();
 		n = 0;
+		if (por_numero(&m, a, "zoom", obs_module_text("Quall.Camera.Zoom")))
+			n += 1 + botoes_das_paradas(&m, a);
 		n += por_lista(&m, a, "foco", obs_module_text("Quall.Camera.Modo"));
 		int foco_manual = por_numero(&m, a, "focoPosicao", obs_module_text("Quall.Camera.PertoLonge"));
 		n += foco_manual;
@@ -1172,6 +1430,24 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 			linha_dos_metros(&m, a);
 		n += linhas_de_limite(&m, a, limites, AREA_FOCO);
 		fechar_area(grupo, a, n, PREFIXO "area.foco", obs_module_text("Quall.Camera.Foco"));
+
+		// Imagem (R9 §3.7): só o que o filmador oferece, em qualquer exposição; a área some sem
+		// nenhum. A contraluz é caixa (sim/não) ou deslizante (os níveis do driver).
+		a = obs_properties_create();
+		n = 0;
+		n += por_numero(&m, a, "gama", obs_module_text("Quall.Camera.Gama"));
+		n += por_numero(&m, a, "contraste", obs_module_text("Quall.Camera.Contraste"));
+		n += por_numero(&m, a, "saturacao", obs_module_text("Quall.Camera.Saturacao"));
+		n += por_numero(&m, a, "nitidez", obs_module_text("Quall.Camera.Nitidez"));
+		if (!por_numero(&m, a, "contraluz", obs_module_text("Quall.Camera.Contraluz")))
+			n += por_caixa(&m, a, "contraluz", obs_module_text("Quall.Camera.Contraluz"));
+		else
+			n++;
+		// O rótulo curto ("Contraluz"); o nome inteiro vai na dica (13/10).
+		obs_property_t *contraluz = obs_properties_get(a, PREFIXO "contraluz");
+		if (contraluz)
+			obs_property_set_long_description(contraluz, obs_module_text("Quall.Camera.Contraluz.Dica"));
+		fechar_area(grupo, a, n, PREFIXO "area.imagem", obs_module_text("Quall.Camera.Imagem"));
 		obs_data_release(limites);
 
 		obs_properties_add_button2(grupo, PREFIXO "restaurar", obs_module_text("Quall.Camera.Restaurar"),
@@ -1192,8 +1468,11 @@ void camera_remota_propriedades(struct camera_remota *c, obs_properties_t *props
 		c->espelho = m.espelho;
 		obs_data_addref(m.espelho);
 		memcpy(c->campos, m.campos, sizeof c->campos);
+		memcpy(c->paradas, m.paradas, sizeof c->paradas);
+		c->n_paradas = m.n_paradas;
 		c->permitido = permitido;
-		aplicar_regras(props, c->espelho, permitido);
+		c->ev_independente = m.u.ev_independente;
+		aplicar_regras(props, c->espelho, permitido, c->ev_independente);
 	} else {
 		c->permitido = false;
 	}

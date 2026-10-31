@@ -5,7 +5,7 @@
 //     cc -O2 -Wall -Wextra -Werror -o /tmp/prova-encaixe \
 //        plugins/obs/bancada/prova-encaixe.c plugins/obs/src/encaixe.c && /tmp/prova-encaixe
 //
-// Os casos são os do controle da troca de tamanho de 21/09 (854×480 ↔ 640×480), onde o Pessoa Exemplo viu
+// Os casos são os do controle da troca de tamanho de 21/09 (854×480 ↔ 640×480), onde o Bruno viu
 // a fonte mudar de tamanho na cena, e os da revisão do `23eb480`:
 //
 //  1. o tamanho publicado é o primeiro, e os seguintes pedem encaixe. **Reprova a regra de antes**,

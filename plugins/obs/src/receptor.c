@@ -5,6 +5,8 @@
 #include "interface-do-cabo.h"
 #include "janela-do-enlace.h"
 #include "perda.h"
+#include "qr-desenho.h"
+#include "recusa-do-vinculo.h"
 #include "som.h"
 #include "tempo-do-som.h"
 #include <quall.h>
@@ -137,7 +139,7 @@ struct sessao {
 
 	struct decodificador *dec;
 
-	/// **O tamanho que esta fonte publica** (decisão do Pessoa Exemplo de 21/09, `encaixe.h`): a cópia da
+	/// **O tamanho que esta fonte publica** (decisão do Bruno de 21/09, `encaixe.h`): a cópia da
 	/// sessão do `publicado_l/a` da fonte, lida ao nascer. Uma imagem de outro tamanho entra
 	/// encaixada em `encaixado`, com faixas, e a fonte não muda de tamanho na cena. Só a thread que
 	/// decodifica toca nestes campos; a fonte recebe o primeiro tamanho de volta sob `r->trava`.
@@ -306,6 +308,31 @@ struct receptor {
 	QuallCanceller *cancelador;
 	char estado[256];
 
+	/// **A sessão salva por identidade** (`docs/conexao.md` §3): o `device_id` do aparelho com quem a
+	/// fonte fechou a última sessão **autenticada**, e o endereço em que fechou. Ficam nos ajustes da
+	/// fonte (`par_id`, `par_endereco`, fora do painel), gravados só depois de a sessão subir — a
+	/// resposta da procura pelo id não grava nada (revisão de 12/10, M3). Sob `trava`.
+	char *par_id;
+	char *par_endereco;
+	/// **A conexão com alvo falhou fechado** (`docs/v3-no-privado.md` §3.5): o par guardado (da sessão
+	/// salva, ou o item da lista que a sonda reconheceu) não mostrou a dica deste vínculo, ou não
+	/// respondeu. O painel oferece "Esquecer este aparelho" para **este** id — e só então o código e o
+	/// QR voltam para ele. `bmalloc`'d ou NULL, sob `trava`.
+	char *id_para_esquecer;
+	/// **O clique em Conectar sem PIN pede o código** (`docs/conexao.md` §4): uma tentativa por
+	/// clique, consumida pela `laco`. A reconexão automática (a cada 3 s, e a da cena salva) nunca
+	/// abre um código sozinha — cada uma apareceria como um pedido na tela do outro aparelho.
+	bool pedir_codigo;
+	/// O confirmador da tentativa em curso, e o cartão que o painel desenha. Só a `laco` cria e
+	/// libera o confirmador; o botão do painel toca nele com `trava` na mão.
+	QuallCodeConfirm *codigo;
+	struct codigo_na_tela codigo_na_tela;
+	/// **O QR invertido** (`docs/conexao.md` §10): a pessoa pediu o QR. A `laco` mostra um convite
+	/// atrás do outro (cada um vale 3 min) até um celular chamar, a pessoa esconder, ou
+	/// `QR_RENOVACOES` convites passarem sem ninguém. Sob `trava`.
+	bool mostrar_qr;
+	int qr_renovacoes;
+
 	/// O som da fonte (S5): criado na primeira track de som e vivo até a fonte morrer — a thread
 	/// dele publica silêncio entre as sessões (crítica 14, M1). Só a `laco` o cria.
 	struct som *som;
@@ -340,10 +367,15 @@ static void dizer(struct receptor *r, const char *chave, ...)
 		snprintf(diario, sizeof diario, texto_pt(chave), "[endereço omitido]", "[interface omitida]");
 	else if (strcmp(chave, "Quall.Estado.SessaoNova") == 0 ||
 		 strcmp(chave, "Quall.Estado.SessaoNovaCabo") == 0 ||
+		 strcmp(chave, "Quall.Estado.SessaoNovaCodigo") == 0 ||
+		 strcmp(chave, "Quall.Estado.SessaoNovaCodigoCabo") == 0 ||
+		 strcmp(chave, "Quall.Estado.SessaoNovaQr") == 0 ||
 		 strcmp(chave, "Quall.Estado.SessaoRetomada") == 0 ||
 		 strcmp(chave, "Quall.Estado.SessaoRetomadaCabo") == 0) {
 		unsigned long long ms = va_arg(ap_diario, unsigned long long);
 		snprintf(diario, sizeof diario, texto_pt(chave), ms, "[par omitido]");
+	} else if (strcmp(chave, "Quall.Estado.QrChamado") == 0) {
+		snprintf(diario, sizeof diario, texto_pt(chave), "[par omitido]");
 	} else if (strcmp(chave, "Quall.Estado.NaoConectou") == 0) {
 		(void)va_arg(ap_diario, const char *); // mensagem completa pertence só à GUI
 		enum QuallStatus status = (enum QuallStatus)va_arg(ap_diario, int);
@@ -536,7 +568,7 @@ static void ao_pronto(void *ctx, const struct dec_nv12 *q, uint64_t chegada_ns, 
 	// `23eb480`, B5): o quadro retido não paga o encaixe nem conta como encaixado. Uma imagem de
 	// outro tamanho entra encaixada, com faixas pretas, e a fonte não muda de tamanho na cena. O
 	// controle da troca de 21/09 mostrou o contrário: o plugin publicava cada quadro no tamanho
-	// dele, e o Pessoa Exemplo viu a fonte encolher e crescer na cena a cada troca.
+	// dele, e o Bruno viu a fonte encolher e crescer na cena a cada troca.
 	bool era_o_primeiro = !s->publicado_l;
 	bool encaixar = encaixe_publicar_em(&s->publicado_l, &s->publicado_a, q->largura, q->altura);
 	if (era_o_primeiro) {
@@ -737,7 +769,7 @@ static bool som_do_quall_ouvido(obs_source_t *fonte)
 	       obs_source_get_monitoring_type(fonte) != OBS_MONITORING_TYPE_MONITOR_ONLY;
 }
 
-/// **A imagem espera o som** (decisão do Pessoa Exemplo de 18/09/2026, ~22h30; `som.h`): segura o quadro
+/// **A imagem espera o som** (decisão do Bruno de 18/09/2026, ~22h30; `som.h`): segura o quadro
 /// `q` (ainda codificado) até ele poder sair **no tique do OBS da hora em que o som da mesma
 /// captura toca**. A hora do som vem do mapa (`som_mapa`); a captura do quadro, do carimbo dele e
 /// do relógio comum. O tique mais perto, e não "o primeiro depois da entrega": é o que tira da
@@ -1485,8 +1517,451 @@ static void relatar_o_som(struct receptor *r, struct sessao *s)
 	     (double)espera_decode(&s->espera) / 1e6, bytes_na_fila / 1024, por_bytes, (double)video_para_som / 1000.0);
 }
 
-static uint32_t uma_sessao(struct receptor *r, const char *endereco, const char *pin, const char *nome,
-			   uint32_t prazo_ms, uint32_t geracao)
+// -------------------------------------------------------------------------------------------------
+// O código de 4 dígitos (`docs/conexao.md` §4)
+//
+// `quall_connect_with_code` bloqueia a `laco` enquanto as duas pessoas comparam. O painel precisa,
+// nesse tempo, ver o código e mandar o toque: uma thread curta lê o estado a cada 150 ms (o ritmo
+// das outras cascas) e, **quando a fase muda**, guarda o cartão e pede ao OBS para refazer as
+// propriedades. Refazer come teclas de quem digita (ver `dizer`), mas aqui ninguém digita: a pessoa
+// acabou de clicar em Conectar com o PIN vazio, e o refazer só acontece nas trocas de fase — três ou
+// quatro por tentativa, não a cada volta.
+// -------------------------------------------------------------------------------------------------
+struct vigia_do_codigo {
+	struct receptor *r;
+	QuallCodeConfirm *c;
+	pthread_t thread;
+	volatile bool parar;
+	bool viva;
+};
+
+/// Lê o estado do confirmador para `out`. `false` se a leitura falhou.
+static bool ler_o_codigo(QuallCodeConfirm *c, struct codigo_na_tela *out)
+{
+	// O padrão `(buf, cap)` inteiro: o `peer` é o nome que o **outro** aparelho escolheu, sem teto
+	// que seja nosso.
+	intptr_t precisa = quall_code_confirm_state_json(c, NULL, 0);
+	if (precisa <= 0)
+		return false;
+	char *json = bmalloc((size_t)precisa);
+	intptr_t n = quall_code_confirm_state_json(c, json, (size_t)precisa);
+	obs_data_t *d = (n > 0 && n <= precisa) ? obs_data_create_from_json(json) : NULL;
+	bfree(json);
+	if (!d)
+		return false;
+	memset(out, 0, sizeof *out);
+	snprintf(out->fase, sizeof out->fase, "%s", obs_data_get_string(d, "phase"));
+	snprintf(out->codigo, sizeof out->codigo, "%s", obs_data_get_string(d, "code"));
+	snprintf(out->par, sizeof out->par, "%s", obs_data_get_string(d, "peer"));
+	out->tentativa = (uint32_t)obs_data_get_int(d, "attempts");
+	out->pareamento_anterior = strcmp(obs_data_get_string(d, "notice"), "previous_pairing_invalid") == 0;
+	obs_data_release(d);
+	return true;
+}
+
+static bool codigo_na_tela(const struct codigo_na_tela *e)
+{
+	return strcmp(e->fase, "mostrando") == 0 || strcmp(e->fase, "confirmado_aqui") == 0;
+}
+
+static void *vigiar_o_codigo(void *arg)
+{
+	struct vigia_do_codigo *v = arg;
+	os_set_thread_name("quall-codigo");
+	char ultima[48] = "";
+	while (!os_atomic_load_bool(&v->parar)) {
+		struct codigo_na_tela e;
+		if (ler_o_codigo(v->c, &e)) {
+			char assinatura[48];
+			snprintf(assinatura, sizeof assinatura, "%s#%u", e.fase, e.tentativa);
+			if (strcmp(assinatura, ultima) != 0) {
+				snprintf(ultima, sizeof ultima, "%s", assinatura);
+				pthread_mutex_lock(&v->r->trava);
+				v->r->codigo_na_tela = e;
+				pthread_mutex_unlock(&v->r->trava);
+				// O diário diz a fase e a tentativa, nunca o código nem o nome de quem está do outro lado.
+				diga(LOG_INFO, "código: fase=%s tentativa=%u", e.fase, e.tentativa);
+				if (strcmp(e.fase, "mostrando") == 0)
+					dizer(v->r, "Quall.Estado.CodigoNaTela");
+				obs_source_update_properties(v->r->fonte);
+			}
+		}
+		os_sleep_ms(150);
+	}
+	return NULL;
+}
+
+/// O que dizer quando a tentativa pelo código não fechou; NULL nas outras fases.
+static const char *desfecho_do_codigo(const char *fase)
+{
+	if (strcmp(fase, "recusado_aqui") == 0)
+		return "Quall.Estado.CodigoRecusadoAqui";
+	if (strcmp(fase, "recusado_la") == 0)
+		return "Quall.Estado.CodigoRecusadoLa";
+	if (strcmp(fase, "nao_conferiu") == 0)
+		return "Quall.Estado.CodigoNaoConferiu";
+	if (strcmp(fase, "expirou") == 0)
+		return "Quall.Estado.CodigoExpirou";
+	return NULL;
+}
+
+bool receptor_codigo(struct receptor *r, struct codigo_na_tela *out)
+{
+	if (!r)
+		return false;
+	pthread_mutex_lock(&r->trava);
+	bool ha = r->codigo && codigo_na_tela(&r->codigo_na_tela);
+	if (ha)
+		*out = r->codigo_na_tela;
+	pthread_mutex_unlock(&r->trava);
+	return ha;
+}
+
+void receptor_codigo_recusar(struct receptor *r)
+{
+	if (!r)
+		return;
+	// Com `trava` na mão: a `laco` só libera o confirmador depois de zerar `r->codigo` sob ela.
+	pthread_mutex_lock(&r->trava);
+	bool valeu = false;
+	uint32_t tentativa = r->codigo_na_tela.tentativa;
+	if (r->codigo && strcmp(r->codigo_na_tela.fase, "mostrando") == 0)
+		valeu = quall_code_confirm_reject(r->codigo, tentativa);
+	pthread_mutex_unlock(&r->trava);
+	diga(LOG_INFO, "código: recusou tentativa=%u valeu=%d", tentativa, (int)valeu);
+}
+
+// -------------------------------------------------------------------------------------------------
+// A sessão salva, gravada nos ajustes da fonte (`docs/conexao.md` §3)
+//
+// Os ajustes são da interface do OBS: escritos daqui, da `laco`, disputariam com a janela de
+// propriedades lendo o mesmo `obs_data`. A escrita vai para a thread da interface
+// (`obs_queue_task(OBS_TASK_UI)`), com a fonte por referência fraca — removida nesse meio tempo,
+// nada é escrito. **Sem `obs_source_update`**: o `.update` acordaria a `laco` e derrubaria a sessão
+// que acabou de subir. O receptor já tem os valores novos na memória (`uma_sessao`).
+// -------------------------------------------------------------------------------------------------
+struct gravar_par {
+	obs_weak_source_t *fonte;
+	char *id;
+	char *endereco;
+	/// O endereço antigo, quando a procura pelo id achou o aparelho noutro: o campo que o guardava
+	/// (`aparelho` ou `endereco`) passa ao novo.
+	char *antigo;
+	/// Pelo QR: o aparelho passa a ser o do chamado, como se escolhido na lista.
+	bool escolher;
+};
+
+static void gravar_par_na_interface(void *param)
+{
+	struct gravar_par *g = param;
+	obs_source_t *fonte = obs_weak_source_get_source(g->fonte);
+	if (fonte) {
+		obs_data_t *a = obs_source_get_settings(fonte);
+		obs_data_set_string(a, "par_id", g->id);
+		obs_data_set_string(a, "par_endereco", g->endereco);
+		if (g->escolher) {
+			obs_data_set_string(a, "aparelho", g->endereco);
+		} else if (g->antigo) {
+			if (strcmp(obs_data_get_string(a, "aparelho"), g->antigo) == 0)
+				obs_data_set_string(a, "aparelho", g->endereco);
+			else if (strcmp(obs_data_get_string(a, "endereco"), g->antigo) == 0)
+				obs_data_set_string(a, "endereco", g->endereco);
+		}
+		obs_data_release(a);
+		obs_source_release(fonte);
+	}
+	obs_weak_source_release(g->fonte);
+	bfree(g->id);
+	bfree(g->endereco);
+	bfree(g->antigo);
+	bfree(g);
+}
+
+/// O `device_id` do par, do JSON de `quall_session_peer_json`. `bmalloc`'d, ou NULL.
+static char *id_do_par(const char *par_json)
+{
+	if (!par_json)
+		return NULL;
+	obs_data_t *d = obs_data_create_from_json(par_json);
+	if (!d)
+		return NULL;
+	const char *id = obs_data_get_string(d, "device_id");
+	char *copia = (id && *id) ? bstrdup(id) : NULL;
+	obs_data_release(d);
+	return copia;
+}
+
+// -------------------------------------------------------------------------------------------------
+// O QR invertido (`docs/conexao.md` §10): o OBS mostra, o celular lê
+//
+// O OBS não tem onde desenhar uma imagem no painel de propriedades — mas a janela de propriedades
+// mostra a **prévia da fonte** em cima. Então o QR vai para a imagem da própria fonte (a sessão não
+// existe ainda, nada é sobrescrito), no tamanho que a fonte já publica, para a cena não pular; e sai
+// dela no chamado. É um pedido explícito (o botão), nunca automático: a fonte numa cena ao vivo não
+// mostra um QR a ninguém sem a pessoa pedir.
+// -------------------------------------------------------------------------------------------------
+/// Quantos convites seguidos (3 min cada) sem ninguém ler antes de o QR parar sozinho.
+#define QR_RENOVACOES 5
+
+static void acordar(struct receptor *r);
+
+/// **A fonte no ar não mostra QR** (revisão de 12/10, M1): o QR vai para a saída de vídeo da fonte,
+/// e com ela na cena do programa ele iria para a transmissão e a gravação — com o segredo do convite
+/// à vista de quem assiste. Recusa, e a pessoa tira a fonte da cena para parear.
+static bool fonte_no_ar(struct receptor *r)
+{
+	return obs_source_active(r->fonte);
+}
+
+/// Larga o pedido de QR e diz por quê (a `laco` volta ao caminho de sempre).
+static void largar_o_qr(struct receptor *r, const char *chave)
+{
+	pthread_mutex_lock(&r->trava);
+	r->mostrar_qr = false;
+	pthread_mutex_unlock(&r->trava);
+	dizer(r, chave);
+	obs_source_update_properties(r->fonte);
+}
+
+struct estado_do_convite {
+	char fase[16];
+	char nome[128];
+	char endpoint[64];
+};
+
+static bool ler_o_convite(QuallQrInvite *c, struct estado_do_convite *out)
+{
+	memset(out, 0, sizeof *out);
+	intptr_t precisa = quall_qr_invite_state_json(c, NULL, 0);
+	if (precisa <= 0)
+		return false;
+	char *json = bmalloc((size_t)precisa);
+	intptr_t n = quall_qr_invite_state_json(c, json, (size_t)precisa);
+	obs_data_t *d = (n > 0 && n <= precisa) ? obs_data_create_from_json(json) : NULL;
+	bfree(json);
+	if (!d)
+		return false;
+	snprintf(out->fase, sizeof out->fase, "%s", obs_data_get_string(d, "phase"));
+	snprintf(out->nome, sizeof out->nome, "%s", obs_data_get_string(d, "peer_name"));
+	snprintf(out->endpoint, sizeof out->endpoint, "%s", obs_data_get_string(d, "endpoint"));
+	obs_data_release(d);
+	return true;
+}
+
+struct vigia_do_convite {
+	struct receptor *r;
+	QuallQrInvite *convite;
+	pthread_t thread;
+	volatile bool parar;
+	bool viva;
+};
+
+/// A cada 300 ms: no chamado, o QR sai da imagem (§10.5: some na hora) e a frase diz quem chamou.
+static void *vigiar_o_convite(void *arg)
+{
+	struct vigia_do_convite *v = arg;
+	os_set_thread_name("quall-qr");
+	bool chamou = false;
+	while (!os_atomic_load_bool(&v->parar) && !chamou) {
+		// Entrou no ar com o QR na imagem (alguém pôs a fonte na cena): o QR sai já, e a espera é
+		// cortada — `acordar` cancela a conexão em curso e vira a geração.
+		if (fonte_no_ar(v->r)) {
+			obs_source_output_video(v->r->fonte, NULL);
+			largar_o_qr(v->r, "Quall.Estado.QrNoAr");
+			acordar(v->r);
+			break;
+		}
+		struct estado_do_convite e;
+		if (ler_o_convite(v->convite, &e) && strcmp(e.fase, "chamado") == 0) {
+			chamou = true;
+			obs_source_output_video(v->r->fonte, NULL);
+			dizer(v->r, "Quall.Estado.QrChamado", e.nome[0] ? e.nome : obs_module_text("Quall.Codigo.OutroAparelho"));
+			obs_source_update_properties(v->r->fonte);
+		}
+		os_sleep_ms(300);
+	}
+	return NULL;
+}
+
+/// Põe o QR na imagem da fonte: no tamanho que ela já publica (ou 1280×720), um quadrado branco
+/// com a margem da norma (4 módulos), os módulos pretos, e o resto num cinza escuro.
+static void publicar_qr(struct receptor *r, const struct qr_matriz *m)
+{
+	pthread_mutex_lock(&r->trava);
+	uint32_t l = r->publicado_l ? r->publicado_l : 1280;
+	uint32_t a = r->publicado_a ? r->publicado_a : 720;
+	pthread_mutex_unlock(&r->trava);
+	int modulos = m->lado + 8;
+	uint32_t menor = l < a ? l : a;
+	int escala = (int)(menor * 9 / 10) / modulos;
+	if (escala < 1)
+		escala = 1;
+	uint32_t quadrado = (uint32_t)(modulos * escala);
+	uint32_t x0 = (l - quadrado) / 2, y0 = (a - quadrado) / 2;
+	uint8_t *px = bmalloc((size_t)l * a * 4);
+	for (uint32_t y = 0; y < a; y++)
+		for (uint32_t x = 0; x < l; x++) {
+			uint8_t c = 0x20;
+			if (x >= x0 && y >= y0 && x < x0 + quadrado && y < y0 + quadrado) {
+				int mx = (int)(x - x0) / escala - 4, my = (int)(y - y0) / escala - 4;
+				bool escuro = mx >= 0 && my >= 0 && mx < m->lado && my < m->lado &&
+					      m->escuro[my * m->lado + mx];
+				c = escuro ? 0x00 : 0xFF;
+			}
+			uint8_t *p = px + ((size_t)y * l + x) * 4;
+			p[0] = p[1] = p[2] = c;
+			p[3] = 0xFF;
+		}
+	struct obs_source_frame f = {0};
+	f.data[0] = px;
+	f.linesize[0] = l * 4;
+	f.width = l;
+	f.height = a;
+	f.format = VIDEO_FORMAT_BGRA;
+	f.full_range = true;
+	f.timestamp = os_gettime_ns();
+	obs_source_output_video(r->fonte, &f);
+	bfree(px);
+}
+
+static uint32_t uma_sessao_em(struct receptor *r, const char *endereco, const char *endereco_pedido,
+			      const char *pin, const char *nome, uint32_t prazo_ms, uint32_t geracao,
+			      bool com_codigo, QuallQrInvite *convite, const char *alvo);
+
+/// **Uma volta do QR**: um convite novo na imagem da fonte, e a espera pelo chamado
+/// (`quall_connect_with_invite`, dentro de `uma_sessao_em`). Subindo, a sessão segue como qualquer
+/// outra; expirando, a `laco` volta aqui com outro convite.
+static uint32_t sessao_pelo_qr(struct receptor *r, const char *nome, uint32_t prazo_ms, uint32_t geracao)
+{
+	pthread_mutex_lock(&r->trava);
+	bool parar = ++r->qr_renovacoes > QR_RENOVACOES;
+	if (parar)
+		r->mostrar_qr = false;
+	pthread_mutex_unlock(&r->trava);
+	if (parar) {
+		dizer(r, "Quall.Estado.QrParou");
+		obs_source_update_properties(r->fonte);
+		return 1000;
+	}
+
+	if (fonte_no_ar(r)) {
+		largar_o_qr(r, "Quall.Estado.QrNoAr");
+		return 1000;
+	}
+
+	struct QuallDeviceDesc eu = {
+		.device_id = identidade_device_id(),
+		.display_name = nome,
+		.screen_source = false,
+		.camera_source = false,
+		.sink = true,
+	};
+	QuallQrInvite *convite = quall_qr_invite_new(&eu, 0);
+	if (!convite) {
+		enum QuallStatus st = quall_last_status();
+		pthread_mutex_lock(&r->trava);
+		r->mostrar_qr = false;
+		pthread_mutex_unlock(&r->trava);
+		dizer(r, st == QUALL_STATUS_NO_ROUTE ? "Quall.Estado.QrSemRede" : "Quall.Estado.QrNaoCriado");
+		obs_source_update_properties(r->fonte);
+		return 1000;
+	}
+
+	// O texto leva o segredo (§10.2): do núcleo para a matriz, apagado logo depois, nunca no diário.
+	bool desenhou = false;
+	intptr_t precisa = quall_qr_invite_text(convite, NULL, 0);
+	if (precisa > 0) {
+		char *texto = bmalloc((size_t)precisa);
+		intptr_t n = quall_qr_invite_text(convite, texto, (size_t)precisa);
+		struct qr_matriz *m = bmalloc(sizeof *m);
+		// De novo aqui: entre a pergunta de cima e o desenho, a fonte pode ter entrado no ar.
+		if (n > 0 && n <= precisa && !fonte_no_ar(r) &&
+		    qr_codificar((const uint8_t *)texto, strlen(texto), m)) {
+			publicar_qr(r, m);
+			desenhou = true;
+		}
+		memset(texto, 0, (size_t)precisa);
+		memset(m, 0, sizeof *m);
+		bfree(texto);
+		bfree(m);
+	}
+	if (!desenhou) {
+		quall_qr_invite_free(convite);
+		pthread_mutex_lock(&r->trava);
+		r->mostrar_qr = false;
+		pthread_mutex_unlock(&r->trava);
+		dizer(r, "Quall.Estado.QrNaoCriado");
+		obs_source_update_properties(r->fonte);
+		return 1000;
+	}
+	diga(LOG_INFO, "QR na imagem da fonte, esperando o celular chamar (convite %d de %d)",
+	     r->qr_renovacoes, QR_RENOVACOES);
+	dizer(r, "Quall.Estado.QrNaTela");
+	obs_source_update_properties(r->fonte);
+
+	uint32_t espera = uma_sessao_em(r, "", "", "", nome, prazo_ms, geracao, false, convite, NULL);
+	// **O QR sai da imagem em toda volta** (revisão de 12/10, M2): `uma_sessao_em` tem saídas
+	// antecipadas (a fonte mudou, mandaram parar) antes de a espera existir, e por elas o QR ficava
+	// preso na imagem. Depois de uma sessão inteira, a imagem já está limpa e isto não muda nada.
+	obs_source_output_video(r->fonte, NULL);
+	quall_qr_invite_free(convite);
+	return espera;
+}
+
+void receptor_mostrar_qr(struct receptor *r, bool mostrar)
+{
+	if (!r)
+		return;
+	pthread_mutex_lock(&r->trava);
+	r->mostrar_qr = mostrar;
+	r->qr_renovacoes = 0;
+	pthread_mutex_unlock(&r->trava);
+	// Corta a tentativa em curso (ou a sessão de pé: mostrar o QR é trocar de conexão) e a espera do
+	// QR, quando é para esconder.
+	acordar(r);
+}
+
+bool receptor_qr_ativo(struct receptor *r)
+{
+	if (!r)
+		return false;
+	pthread_mutex_lock(&r->trava);
+	bool ativo = r->mostrar_qr;
+	pthread_mutex_unlock(&r->trava);
+	return ativo;
+}
+
+static uint32_t uma_sessao(struct receptor *r, const char *endereco_pedido, const char *pin, const char *nome,
+			   uint32_t prazo_ms, uint32_t geracao, bool com_codigo, const char *par_id,
+			   const char *par_endereco)
+{
+	// ------------------------------------------------------------------------------------
+	// **A sessão salva, sem id no anúncio** (`docs/v3-no-privado.md` §5.2). Só sem PIN (com PIN a
+	// pessoa está pareando, talvez outro aparelho) e só para o endereço em que a sessão salva
+	// fechou: escolher outro aparelho na lista é outra sessão. `quall_connect_known` acha o
+	// aparelho — no endereço antigo e nos anfitriões da busca — e retoma com ele na mesma conexão,
+	// só com o vínculo dele, **sem nunca abrir o código** (§3.4): o clique sem PIN ali não pede
+	// código. O endereço é gravado depois, com o que a sessão autenticada diz (M3).
+	// ------------------------------------------------------------------------------------
+	//
+	// **O item da lista que a sonda reconheceu** (`known_device_id`, §5.4) também é alvo: a A2 vale a
+	// partir da lista, e um par guardado nunca cai no código por um `Challenge` trocado.
+	bool sem_pin = !pin || !*pin;
+	bool da_sessao = sem_pin && par_id && *par_id && par_endereco && strcmp(par_endereco, endereco_pedido) == 0;
+	char *da_lista = sem_pin && !da_sessao ? descoberta_par_conhecido(endereco_pedido) : NULL;
+	const char *alvo = da_sessao ? par_id : da_lista;
+	// **O clique em Conectar com alvo** (`docs/v3-no-privado.md` §8.6) também leva o código: o núcleo
+	// reconecta com o vínculo, e só se o outro não o reconhecer mais pareia de novo pelo código. Sem
+	// clique (a cena que volta), `com_codigo` é falso e é a sessão salva de sempre, sem código.
+	uint32_t espera = uma_sessao_em(r, endereco_pedido, endereco_pedido, pin, nome, prazo_ms, geracao,
+					com_codigo, NULL, alvo);
+	bfree(da_lista);
+	return espera;
+}
+
+static uint32_t uma_sessao_em(struct receptor *r, const char *endereco, const char *endereco_pedido,
+			      const char *pin, const char *nome, uint32_t prazo_ms, uint32_t geracao,
+			      bool com_codigo, QuallQrInvite *convite, const char *alvo)
 {
 	// ------------------------------------------------------------------------------------
 	// **Por onde a mídia vai sair, decidido antes de a sessão existir.**
@@ -1566,12 +2041,41 @@ static uint32_t uma_sessao(struct receptor *r, const char *endereco, const char 
 		.bind_address = enlace.prender ? enlace.endereco : NULL,
 	};
 
-	if (enlace.prender)
-		dizer(r, "Quall.Estado.ConectandoCabo", endereco, enlace.nome);
-	else
-		dizer(r, "Quall.Estado.Conectando", endereco);
+	// Pelo QR, o endereço só existe depois do chamado: a frase é a do QR (`sessao_pelo_qr`).
+	if (alvo) {
+		dizer(r, com_codigo ? "Quall.Estado.Reconectando" : "Quall.Estado.ProcurandoPeloId");
+	} else if (!convite) {
+		if (enlace.prender)
+			dizer(r, "Quall.Estado.ConectandoCabo", endereco, enlace.nome);
+		else
+			dizer(r, "Quall.Estado.Conectando", endereco);
+	}
+	struct vigia_do_convite vigia_qr = {.r = r, .convite = convite};
+	if (convite && pthread_create(&vigia_qr.thread, NULL, vigiar_o_convite, &vigia_qr) == 0)
+		vigia_qr.viva = true;
+
+	// **Com o código à mão só no clique sem PIN** (`docs/conexao.md` §4). O núcleo só o usa se não
+	// houver pareamento guardado e se o outro lado disser que aceita; diante de um aparelho que não
+	// aceita, volta logo com `QUALL_STATUS_NEEDS_PIN`. Sem código, é o `connect` de sempre — o mesmo
+	// caminho do plugin publicado, byte a byte.
+	struct vigia_do_codigo vigia = {0};
+	if (com_codigo) {
+		vigia.r = r;
+		vigia.c = quall_code_confirm_new();
+		pthread_mutex_lock(&r->trava);
+		r->codigo = vigia.c;
+		memset(&r->codigo_na_tela, 0, sizeof r->codigo_na_tela);
+		pthread_mutex_unlock(&r->trava);
+		if (vigia.c && pthread_create(&vigia.thread, NULL, vigiar_o_codigo, &vigia) == 0)
+			vigia.viva = true;
+	}
+
 	uint64_t t_conectar = os_gettime_ns();
-	QuallSession *ses = quall_connect_cancelable(endereco, &op, c);
+	QuallSession *ses = convite	      ? quall_connect_with_invite(convite, &op, c)
+			    : alvo && vigia.c ? quall_connect_with_code_to(endereco, &op, c, NULL, vigia.c, 0, 0, alvo)
+			    : alvo	      ? quall_connect_known(alvo, endereco, &op, c, NULL)
+			    : vigia.c	      ? quall_connect_with_code(endereco, &op, c, NULL, vigia.c, 0, 0)
+					      : quall_connect_cancelable(endereco, &op, c);
 	enum QuallStatus status_conexao = QUALL_STATUS_OK;
 	char erro[256] = "";
 	if (!ses) {
@@ -1584,23 +2088,161 @@ static uint32_t uma_sessao(struct receptor *r, const char *endereco, const char 
 	pthread_mutex_unlock(&r->trava);
 	quall_canceller_free(c);
 
+	// O código acabou, de um jeito ou de outro: a vigia sai, o cartão some do painel, e o
+	// confirmador é solto **depois** de `r->codigo` zerado sob `trava` (o botão toca nele com ela).
+	struct codigo_na_tela fim_do_codigo = {0};
+	bool pareou_pelo_codigo = false;
+	if (vigia.c) {
+		os_atomic_set_bool(&vigia.parar, true);
+		if (vigia.viva)
+			pthread_join(vigia.thread, NULL);
+		ler_o_codigo(vigia.c, &fim_do_codigo);
+		pareou_pelo_codigo = strcmp(fim_do_codigo.fase, "conferiu") == 0;
+		pthread_mutex_lock(&r->trava);
+		r->codigo = NULL;
+		memset(&r->codigo_na_tela, 0, sizeof r->codigo_na_tela);
+		pthread_mutex_unlock(&r->trava);
+		quall_code_confirm_free(vigia.c);
+		obs_source_update_properties(r->fonte);
+	}
+
+	// O QR: a vigia sai, o QR sai da imagem da fonte, e o estado final separa os dois sentidos do
+	// TIMEOUT (§10.9) — "expirou" é QR novo em silêncio; "chamado" é o celular que leu e não fechou.
+	struct estado_do_convite fim_do_qr = {0};
+	if (convite) {
+		os_atomic_set_bool(&vigia_qr.parar, true);
+		if (vigia_qr.viva)
+			pthread_join(vigia_qr.thread, NULL);
+		ler_o_convite(convite, &fim_do_qr);
+		obs_source_output_video(r->fonte, NULL);
+	}
+
+	if (!ses && convite) {
+		bfree(pares);
+		if (!ainda_vale(r, geracao) || status_conexao == QUALL_STATUS_CANCELLED)
+			return 0;
+		diga(LOG_INFO, "QR sem conexão: status %d (%s) fase=%s", (int)status_conexao,
+		     registro_causa_status(status_conexao), fim_do_qr.fase);
+		if (status_conexao == QUALL_STATUS_TIMEOUT && strcmp(fim_do_qr.fase, "chamado") != 0)
+			return 0; // expirou sem ninguém: o próximo convite, já
+		// O QR não substitui um vínculo que já existe (`docs/v3-no-privado.md` §8.2): o `PAIRING`
+		// diz qual dos dois é.
+		bool ja_pareado = recusa_do_vinculo(status_conexao) == RECUSA_JA_PAREADO;
+		dizer(r, status_conexao == QUALL_STATUS_TIMEOUT   ? "Quall.Estado.QrNaoFechou"
+			 : ja_pareado				  ? "Quall.Estado.QrJaPareado"
+			 : status_conexao == QUALL_STATUS_PAIRING ? "Quall.Estado.QrOutroAtendeu"
+								  : "Quall.Estado.QrNaoFechou");
+		obs_source_update_properties(r->fonte);
+		return 3000;
+	}
+
 	if (!ses) {
 		bfree(pares);
 		if (!ainda_vale(r, geracao))
 			return 0;
+		// **O código entrou em cena e não fechou**, ou o outro lado não aceita código: a frase é
+		// dessa tentativa, e a fonte **espera o próximo clique** em vez de tentar de novo a cada
+		// 3 s — sem PIN e sem pareamento, a próxima tentativa sozinha só repetiria o pedido.
+		// **O vínculo falha fechado** (`docs/v3-no-privado.md` §3.4, §3.5, §8.1): interferência (A1),
+		// o outro não reconheceu a sessão salva (A2), ou o código chegou ao fim com vínculo de um dos
+		// lados. A fonte espera o clique: sozinha, a próxima tentativa só repetiria a recusa.
+		enum recusa_do_vinculo recusa = recusa_do_vinculo(status_conexao);
+		if (recusa != RECUSA_NENHUMA || (alvo && status_conexao == QUALL_STATUS_NEEDS_PIN)) {
+			diga(LOG_INFO, "vínculo: recusa=%d status %d (%s)", (int)recusa, (int)status_conexao,
+			     registro_causa_status(status_conexao));
+			dizer(r, recusa != RECUSA_NENHUMA ? chave_da_recusa(recusa) : "Quall.Estado.SalvoSemVinculo");
+			pthread_mutex_lock(&r->trava);
+			if (r->geracao == geracao) {
+				r->esperando_clique = true;
+				bfree(r->id_para_esquecer);
+				r->id_para_esquecer = recusa == RECUSA_NAO_RECONHECEU && alvo ? bstrdup(alvo) : NULL;
+			}
+			pthread_mutex_unlock(&r->trava);
+			obs_source_update_properties(r->fonte);
+			return 60000;
+		}
+		// **A sessão salva não achou ninguém com a dica dela** (§5.2): sem cair no código. O aparelho
+		// pode estar noutra rede, desligado — a fonte tenta de novo sozinha, como sempre — ou ter
+		// esquecido este OBS: aí a saída é esquecer daqui também, e o botão aparece.
+		if (alvo && status_conexao == QUALL_STATUS_TIMEOUT) {
+			dizer(r, "Quall.Estado.SalvoNaoAchado");
+			pthread_mutex_lock(&r->trava);
+			bool mostrar = r->geracao == geracao && !r->id_para_esquecer;
+			if (mostrar)
+				r->id_para_esquecer = bstrdup(alvo);
+			pthread_mutex_unlock(&r->trava);
+			if (mostrar)
+				obs_source_update_properties(r->fonte);
+			return 3000;
+		}
+		const char *desfecho = vigia.c ? desfecho_do_codigo(fim_do_codigo.fase) : NULL;
+		bool sem_codigo_la = vigia.c && !desfecho && status_conexao == QUALL_STATUS_NEEDS_PIN;
+		if (desfecho || sem_codigo_la) {
+			dizer(r, desfecho ? desfecho : "Quall.Estado.NaoAceitaCodigo");
+			pthread_mutex_lock(&r->trava);
+			if (r->geracao == geracao)
+				r->esperando_clique = true;
+			pthread_mutex_unlock(&r->trava);
+			return 60000;
+		}
 		dizer(r, "Quall.Estado.NaoConectou", erro, (int)status_conexao);
 		return 3000;
 	}
 
+	// Pelo QR, o endereço em que a sessão subiu é o do chamado (`endpoint`, §10.9), e é dele que a
+	// fonte fala daqui em diante: as próximas vezes são retomada, pelo caminho de sempre.
+	if (convite) {
+		endereco = fim_do_qr.endpoint;
+		pthread_mutex_lock(&r->trava);
+		r->mostrar_qr = false;
+		r->qr_renovacoes = 0;
+		if (r->geracao == geracao && fim_do_qr.endpoint[0]) {
+			bfree(r->endereco);
+			r->endereco = bstrdup(fim_do_qr.endpoint);
+		}
+		pthread_mutex_unlock(&r->trava);
+		obs_source_update_properties(r->fonte);
+	}
+	// **O endereço a gravar é o que a sessão autenticada diz** (`quall_session_endpoint_json`,
+	// `docs/v3-no-privado.md` §5.2): na sessão salva, o aparelho pode ter sido achado noutro IP.
+	char endereco_da_sessao[96] = "";
+	if (!convite) {
+		// O padrão `(buf, cap)` inteiro: a função não tem efeito, perguntar o tamanho antes é de graça.
+		intptr_t precisa_ep = quall_session_endpoint_json(ses, NULL, 0);
+		char *json = precisa_ep > 0 ? bmalloc((size_t)precisa_ep) : NULL;
+		intptr_t n = json ? quall_session_endpoint_json(ses, json, (size_t)precisa_ep) : -1;
+		obs_data_t *d = (n > 0 && n <= precisa_ep) ? obs_data_create_from_json(json) : NULL;
+		bfree(json);
+		if (d) {
+			snprintf(endereco_da_sessao, sizeof endereco_da_sessao, "%s", obs_data_get_string(d, "endpoint"));
+			if (alvo)
+				diga(LOG_INFO, "sessão salva retomada via=%s", obs_data_get_string(d, "via"));
+			obs_data_release(d);
+		}
+		if (endereco_da_sessao[0])
+			endereco = endereco_da_sessao;
+	}
+	pthread_mutex_lock(&r->trava);
+	if (r->geracao == geracao) {
+		bfree(r->id_para_esquecer);
+		r->id_para_esquecer = NULL;
+	}
+	pthread_mutex_unlock(&r->trava);
 	uint64_t ate_sessao_ms = (os_gettime_ns() - t_conectar) / 1000000;
 	bool pareamento_novo = quall_session_pairing_is_new(ses);
 
 	// Persistir o pareamento **agora**: sem isto o usuário digita o PIN a cada sessão.
-	intptr_t precisa = quall_session_known_peers_json(ses, pares, NULL, 0);
+	//
+	// **Só o par novo desta sessão** (`quall_session_known_peers_json(ses, NULL)`), fundido com o disco
+	// **lido na hora** por `pares_gravar_fundindo` (revisão da integração, M2): somar a `pares`, lido
+	// quando esta tentativa abriu, trazia de volta um par que outra fonte esqueceu nesse meio tempo.
+	// Retomada: nada a gravar — o vínculo já está no disco, ou foi esquecido de propósito.
+	intptr_t precisa = pareamento_novo ? quall_session_known_peers_json(ses, NULL, NULL, 0) : 0;
 	if (precisa > 0) {
 		char *b = bmalloc((size_t)precisa);
-		if (quall_session_known_peers_json(ses, pares, b, (size_t)precisa) > 0)
+		if (quall_session_known_peers_json(ses, NULL, b, (size_t)precisa) > 0)
 			pares_gravar_fundindo(b);
+		descoberta_pares_mudaram();
 		bfree(b);
 	}
 	bfree(pares);
@@ -1621,13 +2263,54 @@ static uint32_t uma_sessao(struct receptor *r, const char *endereco, const char 
 		}
 	}
 
-	// Quatro chaves e não pedaços: "novo, por PIN" e ", pelo cabo" mudam de lugar no inglês.
-	dizer(r,
-	      pareamento_novo ? (enlace.prender ? "Quall.Estado.SessaoNovaCabo" : "Quall.Estado.SessaoNova")
-			      : (enlace.prender ? "Quall.Estado.SessaoRetomadaCabo"
-						: "Quall.Estado.SessaoRetomada"),
-	      (unsigned long long)ate_sessao_ms, par ? par : "?");
+	// Seis chaves e não pedaços: "novo, por PIN" e ", pelo cabo" mudam de lugar no inglês.
+	const char *chave_da_sessao;
+	if (!pareamento_novo)
+		chave_da_sessao = enlace.prender ? "Quall.Estado.SessaoRetomadaCabo" : "Quall.Estado.SessaoRetomada";
+	else if (convite)
+		chave_da_sessao = "Quall.Estado.SessaoNovaQr";
+	else if (pareou_pelo_codigo)
+		chave_da_sessao = enlace.prender ? "Quall.Estado.SessaoNovaCodigoCabo" : "Quall.Estado.SessaoNovaCodigo";
+	else
+		chave_da_sessao = enlace.prender ? "Quall.Estado.SessaoNovaCabo" : "Quall.Estado.SessaoNova";
+	dizer(r, chave_da_sessao, (unsigned long long)ate_sessao_ms, par ? par : "?");
+
+	// **A sessão salva guarda quem é o outro lado** (`docs/conexao.md` §3), e só agora: a sessão
+	// subiu, então o id é o que o pareamento autenticou (M3). O endereço é o que de fato conectou.
+	char *id = id_do_par(par);
 	bfree(par);
+	if (id) {
+		bool mudou_o_endereco = strcmp(endereco, endereco_pedido) != 0;
+		pthread_mutex_lock(&r->trava);
+		bool ja_era = r->par_id && strcmp(r->par_id, id) == 0 && r->par_endereco &&
+			      strcmp(r->par_endereco, endereco) == 0;
+		bool vale = r->geracao == geracao;
+		if (vale && !ja_era) {
+			bfree(r->par_id);
+			bfree(r->par_endereco);
+			r->par_id = bstrdup(id);
+			r->par_endereco = bstrdup(endereco);
+			// O endereço com que a fonte fala passa ao novo **na memória** também, para o próximo
+			// `.update` (outra caixa marcada) não o ver como "com quem se fala mudou".
+			if (mudou_o_endereco && r->endereco && strcmp(r->endereco, endereco_pedido) == 0) {
+				bfree(r->endereco);
+				r->endereco = bstrdup(endereco);
+			}
+		}
+		pthread_mutex_unlock(&r->trava);
+		if (vale && !ja_era) {
+			struct gravar_par *g = bzalloc(sizeof *g);
+			g->fonte = obs_source_get_weak_source(r->fonte);
+			g->id = bstrdup(id);
+			g->endereco = bstrdup(endereco);
+			g->antigo = mudou_o_endereco && !convite ? bstrdup(endereco_pedido) : NULL;
+			g->escolher = convite != NULL;
+			obs_queue_task(OBS_TASK_UI, gravar_par_na_interface, g, false);
+			diga(LOG_INFO, "sessão salva gravada (id do par autenticado%s)",
+			     mudou_o_endereco ? ", endereço novo" : "");
+		}
+		bfree(id);
+	}
 
 	conferir_o_caminho(ses, &enlace);
 
@@ -2049,10 +2732,19 @@ static void *laco_principal(void *arg)
 		uint32_t prazo = r->prazo_ms;
 		uint32_t geracao = r->geracao;
 		bool esperando = r->esperando_clique;
+		bool qr = r->mostrar_qr;
+		// O pedido de código é do clique, e vale uma tentativa: consumido aqui.
+		bool com_codigo = r->pedir_codigo && !esperando && !*pin;
+		r->pedir_codigo = false;
+		char *par_id = bstrdup(r->par_id ? r->par_id : "");
+		char *par_endereco = bstrdup(r->par_endereco ? r->par_endereco : "");
 		pthread_mutex_unlock(&r->trava);
 
 		uint32_t espera;
-		if (!*endereco) {
+		if (qr) {
+			// O QR vem antes do endereço: é justamente o caminho de quem não tem um.
+			espera = sessao_pelo_qr(r, nome, prazo, geracao);
+		} else if (!*endereco) {
 			dizer(r, "Quall.Estado.Escolha");
 			espera = 1000;
 		} else if (esperando) {
@@ -2061,9 +2753,11 @@ static void *laco_principal(void *arg)
 			dizer(r, "Quall.Estado.Pronto", endereco);
 			espera = 60000;
 		} else {
-			espera = uma_sessao(r, endereco, pin, nome, prazo, geracao);
+			espera = uma_sessao(r, endereco, pin, nome, prazo, geracao, com_codigo, par_id, par_endereco);
 		}
 
+		bfree(par_id);
+		bfree(par_endereco);
 		bfree(endereco);
 		bfree(pin);
 		bfree(nome);
@@ -2150,6 +2844,11 @@ void receptor_atualizar(struct receptor *r, obs_data_t *ajustes)
 	r->endereco = bstrdup(endereco ? endereco : "");
 	r->pin = bstrdup(pin);
 	r->nome = bstrdup(obs_data_get_string(ajustes, "nome"));
+	// A sessão salva (`docs/conexao.md` §3): fora do painel, escrita só por `gravar_par_na_interface`.
+	bfree(r->par_id);
+	bfree(r->par_endereco);
+	r->par_id = bstrdup(obs_data_get_string(ajustes, "par_id"));
+	r->par_endereco = bstrdup(obs_data_get_string(ajustes, "par_endereco"));
 	r->sem_buffer = obs_data_get_bool(ajustes, "sem_buffer");
 	r->congelar = obs_data_get_bool(ajustes, "congelar");
 	// **`gravar` é o único dos três que a sessão lê uma vez, ao nascer** (ver `sessao_criar`).
@@ -2184,9 +2883,80 @@ void receptor_conectar_agora(struct receptor *r)
 		return;
 	pthread_mutex_lock(&r->trava);
 	r->esperando_clique = false;
+	// Sem PIN no painel, o clique pede o código (uma tentativa). Com PIN, a `laco` o ignora.
+	r->pedir_codigo = true;
 	pthread_mutex_unlock(&r->trava);
 	// `acordar` também cancela a tentativa em curso e vira a geração — é o que faz o botão
 	// significar "esta configuração, agora" em vez de "entra na fila".
+	acordar(r);
+}
+
+void receptor_ativou(struct receptor *r)
+{
+	if (!r)
+		return;
+	// **A fonte entrou no ar com o QR na imagem** (revisão da integração, baixo 5): o QR sai **agora**,
+	// no sinal, e não na próxima volta da vigia (até 300 ms de segredo na transmissão).
+	pthread_mutex_lock(&r->trava);
+	bool qr = r->mostrar_qr;
+	pthread_mutex_unlock(&r->trava);
+	if (!qr)
+		return;
+	obs_source_output_video(r->fonte, NULL);
+	largar_o_qr(r, "Quall.Estado.QrNoAr");
+	acordar(r);
+}
+
+bool receptor_pode_esquecer(struct receptor *r)
+{
+	if (!r)
+		return false;
+	pthread_mutex_lock(&r->trava);
+	bool pode = r->id_para_esquecer && *r->id_para_esquecer;
+	pthread_mutex_unlock(&r->trava);
+	return pode;
+}
+
+void receptor_esquecer_o_salvo(struct receptor *r)
+{
+	if (!r)
+		return;
+	pthread_mutex_lock(&r->trava);
+	char *id = (r->id_para_esquecer && *r->id_para_esquecer) ? bstrdup(r->id_para_esquecer) : NULL;
+	bool era_o_salvo = id && r->par_id && strcmp(r->par_id, id) == 0;
+	pthread_mutex_unlock(&r->trava);
+	if (!id)
+		return;
+	bool esqueceu = pares_esquecer(id);
+	bfree(id);
+	// A lista volta a sondar com a tabela nova (`quall_browser_set_known`).
+	descoberta_pares_mudaram();
+	diga(LOG_INFO, "esquecer o aparelho da sessão salva: gravou=%d", (int)esqueceu);
+	if (!esqueceu) {
+		dizer(r, "Quall.Estado.NaoEsqueceu");
+		return;
+	}
+	// A sessão salva perde o id (o endereço fica no painel). Daqui, da thread da interface — o
+	// clique é dela —, como `gravar_par_na_interface`, e sem `obs_source_update`.
+	obs_data_t *a = era_o_salvo ? obs_source_get_settings(r->fonte) : NULL;
+	if (a) {
+		obs_data_set_string(a, "par_id", "");
+		obs_data_set_string(a, "par_endereco", "");
+		obs_data_release(a);
+	}
+	pthread_mutex_lock(&r->trava);
+	if (era_o_salvo) {
+		bfree(r->par_id);
+		bfree(r->par_endereco);
+		r->par_id = bstrdup("");
+		r->par_endereco = bstrdup("");
+	}
+	bfree(r->id_para_esquecer);
+	r->id_para_esquecer = NULL;
+	r->esperando_clique = true;
+	pthread_mutex_unlock(&r->trava);
+	dizer(r, "Quall.Estado.Esquecido");
+	// Para a `laco` sair da espera longa e passar a "pronto para…" com o novo estado.
 	acordar(r);
 }
 
@@ -2212,6 +2982,9 @@ void receptor_destruir(struct receptor *r)
 	bfree(r->endereco);
 	bfree(r->pin);
 	bfree(r->nome);
+	bfree(r->par_id);
+	bfree(r->par_endereco);
+	bfree(r->id_para_esquecer);
 	bfree(r);
 }
 
